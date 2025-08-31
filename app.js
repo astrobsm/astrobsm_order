@@ -414,10 +414,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     if (saveProductBtn) {
       saveProductBtn.addEventListener('click', async () => {
-        const name = document.getElementById('productName').value;
-        const description = document.getElementById('productDescription').value;
-        const price = parseFloat(document.getElementById('productPrice').value);
-        const stockQuantity = parseInt(document.getElementById('productStock').value);
+        const nameElement = document.getElementById('newProductName');
+        const descriptionElement = document.getElementById('newProductDescription');
+        const priceElement = document.getElementById('newProductPrice');
+        
+        if (!nameElement || !priceElement) {
+          console.error('Required form elements not found');
+          return;
+        }
+        
+        const name = nameElement.value;
+        const description = descriptionElement ? descriptionElement.value : '';
+        const price = parseFloat(priceElement.value);
+        const stockQuantity = 100; // Default stock quantity
         
         if (!name || !price || price <= 0) {
           alert('Please fill in required fields (name and valid price)');
@@ -442,10 +451,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (response.ok) {
             alert('Product added successfully!');
             // Clear form
-            document.getElementById('productName').value = '';
-            document.getElementById('productDescription').value = '';
-            document.getElementById('productPrice').value = '';
-            document.getElementById('productStock').value = '';
+            const nameElement = document.getElementById('newProductName');
+            const descriptionElement = document.getElementById('newProductDescription');
+            const priceElement = document.getElementById('newProductPrice');
+            
+            if (nameElement) nameElement.value = '';
+            if (descriptionElement) descriptionElement.value = '';
+            if (priceElement) priceElement.value = '';
+            
             addProductForm.style.display = 'none';
             // Reload products
             await loadProductsForManagement();
@@ -464,10 +477,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (cancelProductBtn) {
       cancelProductBtn.addEventListener('click', () => {
         // Clear form
-        document.getElementById('productName').value = '';
-        document.getElementById('productDescription').value = '';
-        document.getElementById('productPrice').value = '';
-        document.getElementById('productStock').value = '';
+        const nameElement = document.getElementById('newProductName');
+        const descriptionElement = document.getElementById('newProductDescription');
+        const priceElement = document.getElementById('newProductPrice');
+        
+        if (nameElement) nameElement.value = '';
+        if (descriptionElement) descriptionElement.value = '';
+        if (priceElement) priceElement.value = '';
+        
         addProductForm.style.display = 'none';
       });
     }
