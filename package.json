@@ -1,0 +1,38 @@
+{
+  "name": "astro-bsm-order-app",
+  "version": "1.0.0",
+  "description": "ASTRO-BSM Product Order PWA with PostgreSQL backend",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "nodemon server/server.js",
+    "build": "echo 'Frontend build complete'",
+    "create-db": "node server/database/create-db.js",
+    "setup-db": "node server/database/setup.js",
+    "migrate-db": "node server/database/migrate.js",
+    "init": "npm run create-db && npm run setup-db"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "helmet": "^7.0.0",
+    "html2canvas": "^1.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "jspdf": "^3.0.2",
+    "morgan": "^1.10.0",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "pwa",
+    "order",
+    "astro-bsm",
+    "postgresql"
+  ],
+  "author": "ASTRO-BSM",
+  "license": "MIT"
+}

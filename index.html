@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>ASTRO-BSM Product Order System</title>
+  
+  <!-- PWA Manifest and Icons -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#007bff">
+  <meta name="background-color" content="#ffffff">
+  <meta name="display" content="standalone">
+  <meta name="orientation" content="portrait">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ASTRO-BSM">
+  <meta name="msapplication-TileColor" content="#007bff">
+  <meta name="msapplication-TileImage" content="icon-192.png">
+  
+  <!-- SEO and Description -->
+  <meta name="description" content="Professional medical product ordering system for ASTRO-BSM customers">
+  <meta name="keywords" content="ASTRO-BSM, medical products, order system, healthcare">
+  <meta name="author" content="ASTRO-BSM">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css?v=4">
+</head>
+<body>
+  <header>
+    <div class="header-container">
+      <img src="public/company_logo.PNG" alt="ASTRO-BSM Logo" class="logo">
+      <h1>ASTRO-BSM Product Order System</h1>
+      <button id="adminBtn" class="btn-admin">Admin</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Offline Queue Status -->
+    <div id="offline-queue-status" class="offline-queue" style="display: none;">
+      <div class="queue-info">
+        <span class="queue-icon">📱</span>
+        <span id="queue-message">You have pending orders that will be submitted when online</span>
+        <button id="queue-retry" class="btn-retry">Retry Now</button>
+      </div>
+    </div>
+    
+    <div class="card">
+      <form id="orderForm">
+        <fieldset class="customer-details">
+          <legend>Customer Details</legend>
+          <div class="form-group">
+            <label for="customerName">Full Name *</label>
+            <input type="text" id="customerName" name="customerName" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="customerEmail">Email Address (Optional)</label>
+            <input type="email" id="customerEmail" name="customerEmail">
+          </div>
+          
+          <div class="form-group">
+            <label for="customerPhone">Phone Number *</label>
+            <input type="tel" id="customerPhone" name="customerPhone" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="deliveryAddress">Delivery Address *</label>
+            <textarea id="deliveryAddress" name="deliveryAddress" rows="3" required></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label for="deliveryDate">Preferred Delivery Date *</label>
+            <input type="date" id="deliveryDate" name="deliveryDate" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="deliveryMethod">Preferred Delivery Method *</label>
+            <select id="deliveryMethod" name="deliveryMethod" required>
+              <option value="">Select delivery method</option>
+              <option value="pickup_enugu">Pickup from Enugu Office</option>
+              <option value="delivery_enugu">Home Delivery within Enugu</option>
+              <option value="transport_bus">Transport Bus (Interstate)</option>
+              <option value="courier_service">Courier Service</option>
+              <option value="airline_cargo">Airline Cargo</option>
+              <option value="personal_arrangement">Personal Arrangement</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="deliveryRoute">Delivery Route/Instructions</label>
+            <textarea id="deliveryRoute" name="deliveryRoute" rows="2" 
+                     placeholder="e.g., Via Onitsha Express, Upper Iweka Motor Park"></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label for="requestStatus">Request Urgency *</label>
+            <select id="requestStatus" name="requestStatus" required>
+              <option value="can_wait_24hrs">Can wait for 24 hours</option>
+              <option value="urgent">Urgent</option>
+              <option value="very_urgent">Very Urgent</option>
+            </select>
+          </div>
+        </fieldset>
+
+        <fieldset class="order-items">
+          <legend>Order Items</legend>
+          <div id="itemsContainer"></div>
+          <button type="button" id="addItemBtn" class="btn-secondary">
+            <span>+</span> Add Item
+          </button>
+          
+          <!-- Order Total Display -->
+          <div id="orderTotal" class="order-total-display" style="display: none;">
+            <div class="cost-breakdown">
+              <div class="cost-row">
+                <span>Subtotal:</span>
+                <span id="subtotalAmount">₦0.00</span>
+              </div>
+              <div class="cost-row">
+                <span>VAT (2.5%):</span>
+                <span id="vatAmount">₦0.00</span>
+              </div>
+              <div class="cost-row total-row">
+                <span><strong>Total Amount:</strong></span>
+                <span id="totalAmount"><strong>₦0.00</strong></span>
+              </div>
+              <div class="cost-row words-row" style="margin-top: 10px; font-style: italic; font-size: 0.9em; color: #6b7280;">
+                <span id="totalAmountWords">Amount in Words: </span>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Submit Order</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="orderSummary" class="card summary-card"></div>
+    
+    <!-- Admin Modal -->
+    <div id="adminModal" class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Admin Access</h2>
+        <div id="passwordSection">
+          <label for="adminPassword">Enter Password:</label>
+          <input type="password" id="adminPassword" placeholder="Password">
+          <button id="loginBtn" class="btn-primary">Login</button>
+        </div>
+        <div id="ordersSection" style="display: none;">
+          <h3>All Orders</h3>
+          <div style="margin-bottom: 20px;">
+            <button id="manageProductsBtn" class="btn-secondary">🛠️ Manage Products</button>
+          </div>
+          <div id="ordersList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Product Management Modal -->
+    <div id="productModal" class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Product Management</h2>
+        
+        <div style="margin-bottom: 20px;">
+          <button id="addProductBtn" class="btn-primary">+ Add New Product</button>
+        </div>
+
+        <!-- Add Product Form -->
+        <div id="addProductForm" style="display: none; margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px;">
+          <h3>Add New Product</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <input type="text" id="newProductName" placeholder="Product Name" required>
+            <input type="number" id="newProductPrice" placeholder="Price (₦)" step="0.01" required>
+          </div>
+          <textarea id="newProductDescription" placeholder="Description (optional)" rows="3"></textarea>
+          <div style="margin-top: 10px;">
+            <button id="saveProductBtn" class="btn-primary">Save Product</button>
+            <button id="cancelProductBtn" class="btn-secondary">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Products List -->
+        <div id="productsList"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 ASTRO-BSM. All rights reserved.</p>
+  </footer>
+
+  <script src="app.js?v=4"></script>
+  <script src="html2canvas.min.js"></script>
+</body>
+</html>
