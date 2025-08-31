@@ -8,6 +8,7 @@ require('dotenv').config();
 const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
 const adminRoutes = require('./routes/admin');
+const databaseRoutes = require('./routes/database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -56,6 +57,7 @@ app.use('/public', express.static(path.join(__dirname, '../public')));
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/database', databaseRoutes);
 
 // Health check endpoints
 app.get('/health', (req, res) => {

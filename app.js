@@ -280,15 +280,6 @@ function addItemChangeListeners() {
 // Initialize item change listeners
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    console.log('DOM Content Loaded - Starting initialization...');
-    
-    // Debug: Check if all admin-related elements exist
-    console.log('Admin elements check:');
-    console.log('adminBtn:', document.getElementById('adminBtn'));
-    console.log('adminModal:', document.getElementById('adminModal'));
-    console.log('closeModal:', document.querySelector('.close'));
-    console.log('adminPassword:', document.getElementById('adminPassword'));
-    
     // Load products first
     await loadProducts();
     
@@ -304,22 +295,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     // Set up admin functionality
-    console.log('Setting up admin button...', adminBtn);
     if (adminBtn) {
-      console.log('Admin button found, adding click listener');
       adminBtn.addEventListener('click', (e) => {
-        console.log('Admin button clicked!', e);
         e.preventDefault();
         e.stopPropagation();
         if (adminModal) {
           adminModal.style.display = 'block';
-          console.log('Admin modal should be visible now');
-        } else {
-          console.error('Admin modal not found!');
         }
       });
-    } else {
-      console.error('Admin button not found!');
     }
     
     if (closeModal) {

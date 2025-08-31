@@ -39,12 +39,12 @@ async function initializeDatabase() {
       resolve();
     });
 
-    // Timeout after 30 seconds
+    // Timeout after 60 seconds (increased for database operations)
     setTimeout(() => {
       console.log('⚠️  Database initialization timeout (continuing anyway)');
       initProcess.kill();
       resolve();
-    }, 30000);
+    }, 60000);
   });
 }
 

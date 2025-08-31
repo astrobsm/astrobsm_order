@@ -5,11 +5,20 @@ const router = express.Router();
 // Get all products
 router.get('/', async (req, res) => {
   try {
+    console.log('Fetching all products...');
     const products = await Product.getAll();
+    console.log('Products fetched successfully:', products.length);
     res.json(products);
   } catch (error) {
     console.error('Error fetching products:', error);
-    res.status(500).json({ error: 'Failed to fetch products' });
+    
+    // Check if it's a table not found error
+    if (error.message.includes('does not exist') || error.code === '42P01') {
+      console.log('Products table does not exist, returning empty array');
+      res.json([]);
+    } else {
+      res.status(500).json({ error: 'Failed to fetch products', details: error.message });
+    }
   }
 });
 
