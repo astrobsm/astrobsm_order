@@ -31,7 +31,7 @@ class Order {
         subtotal += itemSubtotal;
         
         await client.query(
-          'INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal) VALUES ($1, $2, $3, $4, $5)',
+          'INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price) VALUES ($1, $2, $3, $4, $5)',
           [order.id, product.id, item.quantity, product.price, itemSubtotal]
         );
       }
@@ -60,7 +60,7 @@ class Order {
 
   static async findById(id) {
     const result = await pool.query(`
-      SELECT o.*, c.name as customer_name, c.email, c.phone, c.delivery_address
+      SELECT o.*, c.name as customer_name, c.email, c.phone, c.address, c.hospital_name
       FROM orders o 
       JOIN customers c ON o.customer_id = c.id 
       WHERE o.id = $1
@@ -80,7 +80,7 @@ class Order {
 
   static async getAll() {
     const result = await pool.query(`
-      SELECT o.*, c.name as customer_name, c.email, c.phone, c.delivery_address
+      SELECT o.*, c.name as customer_name, c.email, c.phone, c.address, c.hospital_name
       FROM orders o 
       JOIN customers c ON o.customer_id = c.id 
       ORDER BY o.created_at DESC
