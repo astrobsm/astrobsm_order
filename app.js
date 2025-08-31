@@ -1556,8 +1556,8 @@ function initOfflineQueueUI() {
 }
 
 // Add CSS animations for notifications
-const style = document.createElement('style');
-style.textContent = `
+const notificationStyle = document.createElement('style');
+notificationStyle.textContent = `
   @keyframes slideIn {
     from {
       transform: translateX(100%);
@@ -1588,4 +1588,4 @@ style.textContent = `
     opacity: 0.9;
   }
 `;
-document.head.appendChild(style);
+document.head.appendChild(notificationStyle);
