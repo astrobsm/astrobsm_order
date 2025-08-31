@@ -14,6 +14,7 @@ const adminModal = document.getElementById('adminModal');
 const productModal = document.getElementById('productModal');
 const closeModal = document.querySelector('.close');
 const loginBtn = document.getElementById('loginBtn');
+const manageProductsBtn = document.getElementById('manageProductsBtn');
 const adminPassword = document.getElementById('adminPassword');
 const passwordSection = document.getElementById('passwordSection');
 const ordersSection = document.getElementById('ordersSection');
@@ -339,6 +340,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
     }
+
+    if (manageProductsBtn) {
+      manageProductsBtn.addEventListener('click', () => {
+        if (productModal) {
+          productModal.style.display = 'block';
+          loadProductsForManagement();
+        }
+      });
+    }
     
     if (adminPassword) {
       adminPassword.addEventListener('keypress', (e) => {
@@ -387,6 +397,80 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       document.body.appendChild(installButton);
     });
+    
+    // Product Management Event Listeners
+    const addProductBtn = document.getElementById('addProductBtn');
+    const saveProductBtn = document.getElementById('saveProductBtn');
+    const cancelProductBtn = document.getElementById('cancelProductBtn');
+    const addProductForm = document.getElementById('addProductForm');
+    
+    if (addProductBtn) {
+      addProductBtn.addEventListener('click', () => {
+        if (addProductForm) {
+          addProductForm.style.display = addProductForm.style.display === 'none' ? 'block' : 'none';
+        }
+      });
+    }
+    
+    if (saveProductBtn) {
+      saveProductBtn.addEventListener('click', async () => {
+        const name = document.getElementById('productName').value;
+        const description = document.getElementById('productDescription').value;
+        const price = parseFloat(document.getElementById('productPrice').value);
+        const stockQuantity = parseInt(document.getElementById('productStock').value);
+        
+        if (!name || !price || price <= 0) {
+          alert('Please fill in required fields (name and valid price)');
+          return;
+        }
+        
+        try {
+          const response = await fetch('/api/admin/products', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              adminPassword: 'roseball',
+              name,
+              description,
+              price,
+              stock_quantity: stockQuantity || 0
+            })
+          });
+          
+          if (response.ok) {
+            alert('Product added successfully!');
+            // Clear form
+            document.getElementById('productName').value = '';
+            document.getElementById('productDescription').value = '';
+            document.getElementById('productPrice').value = '';
+            document.getElementById('productStock').value = '';
+            addProductForm.style.display = 'none';
+            // Reload products
+            await loadProductsForManagement();
+            await loadProducts(); // Reload main products too
+          } else {
+            const error = await response.json();
+            alert('Failed to add product: ' + error.error);
+          }
+        } catch (error) {
+          console.error('Error adding product:', error);
+          alert('Error adding product: ' + error.message);
+        }
+      });
+    }
+    
+    if (cancelProductBtn) {
+      cancelProductBtn.addEventListener('click', () => {
+        // Clear form
+        document.getElementById('productName').value = '';
+        document.getElementById('productDescription').value = '';
+        document.getElementById('productPrice').value = '';
+        document.getElementById('productStock').value = '';
+        addProductForm.style.display = 'none';
+      });
+    }
     
     console.log('Application initialized successfully');
   } catch (error) {
