@@ -101,46 +101,79 @@ async function loadProducts() {
   try {
     const response = await fetch(`${API_BASE_URL}/products`);
     if (response.ok) {
-      productList = await response.json();
+      const productsFromAPI = await response.json();
+      // Convert API response to product objects if needed
+      productList = productsFromAPI.map(product => {
+        if (typeof product === 'string') {
+          // If it's just a string, we need to find the price
+          return { name: product, price: 0 }; // Fallback price
+        } else {
+          // If it's already an object with name and price
+          return {
+            id: product.id,
+            name: product.name,
+            description: product.description,
+            price: parseFloat(product.price) || 0
+          };
+        }
+      });
     } else {
-      // Fallback to hardcoded list if API fails
+      // Fallback to comprehensive product list with prices
       productList = [
-        "Wound-Care Honey Gauze Big (CTN)",
-        "Wound-Care Honey Gauze Big (Packets)",
-        "Wound-Care Honey Gauze Small (CTN)",
-        "Wound-Care Honey Gauze Small (Packets)",
-        "Hera Wound-Gel 100g (CTN)",
-        "Hera Wound-Gel 100g (Tubes)",
-        "Hera Wound-Gel 40g (CTN)",
-        "Hera Wound-Gel 40g (Tubes)",
-        "Coban Bandage 6inc (PCS)",
-        "Coban Bandage 4inc (PCS)",
-        "Silicone Scar Sheet (Packet)",
-        "Opsite (PCS)",
-        "Wound-Clex Solution 500ml (CTN)",
-        "Wound-Clex Solution 500ml (Bottles)",
-        "Sterile Dressing Packs (PCS)"
+        { name: "Wound-Care Honey Gauze Big (Carton)", price: 65000 },
+        { name: "Wound-Care Honey Gauze Big (Packet)", price: 6000 },
+        { name: "Wound-Care Honey Gauze Small (Carton)", price: 61250 },
+        { name: "Wound-Care Honey Gauze Small (Packet)", price: 3500 },
+        { name: "Hera Wound-Gel 100g (Carton)", price: 65000 },
+        { name: "Hera Wound-Gel 100g (Tube)", price: 3250 },
+        { name: "Hera Wound-Gel 40g (Carton)", price: 48000 },
+        { name: "Hera Wound-Gel 40g (Tube)", price: 2000 },
+        { name: "Coban Bandage 6 inch (Piece)", price: 4500 },
+        { name: "Coban Bandage 6 inch (Carton)", price: 48500 },
+        { name: "Coban Bandage 4 inch (Piece)", price: 3500 },
+        { name: "Coban Bandage 4 inch (Carton)", price: 37500 },
+        { name: "Silicone Scar Sheet (Packet)", price: 10000 },
+        { name: "Silicone Scar Sheet (Block)", price: 90000 },
+        { name: "Silicone Foot Pad (Pair)", price: 2000 },
+        { name: "Sterile Dressing Pack (Bag)", price: 10000 },
+        { name: "Sterile Dressing Pack (Piece)", price: 600 },
+        { name: "Sterile Gauze-Only Pack (Bag)", price: 10000 },
+        { name: "Sterile Gauze-Only Pack (Piece)", price: 600 },
+        { name: "Skin Staples (Piece)", price: 4000 },
+        { name: "NPWT (VAC) Foam (Piece)", price: 2000 },
+        { name: "Opsite (Piece)", price: 6000 },
+        { name: "Wound-Clex Solution 500ml (Carton)", price: 12500 },
+        { name: "Wound-Clex Solution 500ml (Bottle)", price: 2300 }
       ];
     }
   } catch (error) {
     console.error('Error loading products:', error);
-    // Use fallback list
+    // Use comprehensive fallback list with prices
     productList = [
-      "Wound-Care Honey Gauze Big (CTN)",
-      "Wound-Care Honey Gauze Big (Packets)",
-      "Wound-Care Honey Gauze Small (CTN)",
-      "Wound-Care Honey Gauze Small (Packets)",
-      "Hera Wound-Gel 100g (CTN)",
-      "Hera Wound-Gel 100g (Tubes)",
-      "Hera Wound-Gel 40g (CTN)",
-      "Hera Wound-Gel 40g (Tubes)",
-      "Coban Bandage 6inc (PCS)",
-      "Coban Bandage 4inc (PCS)",
-      "Silicone Scar Sheet (Packet)",
-      "Opsite (PCS)",
-      "Wound-Clex Solution 500ml (CTN)",
-      "Wound-Clex Solution 500ml (Bottles)",
-      "Sterile Dressing Packs (PCS)"
+      { name: "Wound-Care Honey Gauze Big (Carton)", price: 65000 },
+      { name: "Wound-Care Honey Gauze Big (Packet)", price: 6000 },
+      { name: "Wound-Care Honey Gauze Small (Carton)", price: 61250 },
+      { name: "Wound-Care Honey Gauze Small (Packet)", price: 3500 },
+      { name: "Hera Wound-Gel 100g (Carton)", price: 65000 },
+      { name: "Hera Wound-Gel 100g (Tube)", price: 3250 },
+      { name: "Hera Wound-Gel 40g (Carton)", price: 48000 },
+      { name: "Hera Wound-Gel 40g (Tube)", price: 2000 },
+      { name: "Coban Bandage 6 inch (Piece)", price: 4500 },
+      { name: "Coban Bandage 6 inch (Carton)", price: 48500 },
+      { name: "Coban Bandage 4 inch (Piece)", price: 3500 },
+      { name: "Coban Bandage 4 inch (Carton)", price: 37500 },
+      { name: "Silicone Scar Sheet (Packet)", price: 10000 },
+      { name: "Silicone Scar Sheet (Block)", price: 90000 },
+      { name: "Silicone Foot Pad (Pair)", price: 2000 },
+      { name: "Sterile Dressing Pack (Bag)", price: 10000 },
+      { name: "Sterile Dressing Pack (Piece)", price: 600 },
+      { name: "Sterile Gauze-Only Pack (Bag)", price: 10000 },
+      { name: "Sterile Gauze-Only Pack (Piece)", price: 600 },
+      { name: "Skin Staples (Piece)", price: 4000 },
+      { name: "NPWT (VAC) Foam (Piece)", price: 2000 },
+      { name: "Opsite (Piece)", price: 6000 },
+      { name: "Wound-Clex Solution 500ml (Carton)", price: 12500 },
+      { name: "Wound-Clex Solution 500ml (Bottle)", price: 2300 }
     ];
   }
 }
@@ -153,8 +186,20 @@ function createItemRow() {
   
   const productOptions = Array.isArray(productList) && productList.length > 0 
     ? productList.map(item => {
-        const itemName = typeof item === 'object' ? item.name : item;
-        return `<option value="${itemName}">${itemName}</option>`;
+        if (typeof item === 'object' && item.name && item.price !== undefined) {
+          // Format price with thousands separator
+          const formattedPrice = new Intl.NumberFormat('en-NG', {
+            style: 'currency',
+            currency: 'NGN',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
+          }).format(item.price);
+          
+          return `<option value="${item.name}">${item.name} - ${formattedPrice}</option>`;
+        } else {
+          const itemName = typeof item === 'object' ? item.name : item;
+          return `<option value="${itemName}">${itemName}</option>`;
+        }
       }).join('')
     : '<option value="">No products available</option>';
 
@@ -183,6 +228,17 @@ function createItemRow() {
     div.style.animation = 'fadeOut 0.3s ease-out';
     setTimeout(() => div.remove(), 300);
   });
+  
+  // Add change listener for price calculation
+  const selectElement = div.querySelector(`select[name="item${itemCount}"]`);
+  const quantityElement = div.querySelector(`input[name="quantity${itemCount}"]`);
+  
+  const updateCalculation = () => {
+    calculateOrderTotal();
+  };
+  
+  selectElement.addEventListener('change', updateCalculation);
+  quantityElement.addEventListener('input', updateCalculation);
 }
 
 // Add fadeOut animation
