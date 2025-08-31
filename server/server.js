@@ -73,6 +73,11 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../index.html'));
 });
 
+// Serve admin tools page
+app.get('/admin-tools', (req, res) => {
+  res.sendFile(path.join(__dirname, '../admin-tools.html'));
+});
+
 // PWA routes - serve main app for all non-API routes (SPA behavior)
 app.get('*', (req, res, next) => {
   // Skip API routes and static files

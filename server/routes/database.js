@@ -5,18 +5,42 @@ const router = express.Router();
 // Database health check
 router.get('/health', async (req, res) => {
   try {
+    console.log('Database health check - Environment variables:');
+    console.log('DB_HOST:', process.env.DB_HOST);
+    console.log('DB_PORT:', process.env.DB_PORT);
+    console.log('DB_USER:', process.env.DB_USER);
+    console.log('DB_NAME:', process.env.DB_NAME);
+    console.log('DB_SSL:', process.env.DB_SSL);
+    console.log('DB_PASSWORD:', process.env.DB_PASSWORD ? '[SET]' : '[NOT SET]');
+    
     const result = await pool.query('SELECT NOW()');
     res.json({ 
       status: 'healthy', 
       timestamp: result.rows[0].now,
-      database: 'connected'
+      database: 'connected',
+      environment: {
+        DB_HOST: process.env.DB_HOST,
+        DB_PORT: process.env.DB_PORT,
+        DB_USER: process.env.DB_USER,
+        DB_NAME: process.env.DB_NAME,
+        DB_SSL: process.env.DB_SSL,
+        DB_PASSWORD_SET: !!process.env.DB_PASSWORD
+      }
     });
   } catch (error) {
     console.error('Database health check failed:', error);
     res.status(500).json({ 
       status: 'unhealthy', 
       error: error.message,
-      database: 'disconnected'
+      database: 'disconnected',
+      environment: {
+        DB_HOST: process.env.DB_HOST,
+        DB_PORT: process.env.DB_PORT,
+        DB_USER: process.env.DB_USER,
+        DB_NAME: process.env.DB_NAME,
+        DB_SSL: process.env.DB_SSL,
+        DB_PASSWORD_SET: !!process.env.DB_PASSWORD
+      }
     });
   }
 });
