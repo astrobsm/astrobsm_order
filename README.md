@@ -1,236 +1,125 @@
-# ASTRO-BSM Order Management System
+# ASTRO-BSM Product Order Application
 
-A professional Progressive Web Application (PWA) for managing medical supply orders for ASTRO-BSM Professional Medical Supplies.
+A modern, responsive Progressive Web App (PWA) for ASTRO-BSM product ordering with PostgreSQL backend.
 
 ## Features
 
-### 🏥 **Order Management**
-- Dynamic product selection with real-time pricing
-- Automatic VAT calculation (2.5%)
-- Professional invoice generation with company branding
-- Total amount displayed in words (English/Nigerian format)
-- Multiple delivery options and urgency levels
-- Optional email field for customer notifications
+- **Mobile-First Responsive Design** - Optimized for all screen sizes
+- **PostgreSQL Database** - Robust data storage for customers, products, and orders
+- **RESTful API** - Express.js backend with comprehensive endpoints
+- **PWA Support** - Installable app with offline capabilities
+- **Dynamic Order Form** - Add/remove items dynamically
+- **Professional UI** - Matches company logo color scheme
 
-### 💰 **Pricing & Payment**
-- 24 medical products with accurate pricing
-- Automatic subtotal, VAT, and total calculation
-- Integrated payment instructions with bank account details
-- Export orders as JPG images
-- Print and share functionality (Email/WhatsApp)
+## Tech Stack
 
-### 🔐 **Admin Features**
-- Secure admin panel (Password: `roseball`)
-- View all customer orders with detailed information
-- Product management (CRUD operations)
-- Price editing with additional security (Password: `redvelvet`)
-- Order status tracking and management
+- **Frontend**: HTML5, CSS3, Vanilla JavaScript
+- **Backend**: Node.js, Express.js
+- **Database**: PostgreSQL
+- **Additional**: Service Worker for PWA functionality
 
-### 📱 **Progressive Web App (PWA)**
-- Mobile-first responsive design
-- Offline functionality with service worker
-- Installable on mobile devices and desktop
-- Fast loading and caching
+## Prerequisites
 
-## Product Catalog
+- Node.js (v14 or higher)
+- PostgreSQL (v12 or higher)
+- npm or yarn
 
-The system includes 24 medical products across categories:
+## Installation
 
-- **Wound Care Products**: Honey Gauze (Big/Small), Wound-Gel (100g/40g)
-- **Bandages**: Coban Bandage (4"/6")
-- **Specialty Items**: Silicone Scar Sheet, Silicone Foot Pad
-- **Medical Supplies**: Sterile Dressing/Gauze Packs, Skin Staples, NPWT Foam, Opsite
-- **Solutions**: Wound-Clex Solution 500ml
-
-## Technology Stack
-
-### **Backend**
-- Node.js with Express.js
-- PostgreSQL database
-- RESTful API architecture
-- Helmet for security (CSP configuration)
-
-### **Frontend**
-- Vanilla JavaScript (ES6+)
-- Responsive CSS with mobile-first design
-- Progressive Web App features
-- html2canvas for image export
-
-### **Database**
-- PostgreSQL with proper schema design
-- Foreign key relationships
-- Data validation and constraints
-
-## Installation & Setup
-
-### Prerequisites
-- Node.js (v16 or higher)
-- PostgreSQL database
-- Git
-
-### Environment Variables
-Create a `.env` file with:
-```env
-# Database Configuration
-DB_USER=your_db_user
-DB_HOST=localhost
-DB_NAME=astrobsm_orders
-DB_PASSWORD=your_db_password
-DB_PORT=5432
-
-# Server Configuration
-PORT=3000
-NODE_ENV=production
-```
-
-### Installation Steps
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/astrobsm/astrobsm_order.git
-   cd astrobsm_order
-   ```
-
-2. **Install dependencies**
+1. **Install Dependencies**
    ```bash
    npm install
    ```
 
-3. **Set up the database**
+2. **Database Setup**
+   - Ensure PostgreSQL is running
+   - Create database: `astro_order_db`
+   - Update `.env` file with your database credentials
+   - Run database setup:
    ```bash
-   npm run init
+   npm run setup-db
    ```
 
-4. **Start the application**
+3. **Environment Configuration**
+   - Copy `.env.example` to `.env`
+   - Update database credentials:
+     - DB_USER: postgres
+     - DB_PASSWORD: natiss_natiss
+     - DB_NAME: astro_order_db
+
+## Usage
+
+1. **Start the Application**
    ```bash
    npm start
    ```
+   
+2. **Development Mode**
+   ```bash
+   npm run dev
+   ```
 
-5. **Access the application**
-   - Open browser and navigate to `http://localhost:3000`
+3. **Access the Application**
+   - Open browser to `http://localhost:3000`
+   - The app is fully responsive and works on all devices
 
 ## API Endpoints
 
 ### Products
 - `GET /api/products` - Get all products
-- `POST /api/products` - Create new product (admin)
-- `PUT /api/products/:id` - Update product (admin)
-- `DELETE /api/products/:id` - Delete product (admin)
+- `GET /api/products/:id` - Get product by ID
 
 ### Orders
-- `GET /api/orders` - Get all orders (admin)
 - `POST /api/orders` - Create new order
-- `GET /api/orders/:id` - Get specific order details
+- `GET /api/orders` - Get all orders
+- `GET /api/orders/:id` - Get order by ID with items
 
-### Admin
-- `GET /api/admin/orders` - Admin order management
-- `POST /api/admin/products` - Product management
+### Health Check
+- `GET /api/health` - Service health status
 
-## Deployment
+## Database Schema
 
-### Digital Ocean Deployment
+### Tables
+- **customers**: Customer information
+- **products**: Product catalog with pricing
+- **orders**: Order headers
+- **order_items**: Individual order line items
 
-1. **Create Droplet**
-   - Ubuntu 22.04 LTS
-   - Minimum 1GB RAM
+## PWA Features
 
-2. **Install Dependencies**
-   ```bash
-   # Update system
-   sudo apt update && sudo apt upgrade -y
-   
-   # Install Node.js
-   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-   sudo apt-get install -y nodejs
-   
-   # Install PostgreSQL
-   sudo apt install postgresql postgresql-contrib -y
-   ```
+- **Installable**: Can be installed on mobile devices and desktops
+- **Offline Support**: Basic functionality works without internet
+- **Responsive**: Adapts to all screen sizes
+- **App-like Experience**: Full-screen, native-like interface
 
-3. **Clone and Setup**
-   ```bash
-   git clone https://github.com/astrobsm/astrobsm_order.git
-   cd astrobsm_order
-   npm install
-   ```
+## Mobile Responsiveness
 
-4. **Configure Database**
-   ```bash
-   sudo -u postgres createdb astrobsm_orders
-   sudo -u postgres createuser --interactive
-   ```
+- **Small Phones** (320px+): Optimized layout with stacked elements
+- **Tablets** (768px+): Two-column layouts where appropriate
+- **Desktops** (1024px+): Full desktop experience
 
-5. **Set Environment Variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env with production values
-   ```
+## Order Process
 
-6. **Initialize Database**
-   ```bash
-   npm run init
-   ```
+1. Customer fills in contact details
+2. Adds products using dropdown selection
+3. Specifies quantities for each item
+4. Submits order
+5. Receives confirmation with order ID
+6. Sends payment evidence to WhatsApp: +234 707 679 3866
 
-7. **Setup Process Manager**
-   ```bash
-   sudo npm install -g pm2
-   pm2 start server/server.js --name "astrobsm-order"
-   pm2 startup
-   pm2 save
-   ```
+## Development
 
-8. **Configure Nginx (Optional)**
-   ```nginx
-   server {
-       listen 80;
-       server_name your-domain.com;
-       
-       location / {
-           proxy_pass http://localhost:3000;
-           proxy_http_version 1.1;
-           proxy_set_header Upgrade $http_upgrade;
-           proxy_set_header Connection 'upgrade';
-           proxy_set_header Host $host;
-           proxy_cache_bypass $http_upgrade;
-       }
-   }
-   ```
-
-## Security Features
-
-- Content Security Policy (CSP) implementation
-- SQL injection prevention with parameterized queries
-- XSS protection
-- Password-protected admin areas
-- Input validation and sanitization
-
-## Business Information
-
-**Company**: BONNESANTE MEDICALS  
-**Payment Accounts**:
-- Account 1: 8259518195 - MONIEPOINT MICROFINANCE BANK
-- Account 2: 1379643548 - ACCESS BANK
-
-**WhatsApp Support**: +234 707 679 3866
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/new-feature`)
-3. Commit your changes (`git commit -am 'Add new feature'`)
-4. Push to the branch (`git push origin feature/new-feature`)
-5. Create a Pull Request
+The application follows modern web development best practices:
+- Semantic HTML structure
+- CSS Grid and Flexbox for layouts
+- Progressive enhancement
+- Accessibility features
+- Mobile-first responsive design
 
 ## License
 
-This project is proprietary software developed for ASTRO-BSM Professional Medical Supplies.
+MIT License - See LICENSE file for details
 
 ## Support
 
-For technical support or business inquiries, contact:
-- Email: [Contact through GitHub Issues]
-- WhatsApp: +234 707 679 3866
-
----
-
-**ASTRO-BSM Professional Medical Supplies** - Your trusted partner in medical equipment and supplies.
+For technical support, contact the development team or refer to the API documentation.
