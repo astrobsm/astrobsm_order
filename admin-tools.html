@@ -50,15 +50,15 @@
     <h1>ASTRO-BSM Database Management</h1>
     
     <h2>Database Health Check</h2>
-    <button onclick="checkHealth()">Check Database Health</button>
+    <button id="healthBtn">Check Database Health</button>
     
     <h2>Database Initialization</h2>
     <p>Click this button to create the database tables and insert default products:</p>
-    <button onclick="initDatabase()">Initialize Database</button>
+    <button id="initBtn">Initialize Database</button>
     
     <h2>Manual API Tests</h2>
-    <button onclick="testProducts()">Test Products API</button>
-    <button onclick="testOrders()">Test Orders API</button>
+    <button id="productsBtn">Test Products API</button>
+    <button id="ordersBtn">Test Orders API</button>
     
     <div id="result" class="result" style="display: none;"></div>
 
@@ -115,6 +115,14 @@
                 showResult('Error: ' + error.message, true);
             }
         }
+
+        // Add event listeners when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('healthBtn').addEventListener('click', checkHealth);
+            document.getElementById('initBtn').addEventListener('click', initDatabase);
+            document.getElementById('productsBtn').addEventListener('click', testProducts);
+            document.getElementById('ordersBtn').addEventListener('click', testOrders);
+        });
     </script>
 </body>
 </html>
