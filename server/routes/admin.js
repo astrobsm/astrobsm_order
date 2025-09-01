@@ -166,7 +166,7 @@ router.put('/products/:id', async (req, res) => {
     // If price is being updated, verify additional password
     const currentProduct = await Product.findById(id);
     if (price !== undefined && price !== currentProduct.price) {
-      if (pricePassword !== process.env.ADMIN_PRICE_PASSWORD || 'YOUR_ADMIN_PASSWORD_HERE') {
+      if (pricePassword !== 'redvelvet') {
         return res.status(401).json({ error: 'Price editing requires additional authorization' });
       }
     }

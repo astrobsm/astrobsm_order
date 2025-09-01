@@ -39,6 +39,27 @@ const API_BASE_URL = window.location.origin + '/api';
 // Product list - will be loaded from API
 let productList = [];
 
+// Helper function for password prompts
+// Password Levels:
+// 1. 'roseball' - Admin access for viewing orders and basic admin functions
+// 2. 'redvelvet' - Management access for product management and price editing
+function promptForPassword(message, expectedPassword, successCallback, title = 'Password Required') {
+  const userPassword = prompt(message);
+  
+  if (userPassword === null) {
+    // User cancelled
+    return false;
+  }
+  
+  if (userPassword === expectedPassword) {
+    if (successCallback) successCallback();
+    return true;
+  } else {
+    alert('❌ Incorrect password. Access denied.');
+    return false;
+  }
+}
+
 // DOM Elements
 const itemsContainer = document.getElementById('itemsContainer');
 const addItemBtn = document.getElementById('addItemBtn');
@@ -527,10 +548,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (manageProductsBtn) {
       manageProductsBtn.addEventListener('click', () => {
-        if (productModal) {
-          productModal.style.display = 'block';
-          loadProductsForManagement();
-        }
+        promptForPassword(
+          '🔐 Enter management password to access product management:',
+          'redvelvet',
+          () => {
+            if (productModal) {
+              productModal.style.display = 'block';
+              loadProductsForManagement();
+            }
+          }
+        );
       });
     }
     
@@ -1377,7 +1404,16 @@ window.addEventListener('load', async () => {
 // Product Management Functions
 async function loadProductsForManagement() {
   try {
-    const response = await fetch(`${API_BASE_URL}/admin/products`);
+    const response = await fetch(`${API_BASE_URL}/admin/products`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        adminPassword: 'roseball'
+      })
+    });
+    
     if (!response.ok) {
       throw new Error('Failed to fetch products for management');
     }
@@ -1480,8 +1516,14 @@ function editProduct(id, name, price, description) {
   // Check if price is being changed
   let pricePassword = '';
   if (priceValue !== price) {
-    pricePassword = prompt('Price change requires additional password:');
-    if (pricePassword === null) return;
+    const userPassword = prompt('💰 Price change requires additional password (redvelvet):');
+    if (userPassword === null) return;
+    
+    if (userPassword !== 'redvelvet') {
+      alert('❌ Incorrect price editing password. Changes not saved.');
+      return;
+    }
+    pricePassword = userPassword;
   }
   
   const newDescription = prompt('Enter description (optional):', description);
