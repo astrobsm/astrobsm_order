@@ -1,5 +1,6 @@
 const express = require('express');
 const Product = require('../models/Product');
+const pool = require('../database/db');
 const router = express.Router();
 
 // Get all products for admin management
@@ -103,6 +104,44 @@ router.delete('/products/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting product:', error);
     res.status(500).json({ error: 'Failed to delete product' });
+  }
+});
+
+// Database migration endpoint
+router.post('/migrate', async (req, res) => {
+  try {
+    const { adminPassword, action } = req.body;
+    
+    // Verify admin password
+    if (adminPassword !== 'roseball') {
+      return res.status(401).json({ error: 'Unauthorized access' });
+    }
+
+    if (action === 'add_unit_of_measure_column') {
+      // Check if column already exists
+      const columnCheck = await pool.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'products' AND column_name = 'unit_of_measure'
+      `);
+
+      if (columnCheck.rows.length > 0) {
+        return res.json({ message: 'Column unit_of_measure already exists' });
+      }
+
+      // Add the column
+      await pool.query('ALTER TABLE products ADD COLUMN unit_of_measure VARCHAR(50) DEFAULT \'PCS\'');
+      
+      // Update existing products with default unit
+      await pool.query('UPDATE products SET unit_of_measure = \'PCS\' WHERE unit_of_measure IS NULL');
+      
+      res.json({ message: 'Successfully added unit_of_measure column to products table' });
+    } else {
+      res.status(400).json({ error: 'Unknown migration action' });
+    }
+  } catch (error) {
+    console.error('Error running migration:', error);
+    res.status(500).json({ error: 'Failed to run migration', details: error.message });
   }
 });
 
