@@ -123,6 +123,12 @@ app.get('/production-schema-fix.js', (req, res) => {
   res.sendFile(path.join(__dirname, '../production-schema-fix.js'));
 });
 
+// Serve production schema fix script (CSP-safe version)
+app.get('/production-schema-fix-safe.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.sendFile(path.join(__dirname, '../production-schema-fix-safe.js'));
+});
+
 // PWA routes - serve main app for all non-API routes (SPA behavior)
 app.get('*', (req, res, next) => {
   // Skip API routes and static files
