@@ -99,6 +99,24 @@ app.get('/production-diagnostics.js', (req, res) => {
   res.sendFile(path.join(__dirname, '../production-diagnostics.js'));
 });
 
+// Serve improved diagnostics script
+app.get('/improved-diagnostics.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.sendFile(path.join(__dirname, '../improved-diagnostics.js'));
+});
+
+// Serve production database fix script
+app.get('/production-database-fix.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.sendFile(path.join(__dirname, '../production-database-fix.js'));
+});
+
+// Serve quick diagnostics script
+app.get('/quick-diagnostics.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.sendFile(path.join(__dirname, '../quick-diagnostics.js'));
+});
+
 // PWA routes - serve main app for all non-API routes (SPA behavior)
 app.get('*', (req, res, next) => {
   // Skip API routes and static files
