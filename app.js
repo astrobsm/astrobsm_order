@@ -1218,23 +1218,47 @@ function printOrder() {
   }, 500);
 }
 
-// Load all orders function
+// Load all orders function with enhanced debugging
 async function loadAllOrders() {
+  console.log('🔄 Loading all orders for admin view...');
+  const ordersContainer = document.getElementById('ordersContainer');
+  
   try {
-    ordersList.innerHTML = '<p>Loading orders...</p>';
+    console.log('📡 Fetching orders from:', `${API_BASE_URL}/orders`);
+    ordersContainer.innerHTML = '<p>Loading orders...</p>';
     
     const response = await fetch(`${API_BASE_URL}/orders`);
+    console.log('📡 Orders response status:', response.status);
+    console.log('📡 Orders response ok:', response.ok);
+    
     if (!response.ok) {
-      throw new Error('Failed to fetch orders');
+      throw new Error(`Failed to fetch orders: ${response.status} ${response.statusText}`);
     }
     
     const orders = await response.json();
+    console.log('📊 Fetched orders:', orders.length, 'orders');
     
-    if (orders.length === 0) {
-      ordersList.innerHTML = '<p>No orders found.</p>';
-      return;
+    if (!Array.isArray(orders)) {
+      console.error('❌ Expected array of orders, got:', typeof orders, orders);
+      throw new Error('Invalid orders data format');
     }
     
+    if (orders.length === 0) {
+      ordersContainer.innerHTML = `
+        <div class="alert alert-info">
+          <h4>📋 No Orders Found</h4>
+          <p>No orders have been submitted yet.</p>
+          <p><small>If you expect to see orders here, please check:</small></p>
+          <ul>
+            <li>Orders are being submitted successfully</li>
+            <li>Database connection is working</li>
+            <li>Orders table exists and has data</li>
+          </ul>
+        </div>
+      `;
+      return;
+    }
+
     const deliveryMethodNames = {
       'pickup_enugu': 'Pickup from Enugu Office',
       'delivery_enugu': 'Home Delivery within Enugu',
@@ -1252,6 +1276,8 @@ async function loadAllOrders() {
     
     let ordersHtml = '';
     for (const order of orders) {
+      console.log('🛍️ Processing order:', order.id);
+      
       // Fetch order items
       const itemsResponse = await fetch(`${API_BASE_URL}/orders/${order.id}`);
       const orderWithItems = await itemsResponse.json();
@@ -1260,19 +1286,22 @@ async function loadAllOrders() {
         <div class="order-card">
           <div class="order-header">
             <span class="order-id">Order #${order.id}</span>
-            <span class="order-status status-${order.status}">${order.status}</span>
+            <span class="order-status status-${order.status || 'pending'}">${order.status || 'pending'}</span>
             <span class="urgency-badge urgency-${order.request_status}">${urgencyNames[order.request_status] || order.request_status}</span>
           </div>
           <div class="order-details">
-            <div><strong>Customer:</strong> ${order.customer_name}</div>
+            <div><strong>Customer:</strong> ${order.customer_name || 'N/A'}</div>
             <div><strong>Email:</strong> ${order.email || 'Not provided'}</div>
-            <div><strong>Phone:</strong> ${order.phone}</div>
+            <div><strong>Phone:</strong> ${order.phone || 'N/A'}</div>
+            <div><strong>Hospital:</strong> ${order.hospital_name || 'N/A'}</div>
+            <div><strong>Subtotal:</strong> ₦${parseFloat(order.subtotal || 0).toFixed(2)}</div>
+            <div><strong>VAT (2.5%):</strong> ₦${parseFloat(order.vat_amount || 0).toFixed(2)}</div>
             <div><strong>Total:</strong> ₦${parseFloat(order.total_amount || 0).toFixed(2)}</div>
             <div><strong>Order Date:</strong> ${new Date(order.created_at).toLocaleDateString()}</div>
             <div><strong>Delivery Date:</strong> ${order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : 'Not specified'}</div>
             <div><strong>Delivery Method:</strong> ${deliveryMethodNames[order.preferred_delivery_method] || order.preferred_delivery_method || 'Not specified'}</div>
             ${order.delivery_route ? `<div><strong>Delivery Instructions:</strong> ${order.delivery_route}</div>` : ''}
-            <div><strong>Address:</strong> ${order.delivery_address}</div>
+            <div><strong>Address:</strong> ${order.address || 'N/A'}</div>
           </div>
           <div class="order-items">
             <strong>Items:</strong>
@@ -1286,11 +1315,19 @@ async function loadAllOrders() {
       `;
     }
     
-    ordersList.innerHTML = ordersHtml;
+    ordersContainer.innerHTML = ordersHtml;
+    console.log('✅ Orders loaded successfully');
     
   } catch (error) {
-    console.error('Error loading orders:', error);
-    ordersList.innerHTML = '<p>Error loading orders. Please try again.</p>';
+    console.error('❌ Error loading orders:', error);
+    ordersContainer.innerHTML = `
+      <div class="alert alert-danger">
+        <h4>❌ Error Loading Orders</h4>
+        <p>Failed to load orders: ${error.message}</p>
+        <p><small>Please check your internet connection and try again.</small></p>
+        <button onclick="loadAllOrders()" class="btn-retry">🔄 Retry</button>
+      </div>
+    `;
   }
 }
 
@@ -1594,40 +1631,74 @@ function updateNetworkStatus(online) {
   }
 }
 
-// Enhanced order submission with offline support
+// Enhanced order submission with proper online/offline detection
 async function submitOrderOfflineCapable(orderData) {
+  console.log('🚀 Submitting order...', orderData);
+  console.log('Network status:', isOnline ? 'Online' : 'Offline');
+  
+  // Check if we're offline first
+  if (!isOnline || !navigator.onLine) {
+    console.log('❌ User is offline, queuing order');
+    queueOfflineOrder(orderData);
+    showNotification('📱 You are offline. Order saved and will be submitted when connection is restored.', 'info');
+    return { success: true, offline: true };
+  }
+  
   try {
+    console.log('📡 Attempting to submit order to server...');
+    console.log('API URL:', `${API_BASE_URL}/orders`);
+    
     const response = await fetch(`${API_BASE_URL}/orders`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(orderData)
+      body: JSON.stringify(orderData),
+      timeout: 10000 // 10 second timeout
     });
 
-    const result = await response.json();
+    console.log('📡 Response status:', response.status);
+    console.log('📡 Response ok:', response.ok);
     
-    if (result.offline) {
-      // Order was queued offline
-      showNotification('📱 Order saved offline and will be submitted when connection is restored', 'info');
-      return { success: true, offline: true };
-    } else if (result.success || response.ok) {
-      // Order submitted successfully online
-      showNotification('✅ Order submitted successfully!', 'success');
-      return { success: true, offline: false };
+    if (response.ok) {
+      const result = await response.json();
+      console.log('✅ Order submitted successfully:', result);
+      
+      // Check if server indicates this was an offline submission
+      if (result.offline) {
+        showNotification('📱 Order saved offline and will be submitted when connection is restored', 'info');
+        return { success: true, offline: true };
+      } else {
+        showNotification('✅ Order submitted successfully!', 'success');
+        return { success: true, offline: false, order: result };
+      }
     } else {
-      throw new Error(result.error || 'Failed to submit order');
+      // Server returned an error
+      const errorText = await response.text();
+      console.error('❌ Server error:', response.status, errorText);
+      
+      // For 5xx errors, treat as server issue and queue offline
+      if (response.status >= 500) {
+        console.log('🔄 Server error, queuing for later submission');
+        queueOfflineOrder(orderData);
+        showNotification('🔄 Server temporarily unavailable. Order saved and will be submitted when service is restored.', 'warning');
+        return { success: true, offline: true };
+      } else {
+        // For 4xx errors, it's a client error, don't queue
+        throw new Error(`Server error (${response.status}): ${errorText}`);
+      }
     }
   } catch (error) {
-    console.error('Order submission error:', error);
+    console.error('❌ Order submission error:', error);
     
-    if (!isOnline) {
-      // Network is offline, queue the order
+    // Check if it's a network error (fetch failed)
+    if (error.name === 'TypeError' || error.message.includes('fetch') || error.message.includes('NetworkError')) {
+      console.log('🔄 Network error detected, queuing order offline');
       queueOfflineOrder(orderData);
-      showNotification('📱 You are offline. Order saved and will be submitted when connection is restored.', 'info');
+      showNotification('� Network error. Order saved and will be submitted when connection is restored.', 'warning');
       return { success: true, offline: true };
     } else {
-      // Network error while online
+      // It's a different error, don't queue
       showNotification('❌ Failed to submit order: ' + error.message, 'error');
       return { success: false, error: error.message };
     }

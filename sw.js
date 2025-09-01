@@ -1,4 +1,4 @@
-const CACHE_NAME = 'astro-bsm-pwa-v11';
+const CACHE_NAME = 'astro-bsm-pwa-v12';
 const DATA_CACHE_NAME = 'astro-bsm-data-v11';
 const OFFLINE_QUEUE = 'astro-bsm-offline-queue';
 
