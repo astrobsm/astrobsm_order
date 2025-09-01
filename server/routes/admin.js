@@ -3,30 +3,52 @@ const Product = require('../models/Product');
 const pool = require('../database/db');
 const router = express.Router();
 
-// Get all products for admin management
+// GET all products for admin management
 router.get('/products', async (req, res) => {
   try {
+    console.log('📋 Admin GET products request received');
     const products = await Product.findAll();
+    console.log(`✅ Found ${products.length} products for admin`);
     res.json(products);
   } catch (error) {
-    console.error('Error fetching products for admin:', error);
-    res.status(500).json({ error: 'Failed to fetch products' });
+    console.error('❌ Error fetching products for admin:', error);
+    console.error('Error stack:', error.stack);
+    
+    // Check if it's a table not found error
+    if (error.message.includes('does not exist') || error.code === '42P01') {
+      console.log('Products table does not exist, returning empty array');
+      res.json([]);
+    } else {
+      res.status(500).json({ 
+        error: 'Failed to fetch products', 
+        details: error.message,
+        code: error.code || 'UNKNOWN'
+      });
+    }
   }
 });
 
 // POST version for admin management (with password verification)
 router.post('/products', async (req, res) => {
   try {
+    console.log('📋 Admin POST products request received');
+    console.log('Request body keys:', Object.keys(req.body));
+    
     const { adminPassword } = req.body;
     
     // If this is just a fetch request with password
     if (adminPassword && Object.keys(req.body).length === 1) {
+      console.log('🔐 Password-protected product fetch request');
+      
       // Verify admin password
       if (adminPassword !== 'roseball') {
+        console.log('❌ Invalid admin password for product fetch');
         return res.status(401).json({ error: 'Unauthorized access' });
       }
       
+      console.log('✅ Admin password verified for product fetch');
       const products = await Product.findAll();
+      console.log(`✅ Found ${products.length} products for admin`);
       return res.json(products);
     }
     

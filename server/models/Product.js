@@ -2,13 +2,27 @@ const pool = require('../database/db');
 
 class Product {
   static async getAll() {
-    const result = await pool.query('SELECT * FROM products ORDER BY name');
-    return result.rows;
+    try {
+      console.log('🔍 Product.getAll() called');
+      const result = await pool.query('SELECT * FROM products ORDER BY name');
+      console.log(`✅ Product.getAll() found ${result.rows.length} products`);
+      return result.rows;
+    } catch (error) {
+      console.error('❌ Product.getAll() error:', error);
+      throw error;
+    }
   }
 
   static async findAll() {
-    const result = await pool.query('SELECT * FROM products ORDER BY name');
-    return result.rows;
+    try {
+      console.log('🔍 Product.findAll() called');
+      const result = await pool.query('SELECT * FROM products ORDER BY name');
+      console.log(`✅ Product.findAll() found ${result.rows.length} products`);
+      return result.rows;
+    } catch (error) {
+      console.error('❌ Product.findAll() error:', error);
+      throw error;
+    }
   }
 
   static async findById(id) {
