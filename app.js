@@ -724,6 +724,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 orderForm.addEventListener('submit', async function(e) {
   e.preventDefault();
   
+  // Ensure totals are calculated before submission
+  console.log('🔄 Calculating totals before order submission...');
+  calculateOrderTotal();
+  
   const submitBtn = this.querySelector('button[type="submit"]');
   const originalText = submitBtn.textContent;
   
@@ -807,6 +811,35 @@ orderForm.addEventListener('submit', async function(e) {
 
 // Display order summary
 function displayOrderSummary(customerData, orderData, items, order) {
+  // Calculate totals from items since order object may not have them
+  let calculatedSubtotal = 0;
+  const itemsWithTotals = items.map(item => {
+    const product = productList.find(p => p.name === item.product_name);
+    const unitPrice = product ? parseFloat(product.price) || 0 : 0;
+    const itemTotal = unitPrice * item.quantity;
+    calculatedSubtotal += itemTotal;
+    
+    return {
+      ...item,
+      unitPrice,
+      itemTotal
+    };
+  });
+  
+  const calculatedVat = calculatedSubtotal * 0.025;
+  const calculatedTotal = calculatedSubtotal + calculatedVat;
+  
+  console.log('💰 Order Summary Calculations:');
+  console.log('Items:', itemsWithTotals);
+  console.log('Subtotal:', calculatedSubtotal);
+  console.log('VAT:', calculatedVat);
+  console.log('Total:', calculatedTotal);
+  
+  // Use calculated totals, fallback to order object if available
+  const finalSubtotal = calculatedSubtotal;
+  const finalVat = calculatedVat;
+  const finalTotal = calculatedTotal;
+
   const deliveryMethodNames = {
     'pickup_enugu': 'Pickup from Enugu Office',
     'delivery_enugu': 'Home Delivery within Enugu',
@@ -878,19 +911,19 @@ function displayOrderSummary(customerData, orderData, items, order) {
           <tfoot>
             <tr style="background: #f8fafc;">
               <td colspan="3" style="border: 1px solid #e5e7eb; padding: 10px; text-align: right; font-weight: bold;">Subtotal:</td>
-              <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: right; font-weight: bold;">₦${order?.subtotal?.toFixed(2) || '0.00'}</td>
+              <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: right; font-weight: bold;">₦${finalSubtotal.toFixed(2)}</td>
             </tr>
             <tr style="background: #f8fafc;">
               <td colspan="3" style="border: 1px solid #e5e7eb; padding: 10px; text-align: right; font-weight: bold;">VAT (2.5%):</td>
-              <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: right; font-weight: bold;">₦${order?.vat_amount?.toFixed(2) || '0.00'}</td>
+              <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: right; font-weight: bold;">₦${finalVat.toFixed(2)}</td>
             </tr>
             <tr style="background: #1e3a8a; color: white;">
               <td colspan="3" style="border: 1px solid #e5e7eb; padding: 10px; text-align: right; font-weight: bold;">TOTAL AMOUNT:</td>
-              <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: right; font-weight: bold; font-size: 1.2em;">₦${order?.total_amount?.toFixed(2) || '0.00'}</td>
+              <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: right; font-weight: bold; font-size: 1.2em;">₦${finalTotal.toFixed(2)}</td>
             </tr>
             <tr style="background: #1e3a8a; color: white;">
               <td colspan="4" style="border: 1px solid #e5e7eb; padding: 10px; text-align: center; font-weight: bold; font-style: italic;">
-                Amount in Words: ${numberToWords(parseFloat(order?.total_amount || 0))}
+                Amount in Words: ${numberToWords(finalTotal)}
               </td>
             </tr>
           </tfoot>
