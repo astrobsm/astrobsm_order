@@ -39,26 +39,8 @@ const API_BASE_URL = window.location.origin + '/api';
 // Product list - will be loaded from API
 let productList = [];
 
-// Helper function for password prompts
-// Password Levels:
-// 1. 'roseball' - Admin access for viewing orders and basic admin functions
-// 2. 'redvelvet' - Management access for product management and price editing
-function promptForPassword(message, expectedPassword, successCallback, title = 'Password Required') {
-  const userPassword = prompt(message);
-  
-  if (userPassword === null) {
-    // User cancelled
-    return false;
-  }
-  
-  if (userPassword === expectedPassword) {
-    if (successCallback) successCallback();
-    return true;
-  } else {
-    alert('❌ Incorrect password. Access denied.');
-    return false;
-  }
-}
+// Admin functions - No password required (password-free access)
+// All admin functions are now accessible without password verification
 
 // DOM Elements
 const itemsContainer = document.getElementById('itemsContainer');
@@ -502,11 +484,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Set up admin functionality
     if (adminBtn) {
-      adminBtn.addEventListener('click', (e) => {
+      adminBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
         if (adminModal) {
           adminModal.style.display = 'block';
+          // Skip password section and directly show orders
+          passwordSection.style.display = 'none';
+          ordersSection.style.display = 'block';
+          await loadAllOrders();
         }
       });
     }
@@ -514,18 +500,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (closeModal) {
       closeModal.addEventListener('click', () => {
         adminModal.style.display = 'none';
-        passwordSection.style.display = 'block';
+        passwordSection.style.display = 'none';
         ordersSection.style.display = 'none';
-        adminPassword.value = '';
       });
     }
     
     window.addEventListener('click', (event) => {
       if (event.target === adminModal) {
         adminModal.style.display = 'none';
-        passwordSection.style.display = 'block';
+        passwordSection.style.display = 'none';
         ordersSection.style.display = 'none';
-        adminPassword.value = '';
       }
       if (productModal && event.target === productModal) {
         productModal.style.display = 'none';
@@ -534,40 +518,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     if (loginBtn) {
       loginBtn.addEventListener('click', async () => {
-        const password = adminPassword.value;
-        if (password === 'roseball') {
-          passwordSection.style.display = 'none';
-          ordersSection.style.display = 'block';
-          await loadAllOrders();
-        } else {
-          alert('Incorrect password');
-          adminPassword.value = '';
-        }
+        // No password required - direct access to admin functions
+        passwordSection.style.display = 'none';
+        ordersSection.style.display = 'block';
+        await loadAllOrders();
       });
     }
 
     if (manageProductsBtn) {
       manageProductsBtn.addEventListener('click', () => {
-        promptForPassword(
-          '🔐 Enter management password to access product management:',
-          'redvelvet',
-          () => {
-            if (productModal) {
-              productModal.style.display = 'block';
-              loadProductsForManagement();
-            }
-          }
-        );
-      });
-    }
-    
-    if (adminPassword) {
-      adminPassword.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          loginBtn.click();
+        // No password required - direct access to product management
+        if (productModal) {
+          productModal.style.display = 'block';
+          loadProductsForManagement();
         }
       });
     }
+    
+    // Password functionality removed - admin functions now accessible without authentication
     
     // PWA Installation Prompt
     let deferredPrompt;
