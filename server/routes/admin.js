@@ -242,15 +242,10 @@ router.post('/products/add', async (req, res) => {
     console.log('📦 Admin product addition request received');
     console.log('Request body:', JSON.stringify(req.body, null, 2));
     
-    const { name, description, price, stock_quantity, unit_of_measure, unit, adminPassword } = req.body;
+    const { name, description, price, stock_quantity, unit_of_measure, unit } = req.body;
     
-    // Verify admin password
-    if (adminPassword !== 'roseball') {
-      console.log('❌ Unauthorized access attempt');
-      return res.status(401).json({ error: 'Unauthorized access' });
-    }
-
-    console.log('✅ Admin password verified');
+    // No password verification needed - development mode
+    console.log('✅ No password verification needed - development mode');
 
     // Handle both 'unit' and 'unit_of_measure' fields for compatibility
     const unitToUse = unit_of_measure || unit || 'PCS';
@@ -302,20 +297,10 @@ router.post('/products/add', async (req, res) => {
 router.put('/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, price, stock_quantity, adminPassword, pricePassword } = req.body;
+    const { name, description, price, stock_quantity } = req.body;
     
-    // Verify admin password
-    if (adminPassword !== 'roseball') {
-      return res.status(401).json({ error: 'Unauthorized access' });
-    }
-
-    // If price is being updated, verify additional password
-    const currentProduct = await Product.findById(id);
-    if (price !== undefined && price !== currentProduct.price) {
-      if (pricePassword !== 'redvelvet') {
-        return res.status(401).json({ error: 'Price editing requires additional authorization' });
-      }
-    }
+    // No password verification needed - development mode
+    console.log('✅ No password verification needed - development mode');
 
     const updatedProduct = await Product.update(id, {
       name,
@@ -339,12 +324,9 @@ router.put('/products/:id', async (req, res) => {
 router.delete('/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { adminPassword } = req.body;
     
-    // Verify admin password
-    if (adminPassword !== 'roseball') {
-      return res.status(401).json({ error: 'Unauthorized access' });
-    }
+    // No password verification needed - development mode
+    console.log('✅ No password verification needed - development mode');
 
     const deleted = await Product.delete(id);
     
@@ -362,12 +344,10 @@ router.delete('/products/:id', async (req, res) => {
 // Database migration endpoint
 router.post('/migrate', async (req, res) => {
   try {
-    const { adminPassword, action } = req.body;
+    const { action } = req.body;
     
-    // Verify admin password
-    if (adminPassword !== 'roseball') {
-      return res.status(401).json({ error: 'Unauthorized access' });
-    }
+    // No password verification needed - development mode
+    console.log('✅ No password verification needed - development mode');
 
     if (action === 'add_unit_of_measure_column') {
       // Check if column already exists
