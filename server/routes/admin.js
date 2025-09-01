@@ -118,6 +118,35 @@ router.post('/fix-schema', verifyAdminPassword, async (req, res) => {
   }
 });
 
+// Raw query endpoint for advanced debugging
+router.post('/raw-query', verifyAdminPassword, async (req, res) => {
+  try {
+    const { query } = req.body;
+    
+    if (!query) {
+      return res.status(400).json({ error: 'Query is required' });
+    }
+    
+    console.log('🔍 Executing raw query:', query);
+    
+    const result = await pool.query(query);
+    
+    res.json({
+      success: true,
+      query: query,
+      rowCount: result.rowCount,
+      rows: result.rows
+    });
+    
+  } catch (error) {
+    console.error('❌ Error executing raw query:', error);
+    res.status(500).json({ 
+      error: 'Failed to execute query', 
+      details: error.message 
+    });
+  }
+});
+
 // GET all products for admin management
 router.get('/products', async (req, res) => {
   try {
