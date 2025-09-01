@@ -44,6 +44,12 @@ app.use(express.static(path.join(__dirname, '../'), {
     }
     if (path.endsWith('.js')) {
       res.setHeader('Content-Type', 'application/javascript');
+      // Prevent caching of app.js to ensure updates are loaded
+      if (path.includes('app.js')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
     }
     if (path.endsWith('.css')) {
       res.setHeader('Content-Type', 'text/css');

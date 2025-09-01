@@ -1,4 +1,5 @@
-const CACHE_NAME = 'astro-bsm-pwa-v13';
+const CACHE_NAME = 'astro-bsm-pwa-v14-20250901';
+const FORCE_UPDATE = true; // Force cache update
 const DATA_CACHE_NAME = 'astro-bsm-data-v11';
 const OFFLINE_QUEUE = 'astro-bsm-offline-queue';
 
