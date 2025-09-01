@@ -654,7 +654,6 @@ document.addEventListener('DOMContentLoaded', async () => {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              password: 'admin123',
               name,
               description,
               price,
@@ -1411,7 +1410,7 @@ async function loadProductsForManagement() {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        password: 'admin123'
+        // No password required - development mode
       })
     });
     
@@ -1425,7 +1424,7 @@ async function loadProductsForManagement() {
     displayProductsList(products);
   } catch (error) {
     console.error('Error loading products for management:', error);
-    document.getElementById('productsList').innerHTML = '<p>Error loading products. Please check admin password.</p>';
+    document.getElementById('productsList').innerHTML = '<p>Error loading products.</p>';
   }
 }
 
@@ -1478,8 +1477,7 @@ async function saveNewProduct() {
         name,
         price,
         description,
-        unit_of_measure,
-        password: 'admin123'
+        unit_of_measure
       })
     });
     
@@ -1540,8 +1538,7 @@ async function updateProduct(id, name, price, description, pricePassword) {
     const body = {
       name,
       price,
-      description,
-      password: 'admin123'
+      description
     };
     
     if (pricePassword) {
@@ -1584,7 +1581,7 @@ async function deleteProduct(id, name) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        password: 'admin123'
+        // No password required - development mode
       })
     });
     

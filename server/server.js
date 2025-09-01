@@ -141,6 +141,12 @@ app.get('/final-production-fix.js', (req, res) => {
   res.sendFile(path.join(__dirname, '../final-production-fix.js'));
 });
 
+// Serve password-free fix script
+app.get('/password-free-fix.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.sendFile(path.join(__dirname, '../password-free-fix.js'));
+});
+
 // PWA routes - serve main app for all non-API routes (SPA behavior)
 app.get('*', (req, res, next) => {
   // Skip API routes and static files

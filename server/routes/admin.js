@@ -3,15 +3,10 @@ const Product = require('../models/Product');
 const pool = require('../database/db');
 const router = express.Router();
 
-// Password verification middleware
+// Password verification middleware (DISABLED for development)
 const verifyAdminPassword = (req, res, next) => {
-  const { password } = req.body;
-  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-  
-  if (password !== adminPassword) {
-    return res.status(401).json({ error: 'Invalid admin password' });
-  }
-  
+  // Skip password verification for now - development mode
+  console.log('🔓 Admin password verification skipped - development mode');
   next();
 };
 
@@ -172,26 +167,16 @@ router.get('/products', async (req, res) => {
   }
 });
 
-// POST version for admin management (with password verification)
+// POST version for admin management (password-free for development)
 router.post('/products', async (req, res) => {
   try {
     console.log('📋 Admin POST products request received');
     console.log('Request body keys:', Object.keys(req.body));
     
-    const { password, adminPassword } = req.body;
-    const submittedPassword = password || adminPassword;
-    const adminPasswordEnv = process.env.ADMIN_PASSWORD || 'admin123';
-    
-    // Verify admin password
-    if (submittedPassword !== adminPasswordEnv) {
-      console.log('❌ Invalid admin password');
-      return res.status(401).json({ error: 'Invalid admin password' });
-    }
-    
-    // If this is just a fetch request with password
-    if (submittedPassword && Object.keys(req.body).length === 1) {
-      console.log('🔐 Password-protected product fetch request');
-      console.log('✅ Admin password verified for product fetch');
+    // Check if this is just a fetch request (empty body or just password field)
+    if (Object.keys(req.body).length === 0 || (Object.keys(req.body).length === 1 && req.body.password)) {
+      console.log('🔐 Product fetch request');
+      console.log('✅ No password verification needed - development mode');
       const products = await Product.findAll();
       console.log(`✅ Found ${products.length} products for admin`);
       return res.json(products);
@@ -201,12 +186,12 @@ router.post('/products', async (req, res) => {
     console.log('📦 Admin product addition request received');
     console.log('Request body:', JSON.stringify(req.body, null, 2));
     
-    const { name, description, price, stock_quantity, unit_of_measure, unit } = req.body;
+    const { name, description, price, stock_quantity, unit_of_measure, unit_price, reorder_point, opening_stock_quantity, average_production_time, status } = req.body;
 
-    console.log('✅ Admin password verified');
+    console.log('✅ No password verification needed - development mode');
 
     // Handle both 'unit' and 'unit_of_measure' fields for compatibility
-    const unitToUse = unit_of_measure || unit || 'PCS';
+    const unitToUse = unit_of_measure || 'PCS';
     console.log('🔧 Unit to use:', unitToUse);
 
     console.log('📝 Creating product with data:', {
