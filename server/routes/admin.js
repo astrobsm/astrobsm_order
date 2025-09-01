@@ -3,6 +3,121 @@ const Product = require('../models/Product');
 const pool = require('../database/db');
 const router = express.Router();
 
+// Password verification middleware
+const verifyAdminPassword = (req, res, next) => {
+  const { password } = req.body;
+  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+  
+  if (password !== adminPassword) {
+    return res.status(401).json({ error: 'Invalid admin password' });
+  }
+  
+  next();
+};
+
+// Schema info endpoint
+router.post('/schema-info', verifyAdminPassword, async (req, res) => {
+  try {
+    console.log('🔍 Checking products table schema...');
+    
+    // Check if table exists and get column info
+    const tableExists = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'products'
+      );
+    `);
+    
+    if (!tableExists.rows[0].exists) {
+      return res.json({ 
+        tableExists: false, 
+        columns: [],
+        message: 'Products table does not exist' 
+      });
+    }
+    
+    // Get column information
+    const columns = await pool.query(`
+      SELECT column_name, data_type, is_nullable, column_default
+      FROM information_schema.columns 
+      WHERE table_schema = 'public' 
+      AND table_name = 'products'
+      ORDER BY ordinal_position;
+    `);
+    
+    res.json({
+      tableExists: true,
+      columns: columns.rows,
+      message: 'Schema information retrieved successfully'
+    });
+    
+  } catch (error) {
+    console.error('❌ Error getting schema info:', error);
+    res.status(500).json({ 
+      error: 'Failed to get schema info', 
+      details: error.message 
+    });
+  }
+});
+
+// Schema fix endpoint
+router.post('/fix-schema', verifyAdminPassword, async (req, res) => {
+  try {
+    console.log('🔧 Fixing products table schema...');
+    
+    // Create products table if it doesn't exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS products (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL UNIQUE,
+        description TEXT,
+        price DECIMAL(10,2),
+        stock_quantity INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Add missing columns if they don't exist
+    const alterQueries = [
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS description TEXT`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS price DECIMAL(10,2)`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS stock_quantity INTEGER DEFAULT 0`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`
+    ];
+    
+    for (const query of alterQueries) {
+      try {
+        await pool.query(query);
+      } catch (error) {
+        console.log(`Query already applied or not needed: ${query}`);
+      }
+    }
+    
+    // Add unique constraint on name if it doesn't exist
+    try {
+      await pool.query(`
+        ALTER TABLE products ADD CONSTRAINT products_name_unique UNIQUE (name)
+      `);
+    } catch (error) {
+      console.log('Unique constraint on name already exists or not needed');
+    }
+    
+    console.log('✅ Schema fix completed');
+    res.json({ 
+      success: true, 
+      message: 'Products table schema fixed successfully' 
+    });
+    
+  } catch (error) {
+    console.error('❌ Error fixing schema:', error);
+    res.status(500).json({ 
+      error: 'Failed to fix schema', 
+      details: error.message 
+    });
+  }
+});
+
 // GET all products for admin management
 router.get('/products', async (req, res) => {
   try {
@@ -34,18 +149,19 @@ router.post('/products', async (req, res) => {
     console.log('📋 Admin POST products request received');
     console.log('Request body keys:', Object.keys(req.body));
     
-    const { adminPassword } = req.body;
+    const { password, adminPassword } = req.body;
+    const submittedPassword = password || adminPassword;
+    const adminPasswordEnv = process.env.ADMIN_PASSWORD || 'admin123';
+    
+    // Verify admin password
+    if (submittedPassword !== adminPasswordEnv) {
+      console.log('❌ Invalid admin password');
+      return res.status(401).json({ error: 'Invalid admin password' });
+    }
     
     // If this is just a fetch request with password
-    if (adminPassword && Object.keys(req.body).length === 1) {
+    if (submittedPassword && Object.keys(req.body).length === 1) {
       console.log('🔐 Password-protected product fetch request');
-      
-      // Verify admin password
-      if (adminPassword !== 'roseball') {
-        console.log('❌ Invalid admin password for product fetch');
-        return res.status(401).json({ error: 'Unauthorized access' });
-      }
-      
       console.log('✅ Admin password verified for product fetch');
       const products = await Product.findAll();
       console.log(`✅ Found ${products.length} products for admin`);
@@ -57,12 +173,6 @@ router.post('/products', async (req, res) => {
     console.log('Request body:', JSON.stringify(req.body, null, 2));
     
     const { name, description, price, stock_quantity, unit_of_measure, unit } = req.body;
-    
-    // Verify admin password
-    if (adminPassword !== 'roseball') {
-      console.log('❌ Unauthorized access attempt');
-      return res.status(401).json({ error: 'Unauthorized access' });
-    }
 
     console.log('✅ Admin password verified');
 

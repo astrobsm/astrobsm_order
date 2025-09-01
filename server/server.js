@@ -117,6 +117,12 @@ app.get('/quick-diagnostics.js', (req, res) => {
   res.sendFile(path.join(__dirname, '../quick-diagnostics.js'));
 });
 
+// Serve production schema fix script
+app.get('/production-schema-fix.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.sendFile(path.join(__dirname, '../production-schema-fix.js'));
+});
+
 // PWA routes - serve main app for all non-API routes (SPA behavior)
 app.get('*', (req, res, next) => {
   // Skip API routes and static files
