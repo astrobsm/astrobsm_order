@@ -1505,7 +1505,7 @@ function editProduct(id, name, price, description) {
   const newName = prompt('Enter new product name:', name);
   if (newName === null) return;
   
-  const newPrice = prompt('Enter new price:', price);
+  const newPrice = prompt('💰 Enter new price:', price);
   if (newPrice === null) return;
   
   const priceValue = parseFloat(newPrice);
@@ -1514,36 +1514,22 @@ function editProduct(id, name, price, description) {
     return;
   }
   
-  // Check if price is being changed
-  let pricePassword = '';
-  if (priceValue !== price) {
-    const userPassword = prompt('💰 Price change requires additional password (redvelvet):');
-    if (userPassword === null) return;
-    
-    if (userPassword !== 'redvelvet') {
-      alert('❌ Incorrect price editing password. Changes not saved.');
-      return;
-    }
-    pricePassword = userPassword;
-  }
-  
   const newDescription = prompt('Enter description (optional):', description);
   if (newDescription === null) return;
   
-  updateProduct(id, newName.trim(), priceValue, newDescription.trim(), pricePassword);
+  console.log(`📝 Updating product ${id}: ${name} -> ${newName}, $${price} -> $${priceValue}`);
+  updateProduct(id, newName.trim(), priceValue, newDescription.trim());
 }
 
-async function updateProduct(id, name, price, description, pricePassword) {
+async function updateProduct(id, name, price, description) {
   try {
+    console.log(`🔄 Updating product ${id} with new data...`);
+    
     const body = {
       name,
       price,
       description
     };
-    
-    if (pricePassword) {
-      body.pricePassword = pricePassword;
-    }
     
     const response = await fetch(`${API_BASE_URL}/admin/products/${id}`, {
       method: 'PUT',
@@ -1554,18 +1540,21 @@ async function updateProduct(id, name, price, description, pricePassword) {
     });
     
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to update product');
+      const error = await response.text();
+      console.error('Update failed:', error);
+      throw new Error(error || 'Failed to update product');
     }
+    
+    console.log('✅ Product updated successfully');
     
     // Refresh products list and reload for main form
     await loadProductsForManagement();
     await loadProducts();
     
-    alert('Product updated successfully!');
+    alert(`✅ Product "${name}" updated successfully!\nNew price: $${price}`);
   } catch (error) {
     console.error('Error updating product:', error);
-    alert('Error updating product: ' + error.message);
+    alert('❌ Error updating product: ' + error.message);
   }
 }
 

@@ -147,6 +147,12 @@ app.get('/password-free-fix.js', (req, res) => {
   res.sendFile(path.join(__dirname, '../password-free-fix.js'));
 });
 
+// Serve quick price update script
+app.get('/quick-price-update.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.sendFile(path.join(__dirname, '../quick-price-update.js'));
+});
+
 // PWA routes - serve main app for all non-API routes (SPA behavior)
 app.get('*', (req, res, next) => {
   // Skip API routes and static files
