@@ -601,19 +601,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         const nameElement = document.getElementById('newProductName');
         const descriptionElement = document.getElementById('newProductDescription');
         const priceElement = document.getElementById('newProductPrice');
+        const unitElement = document.getElementById('newProductUnit');
+        const stockElement = document.getElementById('newProductStock');
         
-        if (!nameElement || !priceElement) {
+        if (!nameElement || !priceElement || !unitElement) {
           console.error('Required form elements not found');
           return;
         }
         
-        const name = nameElement.value;
-        const description = descriptionElement ? descriptionElement.value : '';
+        const name = nameElement.value.trim();
+        const description = descriptionElement ? descriptionElement.value.trim() : '';
         const price = parseFloat(priceElement.value);
-        const stockQuantity = 100; // Default stock quantity
+        const unit_of_measure = unitElement.value;
+        const stockQuantity = stockElement ? parseInt(stockElement.value) || 100 : 100;
         
-        if (!name || !price || price <= 0) {
-          alert('Please fill in required fields (name and valid price)');
+        if (!name || !price || price <= 0 || !unit_of_measure) {
+          alert('Please fill in all required fields (name, price, and unit of measure)');
           return;
         }
         
@@ -628,7 +631,8 @@ document.addEventListener('DOMContentLoaded', async () => {
               name,
               description,
               price,
-              stock_quantity: stockQuantity || 0
+              unit_of_measure,
+              stock_quantity: stockQuantity
             })
           });
           
@@ -638,10 +642,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             const nameElement = document.getElementById('newProductName');
             const descriptionElement = document.getElementById('newProductDescription');
             const priceElement = document.getElementById('newProductPrice');
+            const unitElement = document.getElementById('newProductUnit');
+            const stockElement = document.getElementById('newProductStock');
             
             if (nameElement) nameElement.value = '';
             if (descriptionElement) descriptionElement.value = '';
             if (priceElement) priceElement.value = '';
+            if (unitElement) unitElement.value = '';
+            if (stockElement) stockElement.value = '100';
             
             addProductForm.style.display = 'none';
             // Reload products
