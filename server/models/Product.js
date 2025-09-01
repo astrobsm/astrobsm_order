@@ -36,16 +36,65 @@ class Product {
   }
 
   static async create(productData) {
-    const { name, description, price, stock_quantity, unit_of_measure } = productData;
+    const { 
+      name, 
+      description, 
+      price, 
+      stock_quantity, 
+      unit_of_measure,
+      unit_price,
+      reorder_point,
+      opening_stock_quantity,
+      average_production_time,
+      status
+    } = productData;
     
     console.log('🔧 Product.create called with:', productData);
     
     try {
-      // First, try the simplest possible query with just the core fields
-      console.log('📝 Attempting simple product creation...');
+      // Try with all required fields based on production schema analysis
+      console.log('📝 Attempting complete product creation with all required fields...');
+      
+      const insertData = {
+        name: name,
+        description: description || '',
+        unit_of_measure: unit_of_measure || 'PCS',
+        unit_price: unit_price || price || 0,
+        price: price || unit_price || 0,
+        stock_quantity: stock_quantity || 100,
+        opening_stock_quantity: opening_stock_quantity || stock_quantity || 100,
+        reorder_point: reorder_point || 10,
+        average_production_time: average_production_time || 7,
+        status: status || 'active'
+      };
+      
+      console.log('📋 Insert data prepared:', insertData);
+      
       const result = await pool.query(
-        'INSERT INTO products (name, description, price, stock_quantity) VALUES ($1, $2, $3, $4) RETURNING *',
-        [name, description || '', price, stock_quantity || 100]
+        `INSERT INTO products (
+          name, 
+          description, 
+          unit_of_measure, 
+          unit_price, 
+          price, 
+          stock_quantity, 
+          opening_stock_quantity, 
+          reorder_point, 
+          average_production_time, 
+          status
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+        [
+          insertData.name,
+          insertData.description,
+          insertData.unit_of_measure,
+          insertData.unit_price,
+          insertData.price,
+          insertData.stock_quantity,
+          insertData.opening_stock_quantity,
+          insertData.reorder_point,
+          insertData.average_production_time,
+          insertData.status
+        ]
       );
       
       console.log('✅ Simple product creation successful:', result.rows[0]);

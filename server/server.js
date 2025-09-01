@@ -135,6 +135,12 @@ app.get('/schema-investigation-fix.js', (req, res) => {
   res.sendFile(path.join(__dirname, '../schema-investigation-fix.js'));
 });
 
+// Serve final production fix script
+app.get('/final-production-fix.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.sendFile(path.join(__dirname, '../final-production-fix.js'));
+});
+
 // PWA routes - serve main app for all non-API routes (SPA behavior)
 app.get('*', (req, res, next) => {
   // Skip API routes and static files
