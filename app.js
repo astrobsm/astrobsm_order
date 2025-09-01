@@ -308,7 +308,10 @@ function createItemRow() {
   // Add remove functionality
   div.querySelector('.removeItemBtn').addEventListener('click', () => {
     div.style.animation = 'fadeOut 0.3s ease-out';
-    setTimeout(() => div.remove(), 300);
+    setTimeout(() => {
+      div.remove();
+      calculateOrderTotal(); // Recalculate totals after item removal
+    }, 300);
   });
   
   // Add change listener for price calculation
@@ -321,6 +324,9 @@ function createItemRow() {
   
   selectElement.addEventListener('change', updateCalculation);
   quantityElement.addEventListener('input', updateCalculation);
+  
+  // Trigger initial calculation after adding listeners
+  setTimeout(() => calculateOrderTotal(), 100);
 }
 
 // Add fadeOut animation
@@ -338,14 +344,25 @@ function calculateOrderTotal() {
   let subtotal = 0;
   const items = [];
   
+  console.log('Calculating order total, itemCount:', itemCount);
+  
   // Calculate subtotal from all items
   for (let i = 1; i <= itemCount; i++) {
     const productSelect = document.querySelector(`select[name="item${i}"]`);
     const quantityInput = document.querySelector(`input[name="quantity${i}"]`);
     
+    console.log(`Item ${i}:`, {
+      selectElement: !!productSelect,
+      quantityElement: !!quantityInput,
+      selectedProduct: productSelect ? productSelect.value : 'none',
+      quantity: quantityInput ? quantityInput.value : 'none'
+    });
+    
     if (productSelect && quantityInput && productSelect.value && quantityInput.value) {
       const product = productList.find(p => p.name === productSelect.value);
       const quantity = parseInt(quantityInput.value) || 0;
+      
+      console.log(`Found product for ${productSelect.value}:`, product);
       
       if (product && quantity > 0) {
         const price = parseFloat(product.price) || 0;
@@ -357,6 +374,8 @@ function calculateOrderTotal() {
           quantity: quantity,
           total: itemTotal
         });
+        
+        console.log(`Added item: ${product.name}, price: ${price}, qty: ${quantity}, total: ${itemTotal}`);
       }
     }
   }
@@ -366,6 +385,9 @@ function calculateOrderTotal() {
   const total = subtotal + vat;
   
   orderTotal = { subtotal, vat, total, items };
+  
+  console.log('Final order total:', orderTotal);
+  
   updateOrderTotalDisplay();
   
   return orderTotal;
@@ -384,7 +406,10 @@ function updateOrderTotalDisplay() {
     return;
   }
   
-  if (orderTotal.total > 0) {
+  console.log('Updating order total display:', orderTotal);
+  
+  // Always show the total display when items are present
+  if (orderTotal.items && orderTotal.items.length > 0) {
     totalDisplay.style.display = 'block';
     subtotalElement.textContent = `₦${orderTotal.subtotal.toFixed(2)}`;
     vatElement.textContent = `₦${orderTotal.vat.toFixed(2)}`;
@@ -392,7 +417,8 @@ function updateOrderTotalDisplay() {
     
     // Update amount in words if element exists
     if (totalWordsElement) {
-      totalWordsElement.textContent = `Amount in Words: ${numberToWords(orderTotal.total)}`;
+      const totalWords = orderTotal.total > 0 ? numberToWords(orderTotal.total) : 'Zero';
+      totalWordsElement.textContent = `Amount in Words: ${totalWords} Naira Only`;
     }
   } else {
     totalDisplay.style.display = 'none';
@@ -421,6 +447,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     console.log('DOM loaded, starting initialization...');
     
+    // Debug: Check if all total display elements exist
+    const totalDisplay = document.getElementById('orderTotal');
+    const subtotalElement = document.getElementById('subtotalAmount');
+    const vatElement = document.getElementById('vatAmount');
+    const totalElement = document.getElementById('totalAmount');
+    const totalWordsElement = document.getElementById('totalAmountWords');
+    
+    console.log('Total display elements check:', {
+      totalDisplay: !!totalDisplay,
+      subtotalElement: !!subtotalElement,
+      vatElement: !!vatElement,
+      totalElement: !!totalElement,
+      totalWordsElement: !!totalWordsElement
+    });
+    
     // Load products first
     await loadProducts();
     console.log('Products loaded, productList:', productList);
@@ -431,6 +472,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Add change listeners
     addItemChangeListeners();
+    
+    // Initial calculation to set up the display
+    calculateOrderTotal();
+    console.log('Initial calculation performed');
     
     // Set up Add Item button
     if (addItemBtn) {

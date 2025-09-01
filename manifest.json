@@ -1,8 +1,8 @@
 {
   "name": "ASTRO-BSM Product Order System",
   "short_name": "ASTRO-BSM",
-  "version": "2.2.0",
-  "start_url": "/?v=9",
+  "version": "2.3.0",
+  "start_url": "/?v=10",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#007bff",
