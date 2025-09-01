@@ -17,15 +17,30 @@ router.get('/products', async (req, res) => {
 // Add new product (admin only)
 router.post('/products', async (req, res) => {
   try {
+    console.log('📦 Admin product addition request received');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    
     const { name, description, price, stock_quantity, unit_of_measure, unit, adminPassword } = req.body;
     
     // Verify admin password
     if (adminPassword !== 'roseball') {
+      console.log('❌ Unauthorized access attempt');
       return res.status(401).json({ error: 'Unauthorized access' });
     }
 
+    console.log('✅ Admin password verified');
+
     // Handle both 'unit' and 'unit_of_measure' fields for compatibility
     const unitToUse = unit_of_measure || unit || 'PCS';
+    console.log('🔧 Unit to use:', unitToUse);
+
+    console.log('📝 Creating product with data:', {
+      name,
+      description,
+      price,
+      stock_quantity: stock_quantity || 100,
+      unit_of_measure: unitToUse
+    });
 
     const product = await Product.create({
       name,
@@ -35,13 +50,28 @@ router.post('/products', async (req, res) => {
       unit_of_measure: unitToUse
     });
 
+    console.log('✅ Product created successfully:', product);
     res.status(201).json(product);
+    
   } catch (error) {
-    console.error('Error adding product:', error);
+    console.error('❌ Error adding product:', error);
+    console.error('Error stack:', error.stack);
+    
     if (error.code === '23505') { // Unique constraint violation
       res.status(400).json({ error: 'Product with this name already exists' });
+    } else if (error.code === '42703') { // Column does not exist
+      console.log('🔧 Column does not exist, trying fallback...');
+      res.status(500).json({ 
+        error: 'Database schema issue - unit_of_measure column missing', 
+        details: error.message,
+        suggestion: 'Try using the emergency addition script without unit_of_measure'
+      });
     } else {
-      res.status(500).json({ error: 'Failed to add product', details: error.message });
+      res.status(500).json({ 
+        error: 'Failed to add product', 
+        details: error.message,
+        code: error.code || 'UNKNOWN'
+      });
     }
   }
 });
