@@ -654,7 +654,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              adminPassword: 'roseball',
+              password: 'admin123',
               name,
               description,
               price,
@@ -1404,25 +1404,28 @@ window.addEventListener('load', async () => {
 // Product Management Functions
 async function loadProductsForManagement() {
   try {
+    console.log('📋 Loading products for management...');
     const response = await fetch(`${API_BASE_URL}/admin/products`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        adminPassword: 'roseball'
+        password: 'admin123'
       })
     });
     
     if (!response.ok) {
+      console.error('Failed to fetch products for management. Status:', response.status);
       throw new Error('Failed to fetch products for management');
     }
     
     const products = await response.json();
+    console.log('📦 Fetched products for management:', products.length);
     displayProductsList(products);
   } catch (error) {
     console.error('Error loading products for management:', error);
-    document.getElementById('productsList').innerHTML = '<p>Error loading products.</p>';
+    document.getElementById('productsList').innerHTML = '<p>Error loading products. Please check admin password.</p>';
   }
 }
 
@@ -1476,7 +1479,7 @@ async function saveNewProduct() {
         price,
         description,
         unit_of_measure,
-        adminPassword: 'roseball'
+        password: 'admin123'
       })
     });
     
@@ -1538,7 +1541,7 @@ async function updateProduct(id, name, price, description, pricePassword) {
       name,
       price,
       description,
-      adminPassword: 'roseball'
+      password: 'admin123'
     };
     
     if (pricePassword) {
@@ -1581,7 +1584,7 @@ async function deleteProduct(id, name) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        adminPassword: 'roseball'
+        password: 'admin123'
       })
     });
     
