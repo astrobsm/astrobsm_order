@@ -1,3 +1,5 @@
+console.log('🚀 App.js script loaded successfully!');
+
 // API Configuration
 const API_BASE_URL = window.location.origin + '/api';
 
@@ -99,9 +101,13 @@ function numberToWords(num) {
 // Load products from API
 async function loadProducts() {
   try {
+    console.log('Loading products from API...');
     const response = await fetch(`${API_BASE_URL}/products`);
     if (response.ok) {
       const productsFromAPI = await response.json();
+      console.log('Raw API response:', productsFromAPI);
+      console.log('API response length:', productsFromAPI.length);
+      
       // Convert API response to product objects if needed
       productList = productsFromAPI.map(product => {
         if (typeof product === 'string') {
@@ -117,6 +123,9 @@ async function loadProducts() {
           };
         }
       });
+      
+      console.log('Processed productList:', productList);
+      console.log('ProductList length:', productList.length);
     } else {
       // Fallback to comprehensive product list with prices
       productList = [
@@ -184,6 +193,10 @@ function createItemRow() {
   const div = document.createElement('div');
   div.className = 'item-row fade-in';
   
+  console.log('Creating item row, productList:', productList);
+  console.log('ProductList is array:', Array.isArray(productList));
+  console.log('ProductList length:', productList ? productList.length : 'undefined');
+  
   const productOptions = Array.isArray(productList) && productList.length > 0 
     ? productList.map(item => {
         if (typeof item === 'object' && item.name && item.price !== undefined) {
@@ -202,6 +215,8 @@ function createItemRow() {
         }
       }).join('')
     : '<option value="">No products available</option>';
+
+  console.log('Generated product options:', productOptions);
 
   div.innerHTML = `
     <div>
@@ -337,11 +352,15 @@ function addItemChangeListeners() {
 // Initialize item change listeners
 document.addEventListener('DOMContentLoaded', async () => {
   try {
+    console.log('DOM loaded, starting initialization...');
+    
     // Load products first
     await loadProducts();
+    console.log('Products loaded, productList:', productList);
     
-    // Create initial item row
+    // Create initial item row after products are loaded
     createItemRow();
+    console.log('Initial item row created');
     
     // Add change listeners
     addItemChangeListeners();
@@ -1168,12 +1187,12 @@ async function loadAllOrders() {
 
 // Initialize app
 window.addEventListener('load', async () => {
-  await loadProducts();
-  createItemRow(); // Create first item row
-  
   // Set minimum date to today
   const today = new Date().toISOString().split('T')[0];
-  document.getElementById('deliveryDate').min = today;
+  const deliveryDateElement = document.getElementById('deliveryDate');
+  if (deliveryDateElement) {
+    deliveryDateElement.min = today;
+  }
 });
 
 // Product Management Functions
