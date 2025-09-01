@@ -289,14 +289,29 @@ function createItemRow() {
   const quantityElement = div.querySelector(`input[name="quantity${itemCount}"]`);
   
   const updateCalculation = () => {
-    calculateOrderTotal();
+    console.log(`🔄 Calculation triggered for item ${itemCount}`);
+    setTimeout(() => calculateOrderTotal(), 50); // Small delay to ensure DOM is updated
   };
   
-  selectElement.addEventListener('change', updateCalculation);
-  quantityElement.addEventListener('input', updateCalculation);
+  if (selectElement) {
+    selectElement.addEventListener('change', updateCalculation);
+    selectElement.addEventListener('blur', updateCalculation); // Also trigger on blur
+  }
   
-  // Trigger initial calculation after adding listeners
-  setTimeout(() => calculateOrderTotal(), 100);
+  if (quantityElement) {
+    quantityElement.addEventListener('input', updateCalculation);
+    quantityElement.addEventListener('change', updateCalculation); // Also trigger on change
+    quantityElement.addEventListener('blur', updateCalculation); // Also trigger on blur
+  }
+  
+  // Trigger initial calculation after adding listeners - but only if needed
+  setTimeout(() => {
+    // Only calculate if there are actual values to calculate
+    const hasValues = selectElement?.value || quantityElement?.value;
+    if (hasValues) {
+      calculateOrderTotal();
+    }
+  }, 100);
 }
 
 // Add fadeOut animation
@@ -337,8 +352,8 @@ function calculateOrderTotal() {
     
     if (productSelect && quantityInput && productSelect.value && quantityInput.value) {
       // Try to find the product by name
-      const selectedProductName = productSelect.value;
-      const product = productList.find(p => p.name === selectedProductName);
+      const selectedProductName = productSelect.value.trim();
+      const product = productList.find(p => p.name && p.name.trim() === selectedProductName);
       const quantity = parseInt(quantityInput.value) || 0;
       
       console.log(`Searching for product: "${selectedProductName}"`);
@@ -360,6 +375,7 @@ function calculateOrderTotal() {
         items.push(itemData);
         
         console.log(`✅ Added item:`, itemData);
+        console.log(`Item price: ₦${price}, Quantity: ${quantity}, Item total: ₦${itemTotal.toFixed(2)}`);
         console.log(`Running subtotal: ₦${subtotal.toFixed(2)}`);
       } else {
         if (!product) {
@@ -372,6 +388,12 @@ function calculateOrderTotal() {
       }
     } else {
       console.log(`❌ Missing required data for item ${i}`);
+      if (productSelect && !productSelect.value) {
+        console.log('  - No product selected');
+      }
+      if (quantityInput && !quantityInput.value) {
+        console.log('  - No quantity entered');
+      }
     }
   }
   
@@ -429,17 +451,28 @@ function updateOrderTotalDisplay() {
 function addItemChangeListeners() {
   const itemsContainer = document.getElementById('itemsContainer');
   
+  // Use event delegation for better reliability
   itemsContainer.addEventListener('change', (e) => {
     if (e.target.matches('select[name^="item"]') || e.target.matches('input[name^="quantity"]')) {
-      calculateOrderTotal();
+      console.log('📊 Global change event triggered calculation');
+      setTimeout(() => calculateOrderTotal(), 50);
     }
   });
   
   itemsContainer.addEventListener('input', (e) => {
     if (e.target.matches('input[name^="quantity"]')) {
-      calculateOrderTotal();
+      console.log('📊 Global input event triggered calculation');
+      setTimeout(() => calculateOrderTotal(), 50);
     }
   });
+
+  // Add additional listeners for blur events to catch manual typing
+  itemsContainer.addEventListener('blur', (e) => {
+    if (e.target.matches('select[name^="item"]') || e.target.matches('input[name^="quantity"]')) {
+      console.log('📊 Global blur event triggered calculation');
+      setTimeout(() => calculateOrderTotal(), 50);
+    }
+  }, true); // Use capture phase
 }
 
 // Initialize item change listeners
@@ -481,7 +514,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (addItemBtn) {
       addItemBtn.addEventListener('click', createItemRow);
     }
-    
+
+    // Add global function for manual testing
+    window.manualCalculate = () => {
+      console.log('🔧 Manual calculation triggered');
+      calculateOrderTotal();
+    };
+
     // Set up admin functionality
     if (adminBtn) {
       adminBtn.addEventListener('click', async (e) => {
