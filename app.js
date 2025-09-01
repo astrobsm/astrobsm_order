@@ -1422,6 +1422,7 @@ async function saveNewProduct() {
   const name = document.getElementById('newProductName').value.trim();
   const price = parseFloat(document.getElementById('newProductPrice').value);
   const description = document.getElementById('newProductDescription').value.trim();
+  const unit_of_measure = document.getElementById('newProductUnit').value || 'PCS';
   
   if (!name || !price || price <= 0) {
     alert('Please enter valid product name and price.');
@@ -1429,7 +1430,7 @@ async function saveNewProduct() {
   }
   
   try {
-    const response = await fetch(`${API_BASE_URL}/admin/products`, {
+    const response = await fetch(`${API_BASE_URL}/admin/products/add`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -1438,6 +1439,7 @@ async function saveNewProduct() {
         name,
         price,
         description,
+        unit_of_measure,
         adminPassword: 'roseball'
       })
     });

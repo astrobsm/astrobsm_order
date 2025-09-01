@@ -31,7 +31,7 @@ class Order {
         subtotal += itemSubtotal;
         
         await client.query(
-          'INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price) VALUES ($1, $2, $3, $4, $5)',
+          'INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal) VALUES ($1, $2, $3, $4, $5)',
           [order.id, product.id, item.quantity, product.price, itemSubtotal]
         );
       }
