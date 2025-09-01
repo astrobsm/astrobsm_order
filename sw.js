@@ -1,5 +1,5 @@
-const CACHE_NAME = 'astro-bsm-pwa-v10';
-const DATA_CACHE_NAME = 'astro-bsm-data-v10';
+const CACHE_NAME = 'astro-bsm-pwa-v11';
+const DATA_CACHE_NAME = 'astro-bsm-data-v11';
 const OFFLINE_QUEUE = 'astro-bsm-offline-queue';
 
 const urlsToCache = [

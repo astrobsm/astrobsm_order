@@ -133,125 +133,92 @@ function numberToWords(num) {
 
 // Load products from API
 async function loadProducts() {
+  console.log('🔄 Loading products from API...');
+  
   try {
-    console.log('Loading products from API...');
-    const response = await fetch(`${API_BASE_URL}/products`);
+    const response = await fetch(`${API_BASE_URL}/products`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      cache: 'no-cache' // Force fresh data
+    });
+    
+    console.log('API Response status:', response.status);
+    console.log('API Response ok:', response.ok);
+    
     if (response.ok) {
-      const productsFromAPI = await response.json();
-      console.log('Raw API response:', productsFromAPI);
-      console.log('API response length:', productsFromAPI.length);
+      const data = await response.json();
+      console.log('Raw API data:', data);
+      console.log('API data type:', typeof data);
+      console.log('API data is array:', Array.isArray(data));
       
-      // Check if API returned products
-      if (productsFromAPI && productsFromAPI.length > 0) {
-        // Convert API response to product objects if needed
-        productList = productsFromAPI.map(product => {
-          if (typeof product === 'string') {
-            // If it's just a string, we need to find the price
-            return { name: product, price: 0 }; // Fallback price
-          } else {
-            // If it's already an object with name and price
-            return {
-              id: product.id,
-              name: product.name,
-              description: product.description,
-              price: parseFloat(product.price) || 0
-            };
-          }
+      if (Array.isArray(data) && data.length > 0) {
+        // Ensure all products have the required fields and correct data types
+        productList = data.map(item => {
+          const product = {
+            id: item.id,
+            name: item.name || 'Unknown Product',
+            description: item.description || '',
+            price: parseFloat(item.price) || 0,
+            unit: item.unit || 'PCS',
+            stock_quantity: parseInt(item.stock_quantity) || 0
+          };
+          
+          console.log('Processed product:', product);
+          return product;
         });
         
-        console.log('Processed productList from API:', productList);
-        console.log('ProductList length:', productList.length);
+        console.log('✅ Successfully loaded', productList.length, 'products from API');
+        console.log('Final productList structure:', productList.slice(0, 2)); // Show first 2 products
       } else {
-        console.log('API returned empty array, using fallback products...');
-        // Use fallback products when API returns empty array
-        productList = [
-          { name: "Wound-Care Honey Gauze Big (Carton)", price: 65000 },
-          { name: "Wound-Care Honey Gauze Big (Packet)", price: 6000 },
-          { name: "Wound-Care Honey Gauze Small (Carton)", price: 61250 },
-          { name: "Wound-Care Honey Gauze Small (Packet)", price: 3500 },
-          { name: "Hera Wound-Gel 100g (Carton)", price: 65000 },
-          { name: "Hera Wound-Gel 100g (Tube)", price: 3250 },
-          { name: "Hera Wound-Gel 40g (Carton)", price: 48000 },
-          { name: "Hera Wound-Gel 40g (Tube)", price: 2000 },
-          { name: "Coban Bandage 6 inch (Piece)", price: 4500 },
-          { name: "Coban Bandage 6 inch (Carton)", price: 48500 },
-          { name: "Coban Bandage 4 inch (Piece)", price: 3500 },
-          { name: "Coban Bandage 4 inch (Carton)", price: 37500 },
-          { name: "Silicone Scar Sheet (Packet)", price: 10000 },
-          { name: "Silicone Scar Sheet (Block)", price: 90000 },
-          { name: "Silicone Foot Pad (Pair)", price: 2000 },
-          { name: "Sterile Dressing Pack (Bag)", price: 10000 },
-          { name: "Sterile Dressing Pack (Piece)", price: 600 },
-          { name: "Sterile Gauze-Only Pack (Bag)", price: 10000 },
-          { name: "Sterile Gauze-Only Pack (Piece)", price: 600 },
-          { name: "Skin Staples (Piece)", price: 4000 },
-          { name: "NPWT (VAC) Foam (Piece)", price: 2000 },
-          { name: "Opsite (Piece)", price: 6000 },
-          { name: "Wound-Clex Solution 500ml (Carton)", price: 12500 },
-          { name: "Wound-Clex Solution 500ml (Bottle)", price: 2300 }
-        ];
-        console.log('Using fallback products:', productList.length, 'products loaded');
+        console.log('⚠️ API returned empty or invalid data, using fallback products...');
+        loadFallbackProducts();
       }
     } else {
-      console.log('API request failed, using fallback products...');
-      // Fallback to comprehensive product list with prices
-      productList = [
-        { name: "Wound-Care Honey Gauze Big (Carton)", price: 65000 },
-        { name: "Wound-Care Honey Gauze Big (Packet)", price: 6000 },
-        { name: "Wound-Care Honey Gauze Small (Carton)", price: 61250 },
-        { name: "Wound-Care Honey Gauze Small (Packet)", price: 3500 },
-        { name: "Hera Wound-Gel 100g (Carton)", price: 65000 },
-        { name: "Hera Wound-Gel 100g (Tube)", price: 3250 },
-        { name: "Hera Wound-Gel 40g (Carton)", price: 48000 },
-        { name: "Hera Wound-Gel 40g (Tube)", price: 2000 },
-        { name: "Coban Bandage 6 inch (Piece)", price: 4500 },
-        { name: "Coban Bandage 6 inch (Carton)", price: 48500 },
-        { name: "Coban Bandage 4 inch (Piece)", price: 3500 },
-        { name: "Coban Bandage 4 inch (Carton)", price: 37500 },
-        { name: "Silicone Scar Sheet (Packet)", price: 10000 },
-        { name: "Silicone Scar Sheet (Block)", price: 90000 },
-        { name: "Silicone Foot Pad (Pair)", price: 2000 },
-        { name: "Sterile Dressing Pack (Bag)", price: 10000 },
-        { name: "Sterile Dressing Pack (Piece)", price: 600 },
-        { name: "Sterile Gauze-Only Pack (Bag)", price: 10000 },
-        { name: "Sterile Gauze-Only Pack (Piece)", price: 600 },
-        { name: "Skin Staples (Piece)", price: 4000 },
-        { name: "NPWT (VAC) Foam (Piece)", price: 2000 },
-        { name: "Opsite (Piece)", price: 6000 },
-        { name: "Wound-Clex Solution 500ml (Carton)", price: 12500 },
-        { name: "Wound-Clex Solution 500ml (Bottle)", price: 2300 }
-      ];
+      console.log('❌ API request failed with status:', response.status);
+      const errorText = await response.text();
+      console.log('Error response:', errorText);
+      loadFallbackProducts();
     }
   } catch (error) {
-    console.error('Error loading products:', error);
-    // Use comprehensive fallback list with prices
-    productList = [
-      { name: "Wound-Care Honey Gauze Big (Carton)", price: 65000 },
-      { name: "Wound-Care Honey Gauze Big (Packet)", price: 6000 },
-      { name: "Wound-Care Honey Gauze Small (Carton)", price: 61250 },
-      { name: "Wound-Care Honey Gauze Small (Packet)", price: 3500 },
-      { name: "Hera Wound-Gel 100g (Carton)", price: 65000 },
-      { name: "Hera Wound-Gel 100g (Tube)", price: 3250 },
-      { name: "Hera Wound-Gel 40g (Carton)", price: 48000 },
-      { name: "Hera Wound-Gel 40g (Tube)", price: 2000 },
-      { name: "Coban Bandage 6 inch (Piece)", price: 4500 },
-      { name: "Coban Bandage 6 inch (Carton)", price: 48500 },
-      { name: "Coban Bandage 4 inch (Piece)", price: 3500 },
-      { name: "Coban Bandage 4 inch (Carton)", price: 37500 },
-      { name: "Silicone Scar Sheet (Packet)", price: 10000 },
-      { name: "Silicone Scar Sheet (Block)", price: 90000 },
-      { name: "Silicone Foot Pad (Pair)", price: 2000 },
-      { name: "Sterile Dressing Pack (Bag)", price: 10000 },
-      { name: "Sterile Dressing Pack (Piece)", price: 600 },
-      { name: "Sterile Gauze-Only Pack (Bag)", price: 10000 },
-      { name: "Sterile Gauze-Only Pack (Piece)", price: 600 },
-      { name: "Skin Staples (Piece)", price: 4000 },
-      { name: "NPWT (VAC) Foam (Piece)", price: 2000 },
-      { name: "Opsite (Piece)", price: 6000 },
-      { name: "Wound-Clex Solution 500ml (Carton)", price: 12500 },
-      { name: "Wound-Clex Solution 500ml (Bottle)", price: 2300 }
-    ];
+    console.error('❌ Error loading products from API:', error);
+    loadFallbackProducts();
   }
+}
+
+// Fallback products with complete data structure
+function loadFallbackProducts() {
+  console.log('📦 Loading fallback products...');
+  productList = [
+    { id: 1, name: "Wound-Care Honey Gauze Big (Carton)", description: "Wound-Care Honey Gauze Big - Carton (CTN)", price: 65000, unit: "CTN", stock_quantity: 100 },
+    { id: 2, name: "Wound-Care Honey Gauze Big (Packet)", description: "Wound-Care Honey Gauze Big - Packet", price: 6000, unit: "Packet", stock_quantity: 100 },
+    { id: 3, name: "Wound-Care Honey Gauze Small (Carton)", description: "Wound-Care Honey Gauze Small - Carton (CTN)", price: 61250, unit: "CTN", stock_quantity: 100 },
+    { id: 4, name: "Wound-Care Honey Gauze Small (Packet)", description: "Wound-Care Honey Gauze Small - Packet", price: 3500, unit: "Packet", stock_quantity: 100 },
+    { id: 5, name: "Hera Wound-Gel 100g (Carton)", description: "Hera Wound-Gel 100g - Carton (CTN)", price: 65000, unit: "CTN", stock_quantity: 100 },
+    { id: 6, name: "Hera Wound-Gel 100g (Tube)", description: "Hera Wound-Gel 100g - Tube", price: 3250, unit: "Tube", stock_quantity: 100 },
+    { id: 7, name: "Hera Wound-Gel 40g (Carton)", description: "Hera Wound-Gel 40g - Carton (CTN)", price: 48000, unit: "CTN", stock_quantity: 100 },
+    { id: 8, name: "Hera Wound-Gel 40g (Tube)", description: "Hera Wound-Gel 40g - Tube", price: 2000, unit: "Tube", stock_quantity: 100 },
+    { id: 9, name: "Coban Bandage 6 inch (Piece)", description: "Coban Bandage 6 inch - Piece (PCS)", price: 4500, unit: "PCS", stock_quantity: 100 },
+    { id: 10, name: "Coban Bandage 6 inch (Carton)", description: "Coban Bandage 6 inch - Carton (12 PCS)", price: 48500, unit: "CTN", stock_quantity: 100 },
+    { id: 11, name: "Coban Bandage 4 inch (Piece)", description: "Coban Bandage 4 inch - Piece (PCS)", price: 3500, unit: "PCS", stock_quantity: 100 },
+    { id: 12, name: "Coban Bandage 4 inch (Carton)", description: "Coban Bandage 4 inch - Carton (12 PCS)", price: 37500, unit: "CTN", stock_quantity: 100 },
+    { id: 13, name: "Silicone Scar Sheet (Packet)", description: "Silicone Scar Sheet - Packet (4 PCS)", price: 10000, unit: "Packet", stock_quantity: 100 },
+    { id: 14, name: "Silicone Scar Sheet (Block)", description: "Silicone Scar Sheet - Block (10 Packets)", price: 90000, unit: "Block", stock_quantity: 100 },
+    { id: 15, name: "Silicone Foot Pad (Pair)", description: "Silicone Foot Pad - Pair (2 PCS)", price: 2000, unit: "Pair", stock_quantity: 100 },
+    { id: 16, name: "Sterile Dressing Pack (Bag)", description: "Sterile Dressing Pack - Bag (20 PCS)", price: 10000, unit: "Bag", stock_quantity: 100 },
+    { id: 17, name: "Sterile Dressing Pack (Piece)", description: "Sterile Dressing Pack - Piece (PCS)", price: 600, unit: "PCS", stock_quantity: 100 },
+    { id: 18, name: "Sterile Gauze-Only Pack (Bag)", description: "Sterile Gauze-Only Pack - Bag (20 PCS)", price: 10000, unit: "Bag", stock_quantity: 100 },
+    { id: 19, name: "Sterile Gauze-Only Pack (Piece)", description: "Sterile Gauze-Only Pack - Piece (PCS)", price: 600, unit: "PCS", stock_quantity: 100 },
+    { id: 20, name: "Skin Staples (Piece)", description: "Skin Staples - Piece (PCS)", price: 4000, unit: "PCS", stock_quantity: 100 },
+    { id: 21, name: "NPWT (VAC) Foam (Piece)", description: "NPWT (VAC) Foam - Piece (PCS)", price: 2000, unit: "PCS", stock_quantity: 100 },
+    { id: 22, name: "Opsite (Piece)", description: "Opsite - Piece (PCS)", price: 6000, unit: "PCS", stock_quantity: 100 },
+    { id: 23, name: "Wound-Clex Solution 500ml (Carton)", description: "Wound-Clex Solution 500ml - Carton (CTN)", price: 12500, unit: "CTN", stock_quantity: 100 },
+    { id: 24, name: "Wound-Clex Solution 500ml (Bottle)", description: "Wound-Clex Solution 500ml - Bottle", price: 2300, unit: "Bottle", stock_quantity: 100 }
+  ];
+  
+  console.log('✅ Loaded', productList.length, 'fallback products');
 }
 
 // Create item row with improved styling
@@ -339,44 +306,69 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Cost calculation functions
+// Enhanced cost calculation functions with comprehensive debugging
 function calculateOrderTotal() {
+  console.log('🧮 === STARTING CALCULATION ===');
   let subtotal = 0;
   const items = [];
   
-  console.log('Calculating order total, itemCount:', itemCount);
+  console.log('Current itemCount:', itemCount);
+  console.log('Current productList:', productList);
+  console.log('ProductList length:', productList ? productList.length : 'undefined');
   
   // Calculate subtotal from all items
   for (let i = 1; i <= itemCount; i++) {
     const productSelect = document.querySelector(`select[name="item${i}"]`);
     const quantityInput = document.querySelector(`input[name="quantity${i}"]`);
     
-    console.log(`Item ${i}:`, {
-      selectElement: !!productSelect,
-      quantityElement: !!quantityInput,
-      selectedProduct: productSelect ? productSelect.value : 'none',
-      quantity: quantityInput ? quantityInput.value : 'none'
-    });
+    console.log(`--- Item ${i} Analysis ---`);
+    console.log('Select element found:', !!productSelect);
+    console.log('Quantity input found:', !!quantityInput);
+    
+    if (productSelect) {
+      console.log('Selected product name:', productSelect.value);
+    }
+    if (quantityInput) {
+      console.log('Quantity value:', quantityInput.value);
+    }
     
     if (productSelect && quantityInput && productSelect.value && quantityInput.value) {
-      const product = productList.find(p => p.name === productSelect.value);
+      // Try to find the product by name
+      const selectedProductName = productSelect.value;
+      const product = productList.find(p => p.name === selectedProductName);
       const quantity = parseInt(quantityInput.value) || 0;
       
-      console.log(`Found product for ${productSelect.value}:`, product);
+      console.log(`Searching for product: "${selectedProductName}"`);
+      console.log('Found product:', product);
+      console.log('Available products names:', productList.map(p => p.name));
       
       if (product && quantity > 0) {
         const price = parseFloat(product.price) || 0;
         const itemTotal = price * quantity;
         subtotal += itemTotal;
-        items.push({
+        
+        const itemData = {
           name: product.name,
           price: price,
           quantity: quantity,
           total: itemTotal
-        });
+        };
         
-        console.log(`Added item: ${product.name}, price: ${price}, qty: ${quantity}, total: ${itemTotal}`);
+        items.push(itemData);
+        
+        console.log(`✅ Added item:`, itemData);
+        console.log(`Running subtotal: ₦${subtotal.toFixed(2)}`);
+      } else {
+        if (!product) {
+          console.log(`❌ Product not found: "${selectedProductName}"`);
+          console.log('Available products:', productList.map(p => ({ name: p.name, price: p.price })));
+        }
+        if (quantity <= 0) {
+          console.log(`❌ Invalid quantity: ${quantity}`);
+        }
       }
+    } else {
+      console.log(`❌ Missing required data for item ${i}`);
     }
   }
   
@@ -386,7 +378,12 @@ function calculateOrderTotal() {
   
   orderTotal = { subtotal, vat, total, items };
   
-  console.log('Final order total:', orderTotal);
+  console.log('🎯 === FINAL CALCULATION RESULTS ===');
+  console.log('Items processed:', items.length);
+  console.log('Subtotal:', `₦${subtotal.toFixed(2)}`);
+  console.log('VAT (2.5%):', `₦${vat.toFixed(2)}`);
+  console.log('Total:', `₦${total.toFixed(2)}`);
+  console.log('Order object:', orderTotal);
   
   updateOrderTotalDisplay();
   
