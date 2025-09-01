@@ -16,18 +16,22 @@ router.get('/products', async (req, res) => {
 // Add new product (admin only)
 router.post('/products', async (req, res) => {
   try {
-    const { name, description, price, stock_quantity, adminPassword } = req.body;
+    const { name, description, price, stock_quantity, unit_of_measure, unit, adminPassword } = req.body;
     
     // Verify admin password
     if (adminPassword !== 'roseball') {
       return res.status(401).json({ error: 'Unauthorized access' });
     }
 
+    // Handle both 'unit' and 'unit_of_measure' fields for compatibility
+    const unitToUse = unit_of_measure || unit || 'PCS';
+
     const product = await Product.create({
       name,
       description,
       price,
-      stock_quantity: stock_quantity || 100
+      stock_quantity: stock_quantity || 100,
+      unit_of_measure: unitToUse
     });
 
     res.status(201).json(product);
@@ -36,7 +40,7 @@ router.post('/products', async (req, res) => {
     if (error.code === '23505') { // Unique constraint violation
       res.status(400).json({ error: 'Product with this name already exists' });
     } else {
-      res.status(500).json({ error: 'Failed to add product' });
+      res.status(500).json({ error: 'Failed to add product', details: error.message });
     }
   }
 });

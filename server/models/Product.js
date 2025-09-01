@@ -22,19 +22,19 @@ class Product {
   }
 
   static async create(productData) {
-    const { name, description, price, stock_quantity } = productData;
+    const { name, description, price, stock_quantity, unit_of_measure } = productData;
     const result = await pool.query(
-      'INSERT INTO products (name, description, price, stock_quantity) VALUES ($1, $2, $3, $4) RETURNING *',
-      [name, description, price, stock_quantity]
+      'INSERT INTO products (name, description, price, stock_quantity, unit_of_measure) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [name, description, price, stock_quantity, unit_of_measure || 'PCS']
     );
     return result.rows[0];
   }
 
   static async update(id, productData) {
-    const { name, description, price, stock_quantity } = productData;
+    const { name, description, price, stock_quantity, unit_of_measure } = productData;
     const result = await pool.query(
-      'UPDATE products SET name = $1, description = $2, price = $3, stock_quantity = $4 WHERE id = $5 RETURNING *',
-      [name, description, price, stock_quantity, id]
+      'UPDATE products SET name = $1, description = $2, price = $3, stock_quantity = $4, unit_of_measure = $5 WHERE id = $6 RETURNING *',
+      [name, description, price, stock_quantity, unit_of_measure || 'PCS', id]
     );
     return result.rows[0];
   }

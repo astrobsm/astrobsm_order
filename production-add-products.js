@@ -50,7 +50,7 @@ async function addAllProducts() {
           name: product.name,
           description: product.description,
           price: product.price,
-          unit: product.unit,
+          unit_of_measure: product.unit,
           stock_quantity: 100
         })
       });

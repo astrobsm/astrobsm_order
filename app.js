@@ -1221,11 +1221,16 @@ function printOrder() {
 // Load all orders function with enhanced debugging
 async function loadAllOrders() {
   console.log('🔄 Loading all orders for admin view...');
-  const ordersContainer = document.getElementById('ordersContainer');
+  const ordersList = document.getElementById('ordersList');
+  
+  if (!ordersList) {
+    console.error('❌ ordersList element not found in DOM');
+    return;
+  }
   
   try {
     console.log('📡 Fetching orders from:', `${API_BASE_URL}/orders`);
-    ordersContainer.innerHTML = '<p>Loading orders...</p>';
+    ordersList.innerHTML = '<p>Loading orders...</p>';
     
     const response = await fetch(`${API_BASE_URL}/orders`);
     console.log('📡 Orders response status:', response.status);
@@ -1244,7 +1249,7 @@ async function loadAllOrders() {
     }
     
     if (orders.length === 0) {
-      ordersContainer.innerHTML = `
+      ordersList.innerHTML = `
         <div class="alert alert-info">
           <h4>📋 No Orders Found</h4>
           <p>No orders have been submitted yet.</p>
@@ -1279,55 +1284,75 @@ async function loadAllOrders() {
       console.log('🛍️ Processing order:', order.id);
       
       // Fetch order items
-      const itemsResponse = await fetch(`${API_BASE_URL}/orders/${order.id}`);
-      const orderWithItems = await itemsResponse.json();
-      
-      ordersHtml += `
-        <div class="order-card">
-          <div class="order-header">
-            <span class="order-id">Order #${order.id}</span>
-            <span class="order-status status-${order.status || 'pending'}">${order.status || 'pending'}</span>
-            <span class="urgency-badge urgency-${order.request_status}">${urgencyNames[order.request_status] || order.request_status}</span>
+      try {
+        const itemsResponse = await fetch(`${API_BASE_URL}/orders/${order.id}`);
+        const orderWithItems = await itemsResponse.json();
+        
+        ordersHtml += `
+          <div class="order-card">
+            <div class="order-header">
+              <span class="order-id">Order #${order.id}</span>
+              <span class="order-status status-${order.status || 'pending'}">${order.status || 'pending'}</span>
+              <span class="urgency-badge urgency-${order.request_status}">${urgencyNames[order.request_status] || order.request_status}</span>
+            </div>
+            <div class="order-details">
+              <div><strong>Customer:</strong> ${order.customer_name || 'N/A'}</div>
+              <div><strong>Email:</strong> ${order.email || 'Not provided'}</div>
+              <div><strong>Phone:</strong> ${order.phone || 'N/A'}</div>
+              <div><strong>Hospital:</strong> ${order.hospital_name || 'N/A'}</div>
+              <div><strong>Subtotal:</strong> ₦${parseFloat(order.subtotal || 0).toFixed(2)}</div>
+              <div><strong>VAT (2.5%):</strong> ₦${parseFloat(order.vat_amount || 0).toFixed(2)}</div>
+              <div><strong>Total:</strong> ₦${parseFloat(order.total_amount || 0).toFixed(2)}</div>
+              <div><strong>Order Date:</strong> ${new Date(order.created_at).toLocaleDateString()}</div>
+              <div><strong>Delivery Date:</strong> ${order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : 'Not specified'}</div>
+              <div><strong>Delivery Method:</strong> ${deliveryMethodNames[order.preferred_delivery_method] || order.preferred_delivery_method || 'Not specified'}</div>
+              ${order.delivery_route ? `<div><strong>Delivery Instructions:</strong> ${order.delivery_route}</div>` : ''}
+              <div><strong>Address:</strong> ${order.address || 'N/A'}</div>
+            </div>
+            <div class="order-items">
+              <strong>Items:</strong>
+              <ul>
+                ${orderWithItems.items ? orderWithItems.items.map(item => 
+                  `<li>${item.product_name} - Qty: ${item.quantity} @ ₦${parseFloat(item.unit_price).toFixed(2)}</li>`
+                ).join('') : 'No items found'}
+              </ul>
+            </div>
           </div>
-          <div class="order-details">
-            <div><strong>Customer:</strong> ${order.customer_name || 'N/A'}</div>
-            <div><strong>Email:</strong> ${order.email || 'Not provided'}</div>
-            <div><strong>Phone:</strong> ${order.phone || 'N/A'}</div>
-            <div><strong>Hospital:</strong> ${order.hospital_name || 'N/A'}</div>
-            <div><strong>Subtotal:</strong> ₦${parseFloat(order.subtotal || 0).toFixed(2)}</div>
-            <div><strong>VAT (2.5%):</strong> ₦${parseFloat(order.vat_amount || 0).toFixed(2)}</div>
-            <div><strong>Total:</strong> ₦${parseFloat(order.total_amount || 0).toFixed(2)}</div>
-            <div><strong>Order Date:</strong> ${new Date(order.created_at).toLocaleDateString()}</div>
-            <div><strong>Delivery Date:</strong> ${order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : 'Not specified'}</div>
-            <div><strong>Delivery Method:</strong> ${deliveryMethodNames[order.preferred_delivery_method] || order.preferred_delivery_method || 'Not specified'}</div>
-            ${order.delivery_route ? `<div><strong>Delivery Instructions:</strong> ${order.delivery_route}</div>` : ''}
-            <div><strong>Address:</strong> ${order.address || 'N/A'}</div>
+        `;
+      } catch (itemError) {
+        console.error('❌ Error fetching items for order', order.id, ':', itemError);
+        ordersHtml += `
+          <div class="order-card">
+            <div class="order-header">
+              <span class="order-id">Order #${order.id}</span>
+              <span class="order-status status-error">Error Loading Items</span>
+            </div>
+            <div class="order-details">
+              <div><strong>Customer:</strong> ${order.customer_name || 'N/A'}</div>
+              <div><strong>Total:</strong> ₦${parseFloat(order.total_amount || 0).toFixed(2)}</div>
+              <div><strong>Order Date:</strong> ${new Date(order.created_at).toLocaleDateString()}</div>
+              <div class="error">❌ Could not load order items</div>
+            </div>
           </div>
-          <div class="order-items">
-            <strong>Items:</strong>
-            <ul>
-              ${orderWithItems.items ? orderWithItems.items.map(item => 
-                `<li>${item.product_name} - Qty: ${item.quantity} @ ₦${parseFloat(item.unit_price).toFixed(2)}</li>`
-              ).join('') : 'No items found'}
-            </ul>
-          </div>
-        </div>
-      `;
+        `;
+      }
     }
     
-    ordersContainer.innerHTML = ordersHtml;
+    ordersList.innerHTML = ordersHtml;
     console.log('✅ Orders loaded successfully');
     
   } catch (error) {
     console.error('❌ Error loading orders:', error);
-    ordersContainer.innerHTML = `
-      <div class="alert alert-danger">
-        <h4>❌ Error Loading Orders</h4>
-        <p>Failed to load orders: ${error.message}</p>
-        <p><small>Please check your internet connection and try again.</small></p>
-        <button onclick="loadAllOrders()" class="btn-retry">🔄 Retry</button>
-      </div>
-    `;
+    if (ordersList) {
+      ordersList.innerHTML = `
+        <div class="alert alert-danger">
+          <h4>❌ Error Loading Orders</h4>
+          <p>Failed to load orders: ${error.message}</p>
+          <p><small>Please check your internet connection and try again.</small></p>
+          <button onclick="loadAllOrders()" class="btn-retry">🔄 Retry</button>
+        </div>
+      `;
+    }
   }
 }
 
