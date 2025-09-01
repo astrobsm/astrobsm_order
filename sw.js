@@ -1,5 +1,5 @@
-const CACHE_NAME = 'astro-bsm-pwa-v5';
-const DATA_CACHE_NAME = 'astro-bsm-data-v5';
+const CACHE_NAME = 'astro-bsm-pwa-v9';
+const DATA_CACHE_NAME = 'astro-bsm-data-v9';
 const OFFLINE_QUEUE = 'astro-bsm-offline-queue';
 
 const urlsToCache = [
@@ -18,6 +18,14 @@ const API_CACHE_URLS = [
   '/api/products',
   '/api/health'
 ];
+
+// Handle skip waiting message
+self.addEventListener('message', event => {
+  if (event.data && event.data.action === 'skipWaiting') {
+    console.log('🚀 Skipping waiting and activating new service worker...');
+    self.skipWaiting();
+  }
+});
 
 self.addEventListener('install', event => {
   console.log('Service Worker installing...');

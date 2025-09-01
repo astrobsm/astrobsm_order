@@ -1,5 +1,38 @@
 console.log('🚀 App.js script loaded successfully!');
 
+// PWA Update Mechanism
+let refreshing = false;
+navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshing) return;
+    refreshing = true;
+    console.log('🔄 Service worker updated, reloading...');
+    window.location.reload();
+});
+
+// Check for PWA updates
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+        .then(registration => {
+            console.log('✅ Service Worker registered:', registration);
+            
+            // Check for updates
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                console.log('🆕 New service worker installing...');
+                
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        console.log('🔄 New version available, updating...');
+                        newWorker.postMessage({ action: 'skipWaiting' });
+                    }
+                });
+            });
+        })
+        .catch(error => {
+            console.error('❌ Service Worker registration failed:', error);
+        });
+}
+
 // API Configuration
 const API_BASE_URL = window.location.origin + '/api';
 
