@@ -108,25 +108,59 @@ async function loadProducts() {
       console.log('Raw API response:', productsFromAPI);
       console.log('API response length:', productsFromAPI.length);
       
-      // Convert API response to product objects if needed
-      productList = productsFromAPI.map(product => {
-        if (typeof product === 'string') {
-          // If it's just a string, we need to find the price
-          return { name: product, price: 0 }; // Fallback price
-        } else {
-          // If it's already an object with name and price
-          return {
-            id: product.id,
-            name: product.name,
-            description: product.description,
-            price: parseFloat(product.price) || 0
-          };
-        }
-      });
-      
-      console.log('Processed productList:', productList);
-      console.log('ProductList length:', productList.length);
+      // Check if API returned products
+      if (productsFromAPI && productsFromAPI.length > 0) {
+        // Convert API response to product objects if needed
+        productList = productsFromAPI.map(product => {
+          if (typeof product === 'string') {
+            // If it's just a string, we need to find the price
+            return { name: product, price: 0 }; // Fallback price
+          } else {
+            // If it's already an object with name and price
+            return {
+              id: product.id,
+              name: product.name,
+              description: product.description,
+              price: parseFloat(product.price) || 0
+            };
+          }
+        });
+        
+        console.log('Processed productList from API:', productList);
+        console.log('ProductList length:', productList.length);
+      } else {
+        console.log('API returned empty array, using fallback products...');
+        // Use fallback products when API returns empty array
+        productList = [
+          { name: "Wound-Care Honey Gauze Big (Carton)", price: 65000 },
+          { name: "Wound-Care Honey Gauze Big (Packet)", price: 6000 },
+          { name: "Wound-Care Honey Gauze Small (Carton)", price: 61250 },
+          { name: "Wound-Care Honey Gauze Small (Packet)", price: 3500 },
+          { name: "Hera Wound-Gel 100g (Carton)", price: 65000 },
+          { name: "Hera Wound-Gel 100g (Tube)", price: 3250 },
+          { name: "Hera Wound-Gel 40g (Carton)", price: 48000 },
+          { name: "Hera Wound-Gel 40g (Tube)", price: 2000 },
+          { name: "Coban Bandage 6 inch (Piece)", price: 4500 },
+          { name: "Coban Bandage 6 inch (Carton)", price: 48500 },
+          { name: "Coban Bandage 4 inch (Piece)", price: 3500 },
+          { name: "Coban Bandage 4 inch (Carton)", price: 37500 },
+          { name: "Silicone Scar Sheet (Packet)", price: 10000 },
+          { name: "Silicone Scar Sheet (Block)", price: 90000 },
+          { name: "Silicone Foot Pad (Pair)", price: 2000 },
+          { name: "Sterile Dressing Pack (Bag)", price: 10000 },
+          { name: "Sterile Dressing Pack (Piece)", price: 600 },
+          { name: "Sterile Gauze-Only Pack (Bag)", price: 10000 },
+          { name: "Sterile Gauze-Only Pack (Piece)", price: 600 },
+          { name: "Skin Staples (Piece)", price: 4000 },
+          { name: "NPWT (VAC) Foam (Piece)", price: 2000 },
+          { name: "Opsite (Piece)", price: 6000 },
+          { name: "Wound-Clex Solution 500ml (Carton)", price: 12500 },
+          { name: "Wound-Clex Solution 500ml (Bottle)", price: 2300 }
+        ];
+        console.log('Using fallback products:', productList.length, 'products loaded');
+      }
     } else {
+      console.log('API request failed, using fallback products...');
       // Fallback to comprehensive product list with prices
       productList = [
         { name: "Wound-Care Honey Gauze Big (Carton)", price: 65000 },
