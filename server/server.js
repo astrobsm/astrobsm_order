@@ -20,7 +20,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdnjs.cloudflare.com"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "blob:"],
       connectSrc: ["'self'", "https://cdnjs.cloudflare.com"],
@@ -86,6 +86,17 @@ app.get('/', (req, res) => {
 // Serve admin tools page
 app.get('/admin-tools', (req, res) => {
   res.sendFile(path.join(__dirname, '../admin-tools.html'));
+});
+
+// Serve diagnostics page
+app.get('/diagnostics', (req, res) => {
+  res.sendFile(path.join(__dirname, '../diagnostics.html'));
+});
+
+// Serve diagnostics script
+app.get('/production-diagnostics.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.sendFile(path.join(__dirname, '../production-diagnostics.js'));
 });
 
 // PWA routes - serve main app for all non-API routes (SPA behavior)

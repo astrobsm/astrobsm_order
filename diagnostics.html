@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Diagnostics - ASTROBSM Order Form</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .diagnostic-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        .diagnostic-section h2 {
+            color: #34495e;
+            margin-top: 0;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .test-pass {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .test-fail {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .test-critical {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 2px solid #dc3545;
+            font-weight: bold;
+        }
+        .run-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        .run-btn:hover {
+            background-color: #0056b3;
+        }
+        .clear-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .clear-btn:hover {
+            background-color: #545b62;
+        }
+        .loading {
+            color: #007bff;
+            font-style: italic;
+        }
+        .summary {
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+        .summary.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .summary.warning {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .summary.danger {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Production Diagnostics</h1>
+        <p style="text-align: center; color: #666;">
+            Comprehensive testing of the ASTROBSM Order Form PWA
+        </p>
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+            <button class="run-btn" onclick="runAllDiagnostics()">🚀 Run All Diagnostics</button>
+            <button class="clear-btn" onclick="clearResults()">🗑️ Clear Results</button>
+        </div>
+
+        <div id="results-container"></div>
+    </div>
+
+    <script>
+        let diagnosticResults = {
+            tests: [],
+            passed: 0,
+            failed: 0,
+            critical_issues: []
+        };
+
+        function logTest(name, status, details = '', critical = false) {
+            const result = { name, status, details, critical };
+            diagnosticResults.tests.push(result);
+            
+            if (status === 'PASS') diagnosticResults.passed++;
+            else diagnosticResults.failed++;
+            
+            if (critical && status === 'FAIL') {
+                diagnosticResults.critical_issues.push(name);
+            }
+            
+            displayTestResult(result);
+        }
+
+        function displayTestResult(result) {
+            const container = document.getElementById('results-container');
+            const testDiv = document.createElement('div');
+            
+            let className = 'test-result ';
+            if (result.status === 'PASS') {
+                className += 'test-pass';
+            } else if (result.critical) {
+                className += 'test-critical';
+            } else {
+                className += 'test-fail';
+            }
+            
+            testDiv.className = className;
+            
+            const emoji = result.status === 'PASS' ? '✅' : '❌';
+            const criticalFlag = result.critical && result.status === 'FAIL' ? ' 🚨 CRITICAL' : '';
+            
+            testDiv.innerHTML = `
+                <strong>${emoji} ${result.name}: ${result.status}${criticalFlag}</strong>
+                ${result.details ? `<br><span style="font-size: 14px;">${result.details}</span>` : ''}
+            `;
+            
+            container.appendChild(testDiv);
+        }
+
+        function clearResults() {
+            document.getElementById('results-container').innerHTML = '';
+            diagnosticResults = {
+                tests: [],
+                passed: 0,
+                failed: 0,
+                critical_issues: []
+            };
+        }
+
+        function showSummary() {
+            const container = document.getElementById('results-container');
+            const summaryDiv = document.createElement('div');
+            
+            const totalTests = diagnosticResults.passed + diagnosticResults.failed;
+            const passRate = totalTests > 0 ? Math.round((diagnosticResults.passed / totalTests) * 100) : 0;
+            
+            let summaryClass = 'summary ';
+            if (diagnosticResults.critical_issues.length > 0) {
+                summaryClass += 'danger';
+            } else if (diagnosticResults.failed > 0) {
+                summaryClass += 'warning';
+            } else {
+                summaryClass += 'success';
+            }
+            
+            summaryDiv.className = summaryClass;
+            summaryDiv.innerHTML = `
+                📊 DIAGNOSTICS SUMMARY<br>
+                Total Tests: ${totalTests} | Passed: ${diagnosticResults.passed} | Failed: ${diagnosticResults.failed}<br>
+                Pass Rate: ${passRate}%<br>
+                ${diagnosticResults.critical_issues.length > 0 ? `🚨 Critical Issues: ${diagnosticResults.critical_issues.length}` : '🎉 No Critical Issues'}
+            `;
+            
+            container.appendChild(summaryDiv);
+        }
+
+        async function runAllDiagnostics() {
+            clearResults();
+            
+            const container = document.getElementById('results-container');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'loading';
+            loadingDiv.innerHTML = '🔄 Running diagnostics...';
+            container.appendChild(loadingDiv);
+            
+            console.log('🔍 PRODUCTION DIAGNOSTICS STARTING...');
+            console.log('Site URL:', window.location.origin);
+            console.log('Current Time:', new Date().toISOString());
+            console.log('='.repeat(60));
+            
+            // Test 1: Basic API Health
+            try {
+                const healthResponse = await fetch('/api/health');
+                if (healthResponse.ok) {
+                    const health = await healthResponse.json();
+                    logTest('API Health Check', 'PASS', `Status: ${health.status}`);
+                } else {
+                    logTest('API Health Check', 'FAIL', `HTTP ${healthResponse.status}`, true);
+                }
+            } catch (error) {
+                logTest('API Health Check', 'FAIL', error.message, true);
+            }
+
+            // Test 2: Database Connection
+            try {
+                const dbResponse = await fetch('/api/database/status');
+                if (dbResponse.ok) {
+                    const dbStatus = await dbResponse.json();
+                    logTest('Database Connection', 'PASS', `Connected: ${dbStatus.connected}`);
+                } else {
+                    logTest('Database Connection', 'FAIL', `HTTP ${dbResponse.status}`, true);
+                }
+            } catch (error) {
+                logTest('Database Connection', 'FAIL', error.message, true);
+            }
+
+            // Test 3: Products API
+            try {
+                const productsResponse = await fetch('/api/products');
+                if (productsResponse.ok) {
+                    const products = await productsResponse.json();
+                    if (Array.isArray(products) && products.length > 0) {
+                        logTest('Products API', 'PASS', `${products.length} products loaded`);
+                        
+                        // Check product structure
+                        const firstProduct = products[0];
+                        const requiredFields = ['id', 'name', 'price'];
+                        const hasAllFields = requiredFields.every(field => firstProduct.hasOwnProperty(field));
+                        
+                        if (hasAllFields) {
+                            logTest('Product Data Structure', 'PASS', 'All required fields present');
+                        } else {
+                            logTest('Product Data Structure', 'FAIL', 'Missing required fields', true);
+                        }
+                    } else {
+                        logTest('Products API', 'FAIL', 'No products found', true);
+                    }
+                } else {
+                    logTest('Products API', 'FAIL', `HTTP ${productsResponse.status}`, true);
+                }
+            } catch (error) {
+                logTest('Products API', 'FAIL', error.message, true);
+            }
+
+            // Test 4: Admin Products API
+            try {
+                const adminProductsResponse = await fetch('/api/admin/products');
+                if (adminProductsResponse.ok) {
+                    const adminProducts = await adminProductsResponse.json();
+                    logTest('Admin Products API', 'PASS', `${adminProducts.length} admin products`);
+                } else {
+                    logTest('Admin Products API', 'FAIL', `HTTP ${adminProductsResponse.status}`);
+                }
+            } catch (error) {
+                logTest('Admin Products API', 'FAIL', error.message);
+            }
+
+            // Test 5: Orders API
+            try {
+                const ordersResponse = await fetch('/api/orders');
+                if (ordersResponse.ok) {
+                    const orders = await ordersResponse.json();
+                    logTest('Orders API', 'PASS', `${orders.length} orders found`);
+                } else {
+                    logTest('Orders API', 'FAIL', `HTTP ${ordersResponse.status}`);
+                }
+            } catch (error) {
+                logTest('Orders API', 'FAIL', error.message);
+            }
+
+            // Test 6: PWA Files
+            const pwaFiles = [
+                { path: '/manifest.json', name: 'PWA Manifest' },
+                { path: '/sw.js', name: 'Service Worker' },
+                { path: '/app.js', name: 'Main App JS' },
+                { path: '/style.css', name: 'Main Stylesheet' }
+            ];
+
+            for (const file of pwaFiles) {
+                try {
+                    const response = await fetch(file.path);
+                    if (response.ok) {
+                        logTest(file.name, 'PASS', `HTTP ${response.status}`);
+                    } else {
+                        logTest(file.name, 'FAIL', `HTTP ${response.status}`, file.path === '/app.js');
+                    }
+                } catch (error) {
+                    logTest(file.name, 'FAIL', error.message, file.path === '/app.js');
+                }
+            }
+
+            // Test 7: Local Storage
+            try {
+                localStorage.setItem('test', 'value');
+                const testValue = localStorage.getItem('test');
+                localStorage.removeItem('test');
+                
+                if (testValue === 'value') {
+                    logTest('Local Storage', 'PASS', 'Read/write working');
+                } else {
+                    logTest('Local Storage', 'FAIL', 'Read/write failed');
+                }
+            } catch (error) {
+                logTest('Local Storage', 'FAIL', error.message);
+            }
+
+            // Test 8: Service Worker Registration
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registration = await navigator.serviceWorker.getRegistration();
+                    if (registration) {
+                        logTest('Service Worker', 'PASS', 'Registered and active');
+                    } else {
+                        logTest('Service Worker', 'FAIL', 'Not registered');
+                    }
+                } catch (error) {
+                    logTest('Service Worker', 'FAIL', error.message);
+                }
+            } else {
+                logTest('Service Worker', 'FAIL', 'Not supported in this browser');
+            }
+
+            // Test 9: Network Status
+            const isOnline = navigator.onLine;
+            logTest('Network Status', isOnline ? 'PASS' : 'FAIL', `Online: ${isOnline}`);
+
+            // Test 10: DOM Elements
+            const criticalElements = [
+                '#productSelect',
+                '#quantityInput',
+                '#calculateBtn',
+                '#submitOrderBtn'
+            ];
+
+            for (const selector of criticalElements) {
+                const element = document.querySelector(selector);
+                if (element) {
+                    logTest(`DOM Element ${selector}`, 'PASS', 'Element found');
+                } else {
+                    logTest(`DOM Element ${selector}`, 'FAIL', 'Element missing', true);
+                }
+            }
+
+            // Remove loading message
+            container.removeChild(loadingDiv);
+            
+            // Show summary
+            showSummary();
+            
+            console.log('\n📊 DIAGNOSTICS COMPLETE');
+            console.log(`Total Tests: ${diagnosticResults.passed + diagnosticResults.failed}`);
+            console.log(`Passed: ${diagnosticResults.passed}`);
+            console.log(`Failed: ${diagnosticResults.failed}`);
+            console.log(`Critical Issues: ${diagnosticResults.critical_issues.length}`);
+        }
+
+        // Add a link back to main app
+        window.onload = function() {
+            const container = document.querySelector('.container');
+            const linkDiv = document.createElement('div');
+            linkDiv.style.textAlign = 'center';
+            linkDiv.style.marginTop = '30px';
+            linkDiv.innerHTML = '<a href="/" style="color: #007bff; text-decoration: none;">← Back to ASTROBSM Order Form</a>';
+            container.appendChild(linkDiv);
+        };
+    </script>
+</body>
+</html>
