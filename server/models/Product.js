@@ -24,38 +24,50 @@ class Product {
   static async create(productData) {
     const { name, description, price, stock_quantity, unit_of_measure } = productData;
     
-    // Check if unit_of_measure column exists in the table
-    const pool = require('../database/db');
+    console.log('🔧 Product.create called with:', productData);
+    
     try {
-      const columnCheck = await pool.query(`
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name = 'products' AND column_name = 'unit_of_measure'
-      `);
-      
-      if (columnCheck.rows.length > 0) {
-        // Column exists, include it in the query
-        const result = await pool.query(
-          'INSERT INTO products (name, description, price, stock_quantity, unit_of_measure) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-          [name, description, price, stock_quantity, unit_of_measure || 'PCS']
-        );
-        return result.rows[0];
-      } else {
-        // Column doesn't exist, use old query
-        const result = await pool.query(
-          'INSERT INTO products (name, description, price, stock_quantity) VALUES ($1, $2, $3, $4) RETURNING *',
-          [name, description, price, stock_quantity]
-        );
-        return result.rows[0];
-      }
-    } catch (error) {
-      // If column check fails, try old query as fallback
-      console.log('Falling back to old product schema');
+      // First, try the simplest possible query with just the core fields
+      console.log('📝 Attempting simple product creation...');
       const result = await pool.query(
         'INSERT INTO products (name, description, price, stock_quantity) VALUES ($1, $2, $3, $4) RETURNING *',
-        [name, description, price, stock_quantity]
+        [name, description || '', price, stock_quantity || 100]
       );
+      
+      console.log('✅ Simple product creation successful:', result.rows[0]);
       return result.rows[0];
+      
+    } catch (simpleError) {
+      console.log('❌ Simple creation failed, checking if unit_of_measure column exists...');
+      console.log('Simple error:', simpleError.message);
+      
+      try {
+        // Check if unit_of_measure column exists
+        const columnCheck = await pool.query(`
+          SELECT column_name 
+          FROM information_schema.columns 
+          WHERE table_name = 'products' AND column_name = 'unit_of_measure'
+        `);
+        
+        if (columnCheck.rows.length > 0) {
+          console.log('✅ unit_of_measure column exists, trying with it...');
+          // Column exists, include it in the query
+          const result = await pool.query(
+            'INSERT INTO products (name, description, price, stock_quantity, unit_of_measure) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [name, description || '', price, stock_quantity || 100, unit_of_measure || 'PCS']
+          );
+          console.log('✅ Product creation with unit_of_measure successful:', result.rows[0]);
+          return result.rows[0];
+        } else {
+          console.log('❌ unit_of_measure column does not exist');
+          // Re-throw the original simple error since that should have worked
+          throw simpleError;
+        }
+      } catch (columnCheckError) {
+        console.error('❌ Error checking columns or creating with unit_of_measure:', columnCheckError);
+        // If everything fails, throw the original error
+        throw simpleError;
+      }
     }
   }
 
