@@ -1,13 +1,13 @@
 // ASTRO-BSM Order Management System - Clean Version
 // Global variables
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = '/api'; // Use relative URL to avoid CSP issues
 let productList = [];
 let itemCount = 0;
 let orderTotal = { subtotal: 0, vat: 0, total: 0, items: [] };
 
 // DOM Elements
 const orderForm = document.getElementById('orderForm');
-const itemsContainer = document.getElementById('items');
+const itemsContainer = document.getElementById('itemsContainer'); // Fixed: correct element ID
 const addItemBtn = document.getElementById('addItemBtn');
 const adminBtn = document.getElementById('adminBtn');
 const adminModal = document.getElementById('adminModal');
@@ -17,13 +17,18 @@ document.addEventListener('DOMContentLoaded', async function() {
   console.log('🚀 Initializing ASTRO-BSM Order System...');
   
   try {
+    // Check if required DOM elements exist
+    if (!itemsContainer) {
+      throw new Error('Items container element not found');
+    }
+    
     await loadProducts();
     setupEventListeners();
     createItemRow(); // Create first item row
     console.log('✅ Application initialized successfully');
   } catch (error) {
     console.error('❌ Failed to initialize application:', error);
-    showNotification('Failed to load products. Please refresh the page.', 'error');
+    showNotification('Failed to initialize application. Please refresh the page.', 'error');
   }
 });
 
@@ -31,7 +36,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 async function loadProducts() {
   try {
     console.log('📦 Loading products from API...');
-    const response = await fetch(`${API_BASE_URL}/admin/products`);
+    const response = await fetch(`${API_BASE_URL}/admin/products`); // Correct endpoint
     
     if (response.ok) {
       productList = await response.json();
