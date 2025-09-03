@@ -334,6 +334,12 @@ function calculateOrderTotal() {
   console.log('Current productList:', productList);
   console.log('ProductList length:', productList ? productList.length : 'undefined');
   
+  // Ensure productList is available
+  if (!productList || !Array.isArray(productList) || productList.length === 0) {
+    console.log('❌ ProductList not available - cannot calculate');
+    return { subtotal: 0, vat: 0, total: 0, items: [] };
+  }
+  
   // Calculate subtotal from all items
   for (let i = 1; i <= itemCount; i++) {
     const productSelect = document.querySelector(`select[name="item${i}"]`);
@@ -353,7 +359,13 @@ function calculateOrderTotal() {
     if (productSelect && quantityInput && productSelect.value && quantityInput.value) {
       // Try to find the product by name
       const selectedProductName = productSelect.value.trim();
-      const product = productList.find(p => p.name && p.name.trim() === selectedProductName);
+      let product = productList.find(p => p.name && p.name.trim() === selectedProductName);
+      
+      // If exact match fails, try case-insensitive search
+      if (!product) {
+        product = productList.find(p => p.name && p.name.toLowerCase().trim() === selectedProductName.toLowerCase());
+      }
+      
       const quantity = parseInt(quantityInput.value) || 0;
       
       console.log(`Searching for product: "${selectedProductName}"`);
@@ -519,6 +531,56 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.manualCalculate = () => {
       console.log('🔧 Manual calculation triggered');
       calculateOrderTotal();
+    };
+
+    // Add comprehensive debugging function
+    window.debugCalculation = () => {
+      console.log('🔍 === COMPREHENSIVE CALCULATION DEBUG ===');
+      console.log('itemCount:', itemCount);
+      console.log('productList available:', !!productList);
+      console.log('productList length:', productList?.length);
+      
+      for (let i = 1; i <= itemCount; i++) {
+        const productSelect = document.querySelector(`select[name="item${i}"]`);
+        const quantityInput = document.querySelector(`input[name="quantity${i}"]`);
+        
+        console.log(`\n--- ITEM ${i} DEBUG ---`);
+        console.log('Select element exists:', !!productSelect);
+        console.log('Quantity element exists:', !!quantityInput);
+        
+        if (productSelect) {
+          console.log('Selected value:', productSelect.value);
+          console.log('Options count:', productSelect.options.length);
+        }
+        
+        if (quantityInput) {
+          console.log('Quantity value:', quantityInput.value);
+          console.log('Quantity type:', typeof quantityInput.value);
+        }
+        
+        if (productSelect?.value && quantityInput?.value) {
+          const selectedProduct = productList.find(p => p.name === productSelect.value.trim());
+          console.log('Found product:', selectedProduct);
+          if (selectedProduct) {
+            console.log('Product price:', selectedProduct.price);
+            console.log('Quantity:', quantityInput.value);
+            console.log('Calculated item total:', selectedProduct.price * parseInt(quantityInput.value));
+          }
+        }
+      }
+      
+      // Check display elements
+      console.log('\n--- DISPLAY ELEMENTS CHECK ---');
+      console.log('orderTotal element:', !!document.getElementById('orderTotal'));
+      console.log('subtotalAmount element:', !!document.getElementById('subtotalAmount'));
+      console.log('vatAmount element:', !!document.getElementById('vatAmount'));
+      console.log('totalAmount element:', !!document.getElementById('totalAmount'));
+      
+      // Current orderTotal object
+      console.log('\n--- CURRENT ORDER TOTAL OBJECT ---');
+      console.log('orderTotal:', orderTotal);
+      
+      console.log('🔍 === END DEBUG ===');
     };
 
     // Set up admin functionality
@@ -1737,22 +1799,36 @@ function updateNetworkStatus(online) {
   }
 }
 
-// Enhanced order submission with proper online/offline detection
+// Enhanced order submission with reliable online/offline detection
 async function submitOrderOfflineCapable(orderData) {
-  console.log('🚀 Submitting order...', orderData);
-  console.log('Network status:', isOnline ? 'Online' : 'Offline');
-  
-  // Check if we're offline first
-  if (!isOnline || !navigator.onLine) {
-    console.log('❌ User is offline, queuing order');
-    queueOfflineOrder(orderData);
-    showNotification('📱 You are offline. Order saved and will be submitted when connection is restored.', 'info');
-    return { success: true, offline: true };
-  }
+  console.log('🚀 Submitting order directly to server...', orderData);
   
   try {
-    console.log('📡 Attempting to submit order to server...');
-    console.log('API URL:', `${API_BASE_URL}/orders`);
+    const response = await fetch(`${API_BASE_URL}/orders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(orderData)
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log('✅ Order submitted successfully:', result);
+      showNotification('✅ Order submitted successfully!', 'success');
+      return { success: true, offline: false, data: result };
+    } else {
+      const errorText = await response.text();
+      console.error('❌ Server error:', response.status, errorText);
+      showNotification(`❌ Server error: ${errorText}`, 'error');
+      return { success: false, error: errorText };
+    }
+  } catch (error) {
+    console.error('❌ Submission error:', error);
+    showNotification(`❌ Failed to submit order: ${error.message}`, 'error');
+    return { success: false, error: error.message };
+  }
+}
     
     const response = await fetch(`${API_BASE_URL}/orders`, {
       method: 'POST',
