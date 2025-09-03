@@ -201,8 +201,8 @@ function updateOrderTotalDisplay() {
     totalElement.textContent = `₦${orderTotal.total.toFixed(2)}`;
     
     if (totalWordsElement) {
-      const totalWords = orderTotal.total > 0 ? numberToWords(orderTotal.total) : 'Zero';
-      totalWordsElement.textContent = `Amount in Words: ${totalWords} Naira Only`;
+      const totalWords = orderTotal.total > 0 ? numberToWords(orderTotal.total) : 'Zero Naira Only';
+      totalWordsElement.textContent = `Amount in Words: ${totalWords}`;
     }
   } else {
     totalDisplay.style.display = 'none';
@@ -243,11 +243,16 @@ async function handleFormSubmission(e) {
   e.preventDefault();
   console.log('📝 Handling form submission...');
   
+  // Get submit button and store original text
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  const originalText = submitBtn ? submitBtn.textContent : 'Submit Order';
+  
   try {
     // Show loading state
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-    submitBtn.textContent = 'Submitting...';
+    if (submitBtn) {
+      submitBtn.textContent = 'Submitting...';
+      submitBtn.disabled = true;
+    }
     submitBtn.disabled = true;
     
     // Prepare form data
@@ -574,7 +579,7 @@ function numberToWords(number) {
     return result.trim();
   }
   
-  const integerPart = Math.floor(number);
+  let integerPart = Math.floor(number);
   let result = '';
   let thousandIndex = 0;
   
@@ -588,7 +593,7 @@ function numberToWords(number) {
     thousandIndex++;
   }
   
-  return result.trim();
+  return result.trim() + ' Naira Only';
 }
 
 // Show notification
