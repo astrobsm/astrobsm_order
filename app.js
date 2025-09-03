@@ -843,8 +843,12 @@ orderForm.addEventListener('submit', async function(e) {
     });
     
     if (submissionResult.success) {
-      // Show success summary
-      displayOrderSummary(customerData, orderData, items, submissionResult.order || {});
+      // Force calculation and get current totals
+      const currentTotals = calculateOrderTotal();
+      console.log('🔢 Current form totals:', currentTotals);
+      
+      // Pass the calculated totals to the summary
+      displayOrderSummary(customerData, orderData, items, submissionResult.order || {}, currentTotals);
       
       // Reset form
       this.reset();
@@ -872,11 +876,12 @@ orderForm.addEventListener('submit', async function(e) {
 });
 
 // Display order summary
-function displayOrderSummary(customerData, orderData, items, order) {
+function displayOrderSummary(customerData, orderData, items, order, passedTotals) {
   console.log('🧾 === DISPLAY ORDER SUMMARY DEBUG ===');
   console.log('Customer:', customerData);
   console.log('Order data:', orderData);
   console.log('Items received:', items);
+  console.log('Passed totals:', passedTotals);
   console.log('ProductList available:', productList ? productList.length : 'No');
   
   // Calculate totals from items since order object may not have them
@@ -909,10 +914,28 @@ function displayOrderSummary(customerData, orderData, items, order) {
   console.log('VAT:', calculatedVat);
   console.log('Total:', calculatedTotal);
   
-  // Use calculated totals, fallback to order object if available
-  const finalSubtotal = calculatedSubtotal;
-  const finalVat = calculatedVat;
-  const finalTotal = calculatedTotal;
+  // Use passed totals if available, otherwise use calculated
+  let finalSubtotal = 0;
+  let finalVat = 0;
+  let finalTotal = 0;
+  
+  if (passedTotals && passedTotals.subtotal > 0) {
+    finalSubtotal = passedTotals.subtotal;
+    finalVat = passedTotals.vat;
+    finalTotal = passedTotals.total;
+    console.log('✅ Using passed totals:', passedTotals);
+  } else if (orderTotal && orderTotal.subtotal > 0) {
+    finalSubtotal = orderTotal.subtotal;
+    finalVat = orderTotal.vat;
+    finalTotal = orderTotal.total;
+    console.log('✅ Using global orderTotal:', orderTotal);
+  } else {
+    // Fallback to calculated values
+    finalSubtotal = calculatedSubtotal;
+    finalVat = calculatedVat;
+    finalTotal = calculatedTotal;
+    console.log('⚠️ Using calculated values as fallback');
+  }
   
   console.log('💯 Final amounts being used:');
   console.log('Final Subtotal:', finalSubtotal);
