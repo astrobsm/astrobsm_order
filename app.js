@@ -873,13 +873,25 @@ orderForm.addEventListener('submit', async function(e) {
 
 // Display order summary
 function displayOrderSummary(customerData, orderData, items, order) {
+  console.log('🧾 === DISPLAY ORDER SUMMARY DEBUG ===');
+  console.log('Customer:', customerData);
+  console.log('Order data:', orderData);
+  console.log('Items received:', items);
+  console.log('ProductList available:', productList ? productList.length : 'No');
+  
   // Calculate totals from items since order object may not have them
   let calculatedSubtotal = 0;
   const itemsWithTotals = items.map(item => {
+    console.log(`Processing item: ${item.product_name}, quantity: ${item.quantity}`);
+    
     const product = productList.find(p => p.name === item.product_name);
+    console.log('Found product:', product);
+    
     const unitPrice = product ? parseFloat(product.price) || 0 : 0;
     const itemTotal = unitPrice * item.quantity;
     calculatedSubtotal += itemTotal;
+    
+    console.log(`Item calculation: ${unitPrice} × ${item.quantity} = ${itemTotal}`);
     
     return {
       ...item,
@@ -901,6 +913,11 @@ function displayOrderSummary(customerData, orderData, items, order) {
   const finalSubtotal = calculatedSubtotal;
   const finalVat = calculatedVat;
   const finalTotal = calculatedTotal;
+  
+  console.log('💯 Final amounts being used:');
+  console.log('Final Subtotal:', finalSubtotal);
+  console.log('Final VAT:', finalVat);
+  console.log('Final Total:', finalTotal);
 
   const deliveryMethodNames = {
     'pickup_enugu': 'Pickup from Enugu Office',
