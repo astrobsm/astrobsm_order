@@ -20,10 +20,23 @@ class Order {
       
       // Create order items
       for (const item of items) {
-        const productResult = await client.query('SELECT * FROM products WHERE name = $1', [item.product_name]);
+        console.log('🔍 Looking for product:', item.product_name);
+        // Try exact match first, then case-insensitive match
+        let productResult = await client.query('SELECT * FROM products WHERE name = $1', [item.product_name]);
+        
+        if (productResult.rows.length === 0) {
+          console.log('⚠️ Exact match failed, trying case-insensitive...');
+          productResult = await client.query('SELECT * FROM products WHERE name ILIKE $1', [item.product_name]);
+        }
+        
+        console.log('📦 Found products:', productResult.rows.length);
         const product = productResult.rows[0];
         
         if (!product) {
+          console.error('❌ Product not found:', item.product_name);
+          // Try to find similar products for debugging
+          const similarResult = await client.query('SELECT name FROM products WHERE name ILIKE $1 LIMIT 5', [`%${item.product_name.split(' ')[0]}%`]);
+          console.log('🔄 Similar products:', similarResult.rows.map(p => p.name));
           throw new Error(`Product not found: ${item.product_name}`);
         }
         
