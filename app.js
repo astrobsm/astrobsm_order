@@ -40,7 +40,8 @@ async function loadProducts() {
     
     if (response.ok) {
       productList = await response.json();
-      console.log(`✅ Loaded ${productList.length} products`);
+      console.log(`✅ Loaded ${productList.length} products from API`);
+      console.log('🔍 First 3 products:', productList.slice(0, 3).map(p => `${p.name} - ₦${p.price}`));
     } else {
       console.warn('⚠️ Failed to load products from API, using fallback');
       loadFallbackProducts();
