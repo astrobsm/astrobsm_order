@@ -45,6 +45,27 @@ router.get('/health', async (req, res) => {
   }
 });
 
+// Database status endpoint (alias for health check)
+router.get('/status', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    res.json({ 
+      status: 'connected', 
+      timestamp: result.rows[0].now,
+      database: 'postgresql',
+      environment: process.env.NODE_ENV || 'development'
+    });
+  } catch (error) {
+    console.error('Database status check failed:', error);
+    res.status(500).json({ 
+      status: 'disconnected', 
+      error: error.message,
+      database: 'postgresql',
+      environment: process.env.NODE_ENV || 'development'
+    });
+  }
+});
+
 // Initialize database tables if they don't exist (GET version for easy access)
 router.get('/init', async (req, res) => {
   try {

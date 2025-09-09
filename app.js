@@ -16,6 +16,16 @@ const adminModal = document.getElementById('adminModal');
 document.addEventListener('DOMContentLoaded', async function() {
   console.log('🚀 Initializing ASTRO-BSM Order System...');
   
+  // Register service worker for PWA functionality
+  if ('serviceWorker' in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      console.log('✅ Service Worker registered successfully:', registration.scope);
+    } catch (error) {
+      console.warn('⚠️ Service Worker registration failed:', error);
+    }
+  }
+  
   try {
     // Check if required DOM elements exist
     if (!itemsContainer) {

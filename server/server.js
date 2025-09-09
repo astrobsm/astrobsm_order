@@ -89,6 +89,11 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// Favicon endpoint
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end();
+});
+
 // Serve the main app
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../index.html'));

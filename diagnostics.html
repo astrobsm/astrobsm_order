@@ -359,10 +359,10 @@
 
             // Test 10: DOM Elements
             const criticalElements = [
-                '#productSelect',
-                '#quantityInput',
-                '#calculateBtn',
-                '#submitOrderBtn'
+                '#itemsContainer',
+                '#addItemBtn', 
+                '#orderForm',
+                'input[type="submit"], button[type="submit"]'
             ];
 
             for (const selector of criticalElements) {
@@ -373,6 +373,23 @@
                     logTest(`DOM Element ${selector}`, 'FAIL', 'Element missing', true);
                 }
             }
+
+            // Test dynamic form elements (created by app.js)
+            setTimeout(() => {
+                const dynamicElements = [
+                    'select[name^="item"]',
+                    'input[name^="quantity"]'
+                ];
+                
+                for (const selector of dynamicElements) {
+                    const element = document.querySelector(selector);
+                    if (element) {
+                        logTest(`Dynamic Element ${selector}`, 'PASS', 'Dynamic element created');
+                    } else {
+                        logTest(`Dynamic Element ${selector}`, 'FAIL', 'Dynamic element missing', true);
+                    }
+                }
+            }, 2000); // Wait for app.js to create dynamic elements
 
             // Remove loading message
             container.removeChild(loadingDiv);
