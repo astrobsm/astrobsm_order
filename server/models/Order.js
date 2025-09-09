@@ -127,7 +127,7 @@ class Order {
 
   static async getAll() {
     const result = await pool.query(`
-      SELECT o.*, c.name as customer_name, c.email, c.phone, c.address, c.hospital_name
+      SELECT o.*, c.name as customer_name, c.email, c.phone, c.delivery_address as customer_delivery_address
       FROM orders o 
       JOIN customers c ON o.customer_id = c.id 
       ORDER BY o.created_at DESC
