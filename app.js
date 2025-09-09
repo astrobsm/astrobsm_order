@@ -61,11 +61,30 @@ async function loadProducts() {
 // Fallback products if API fails
 function loadFallbackProducts() {
   productList = [
-    { name: 'Silicone foot pad (pair)', price: 2000 },
-    { name: 'Compression stockings', price: 3500 },
-    { name: 'Diabetic socks', price: 1500 },
-    { name: 'Orthopedic insoles', price: 2800 },
-    { name: 'Knee support brace', price: 4200 }
+    { name: "Wound-Care Honey Gauze Big (Carton)", price: 65000 },
+    { name: "Wound-Care Honey Gauze Big (Packet)", price: 6000 },
+    { name: "Wound-Care Honey Gauze Small (Carton)", price: 61250 },
+    { name: "Wound-Care Honey Gauze Small (Packet)", price: 3500 },
+    { name: "Hera Wound-Gel 100g (Carton)", price: 65000 },
+    { name: "Hera Wound-Gel 100g (Tube)", price: 3250 },
+    { name: "Hera Wound-Gel 40g (Carton)", price: 48000 },
+    { name: "Hera Wound-Gel 40g (Tube)", price: 2000 },
+    { name: "Coban Bandage 6 inch (Piece)", price: 4500 },
+    { name: "Coban Bandage 6 inch (Carton)", price: 48500 },
+    { name: "Coban Bandage 4 inch (Piece)", price: 3500 },
+    { name: "Coban Bandage 4 inch (Carton)", price: 37500 },
+    { name: "Silicone Scar Sheet (Packet)", price: 10000 },
+    { name: "Silicone Scar Sheet (Block)", price: 90000 },
+    { name: "Silicone Foot Pad (Pair)", price: 2000 },
+    { name: "Sterile Dressing Pack (Bag)", price: 10000 },
+    { name: "Sterile Dressing Pack (Piece)", price: 600 },
+    { name: "Sterile Gauze-Only Pack (Bag)", price: 10000 },
+    { name: "Sterile Gauze-Only Pack (Piece)", price: 600 },
+    { name: "Skin Staples (Piece)", price: 4000 },
+    { name: "NPWT (VAC) Foam (Piece)", price: 2000 },
+    { name: "Opsite (Piece)", price: 6000 },
+    { name: "Wound-Clex Solution 500ml (Carton)", price: 12500 },
+    { name: "Wound-Clex Solution 500ml (Bottle)", price: 2300 }
   ];
   console.log('✅ Loaded fallback products');
 }
