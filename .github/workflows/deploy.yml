@@ -1,0 +1,98 @@
+name: Production Deployment
+
+on:
+  push:
+    branches: [ production-ready ]
+  workflow_dispatch:
+    inputs:
+      force_migrate:
+        description: 'Force run migrations even if they were previously applied'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/production-ready'
+    
+    steps:
+    - name: 🚀 Deploy to Production Server
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.PRODUCTION_HOST }}
+        username: ${{ secrets.PRODUCTION_USERNAME }}
+        key: ${{ secrets.PRODUCTION_SSH_KEY }}
+        port: ${{ secrets.PRODUCTION_PORT || 22 }}
+        script: |
+          echo "🚀 Starting Production Deployment"
+          echo "=================================="
+          
+          # Navigate to application directory
+          cd ${{ secrets.PRODUCTION_APP_DIR || '/var/www/astrobsm_order' }}
+          
+          # Set environment variables
+          export NODE_ENV=production
+          export DATABASE_URL="${{ secrets.DATABASE_URL }}"
+          
+          # Pull latest changes
+          echo "📥 Pulling latest changes..."
+          git fetch origin
+          git reset --hard origin/production-ready
+          
+          # Install dependencies
+          echo "📦 Installing dependencies..."
+          npm ci --production
+          
+          # Run database migrations
+          echo "🗃️  Running database migrations..."
+          node deploy-migration.js
+          
+          # Restart the application
+          echo "🔄 Restarting application..."
+          pm2 restart astrobsm-order || systemctl restart astrobsm-order || echo "Manual restart required"
+          
+          # Health check
+          echo "🏥 Running health check..."
+          sleep 10
+          
+          # Check if app is responding
+          if curl -f http://localhost:3000/api/health > /dev/null 2>&1; then
+            echo "✅ Application is healthy"
+          elif nc -z localhost 3000; then
+            echo "✅ Application is running on port 3000"
+          else
+            echo "❌ Application health check failed"
+            exit 1
+          fi
+          
+          echo "🎉 Deployment completed successfully!"
+
+  notify:
+    name: Notify Deployment Status
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: always()
+    
+    steps:
+    - name: 📧 Notify Success
+      if: needs.deploy.result == 'success'
+      run: |
+        echo "✅ Production deployment successful!"
+        echo "Time: $(date)"
+        echo "Commit: ${{ github.sha }}"
+        
+    - name: 📧 Notify Failure
+      if: needs.deploy.result == 'failure'
+      run: |
+        echo "❌ Production deployment failed!"
+        echo "Time: $(date)"
+        echo "Commit: ${{ github.sha }}"
+        echo "Check the deployment logs for details."

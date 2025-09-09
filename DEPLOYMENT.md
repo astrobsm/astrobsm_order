@@ -1,8 +1,254 @@
-# Digital Ocean Deployment Guide for ASTRO-BSM Order Application
+# Deployment Guide
 
-## Prerequisites
+This guide explains how to deploy the ASTRO-BSM Order Application with automatic database migrations.
 
-1. **Digital Ocean Droplet** (Ubuntu 20.04 LTS or later)
+## Deployment Scripts
+
+### 1. Automatic Migration Script (`deploy-migration.js`)
+
+This Node.js script automatically handles database migrations during deployment:
+
+- ✅ Checks database connection
+- ✅ Verifies required tables exist
+- ✅ Tracks which migrations have been applied
+- ✅ Runs only new migrations
+- ✅ Provides detailed logging
+- ✅ Handles errors gracefully
+
+**Usage:**
+```bash
+# Run migrations manually
+node deploy-migration.js
+
+# Run via npm script
+npm run deploy
+```
+
+### 2. Full Deployment Scripts
+
+#### Linux/Unix (`deploy.sh`)
+Complete deployment script for Linux servers:
+```bash
+# Make executable
+chmod +x deploy.sh
+
+# Run deployment
+./deploy.sh
+```
+
+#### Windows (`deploy.ps1`)
+Complete deployment script for Windows servers:
+```powershell
+# Run deployment
+powershell -ExecutionPolicy Bypass -File deploy.ps1
+```
+
+#### NPM Scripts
+```bash
+# Linux deployment
+npm run deploy:linux
+
+# Windows deployment
+npm run deploy:windows
+
+# Just migrations
+npm run deploy
+```
+
+## GitHub Actions Automatic Deployment
+
+### Setup Requirements
+
+1. **Repository Secrets** (in GitHub repository settings):
+   ```
+   PRODUCTION_HOST=your-server-ip
+   PRODUCTION_USERNAME=your-ssh-username
+   PRODUCTION_SSH_KEY=your-private-ssh-key
+   PRODUCTION_PORT=22 (optional, defaults to 22)
+   PRODUCTION_APP_DIR=/var/www/astrobsm_order (optional)
+   DATABASE_URL=postgresql://user:pass@host:port/dbname
+   ```
+
+2. **Server Setup:**
+   - Git repository cloned to production directory
+   - Node.js and npm installed
+   - PM2 or systemd service configured
+   - Database accessible with provided credentials
+
+### Automatic Trigger
+
+The deployment runs automatically when:
+- Code is pushed to `production-ready` branch
+- Can also be triggered manually from GitHub Actions tab
+
+### Deployment Process
+
+1. **Code Update:** Pulls latest changes from `production-ready` branch
+2. **Dependencies:** Installs/updates npm packages
+3. **Database Migration:** Runs automatic migration script
+4. **Service Restart:** Restarts the application service
+5. **Health Check:** Verifies application is responding
+6. **Notification:** Reports success/failure status
+
+## Manual Deployment Steps
+
+### 1. Server Preparation
+```bash
+# Clone repository
+git clone https://github.com/astrobsm/astrobsm_order.git /var/www/astrobsm_order
+cd /var/www/astrobsm_order
+
+# Switch to production branch
+git checkout production-ready
+
+# Install dependencies
+npm ci --production
+```
+
+### 2. Environment Configuration
+```bash
+# Set environment variables
+export NODE_ENV=production
+export DATABASE_URL="postgresql://user:pass@host:port/dbname"
+```
+
+### 3. Database Migration
+```bash
+# Run automatic migration
+node deploy-migration.js
+```
+
+### 4. Service Management
+
+#### PM2 (Recommended)
+```bash
+# Install PM2 globally
+npm install -g pm2
+
+# Start application
+pm2 start server/server.js --name astrobsm-order
+
+# Save PM2 configuration
+pm2 save
+pm2 startup
+```
+
+#### Systemd Service
+Create `/etc/systemd/system/astrobsm-order.service`:
+```ini
+[Unit]
+Description=ASTRO-BSM Order Application
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/astrobsm_order
+ExecStart=/usr/bin/node server/server.js
+Restart=always
+RestartSec=10
+Environment=NODE_ENV=production
+Environment=DATABASE_URL=postgresql://user:pass@host:port/dbname
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start:
+```bash
+sudo systemctl enable astrobsm-order
+sudo systemctl start astrobsm-order
+```
+
+## Database Migration Details
+
+### Migration Tracking
+
+The system uses a `migrations` table to track applied migrations:
+- Prevents duplicate migrations
+- Records execution timestamp
+- Allows safe re-runs
+
+### Included Migrations
+
+1. **add_email_to_customers:** Adds email column to customers table
+2. **add_delivery_address_to_orders:** Adds delivery_address column to orders table
+3. **create_indexes:** Creates performance indexes
+
+### Adding New Migrations
+
+Edit `deploy-migration.js` and add to the `MIGRATIONS` array:
+```javascript
+{
+  name: 'your_migration_name',
+  description: 'Description of what it does',
+  sql: `YOUR SQL COMMANDS HERE;`
+}
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Database Connection Failed**
+   - Check DATABASE_URL environment variable
+   - Verify database server is running
+   - Check network connectivity
+
+2. **Migration Failed**
+   - Check database permissions
+   - Review migration SQL syntax
+   - Check for conflicting table structures
+
+3. **Service Won't Start**
+   - Check port 3000 availability
+   - Review application logs
+   - Verify all dependencies installed
+
+### Checking Status
+
+```bash
+# Check application status
+curl http://localhost:3000/api/health
+
+# Check database connection
+node -e "
+const pool = require('./server/database/db');
+pool.query('SELECT NOW()').then(r => 
+  console.log('✅ DB OK:', r.rows[0].now)
+).catch(e => 
+  console.error('❌ DB Error:', e.message)
+);
+"
+
+# View PM2 logs
+pm2 logs astrobsm-order
+
+# View systemd logs
+sudo journalctl -u astrobsm-order -f
+```
+
+## Rollback Procedure
+
+If deployment fails:
+1. **Automatic:** Scripts create backups and can restore automatically
+2. **Manual:** 
+   ```bash
+   git reset --hard previous-commit-hash
+   npm ci --production
+   pm2 restart astrobsm-order
+   ```
+
+## Security Notes
+
+- Always use environment variables for sensitive data
+- Keep SSH keys secure and rotate regularly
+- Use SSL/TLS for database connections in production
+- Regularly update dependencies and Node.js version
+
+---
+
+# Original Digital Ocean Deployment Guide
 2. **Domain name** (optional, but recommended)
 3. **SSL Certificate** (Let's Encrypt recommended)
 
