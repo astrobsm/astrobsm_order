@@ -67,36 +67,51 @@ const createTables = async () => {
 };
 
 const insertDefaultProducts = async () => {
+  // Updated product list - perfectly synchronized with frontend dropdown
   const products = [
-    { name: 'Wound-Care Honey Gauze Big (CTN)', price: 150.00 },
-    { name: 'Wound-Care Honey Gauze Big (Packets)', price: 25.00 },
-    { name: 'Wound-Care Honey Gauze Small (CTN)', price: 120.00 },
-    { name: 'Wound-Care Honey Gauze Small (Packets)', price: 20.00 },
-    { name: 'Hera Wound-Gel 100g (CTN)', price: 200.00 },
-    { name: 'Hera Wound-Gel 100g (Tubes)', price: 35.00 },
-    { name: 'Hera Wound-Gel 40g (CTN)', price: 160.00 },
-    { name: 'Hera Wound-Gel 40g (Tubes)', price: 28.00 },
-    { name: 'Coban Bandage 6inc (PCS)', price: 15.00 },
-    { name: 'Coban Bandage 4inc (PCS)', price: 12.00 },
-    { name: 'Silicone Scar Sheet (Packet)', price: 45.00 },
-    { name: 'Opsite (PCS)', price: 18.00 },
-    { name: 'Wound-Clex Solution 500ml (CTN)', price: 180.00 },
-    { name: 'Wound-Clex Solution 500ml (Bottles)', price: 30.00 },
-    { name: 'Sterile Dressing Packs (PCS)', price: 22.00 }
+    { name: "Wound-Care Honey Gauze Big (Carton)", price: 65000, description: "Medical supply: Wound-Care Honey Gauze Big (Carton)" },
+    { name: "Wound-Care Honey Gauze Big (Packet)", price: 6000, description: "Medical supply: Wound-Care Honey Gauze Big (Packet)" },
+    { name: "Wound-Care Honey Gauze Small (Carton)", price: 61250, description: "Medical supply: Wound-Care Honey Gauze Small (Carton)" },
+    { name: "Wound-Care Honey Gauze Small (Packet)", price: 3500, description: "Medical supply: Wound-Care Honey Gauze Small (Packet)" },
+    { name: "Hera Wound-Gel 100g (Carton)", price: 65000, description: "Medical supply: Hera Wound-Gel 100g (Carton)" },
+    { name: "Hera Wound-Gel 100g (Tube)", price: 3250, description: "Medical supply: Hera Wound-Gel 100g (Tube)" },
+    { name: "Hera Wound-Gel 40g (Carton)", price: 48000, description: "Medical supply: Hera Wound-Gel 40g (Carton)" },
+    { name: "Hera Wound-Gel 40g (Tube)", price: 2000, description: "Medical supply: Hera Wound-Gel 40g (Tube)" },
+    { name: "Coban Bandage 6 inch (Piece)", price: 4500, description: "Medical supply: Coban Bandage 6 inch (Piece)" },
+    { name: "Coban Bandage 6 inch (Carton)", price: 48500, description: "Medical supply: Coban Bandage 6 inch (Carton)" },
+    { name: "Coban Bandage 4 inch (Piece)", price: 3500, description: "Medical supply: Coban Bandage 4 inch (Piece)" },
+    { name: "Coban Bandage 4 inch (Carton)", price: 37500, description: "Medical supply: Coban Bandage 4 inch (Carton)" },
+    { name: "Silicone Scar Sheet (Packet)", price: 10000, description: "Medical supply: Silicone Scar Sheet (Packet)" },
+    { name: "Silicone Scar Sheet (Block)", price: 90000, description: "Medical supply: Silicone Scar Sheet (Block)" },
+    { name: "Silicone Foot Pad (Pair)", price: 2000, description: "Medical supply: Silicone Foot Pad (Pair)" },
+    { name: "Sterile Dressing Pack (Bag)", price: 10000, description: "Medical supply: Sterile Dressing Pack (Bag)" },
+    { name: "Sterile Dressing Pack (Piece)", price: 600, description: "Medical supply: Sterile Dressing Pack (Piece)" },
+    { name: "Sterile Gauze-Only Pack (Bag)", price: 10000, description: "Medical supply: Sterile Gauze-Only Pack (Bag)" },
+    { name: "Sterile Gauze-Only Pack (Piece)", price: 600, description: "Medical supply: Sterile Gauze-Only Pack (Piece)" },
+    { name: "Skin Staples (Piece)", price: 4000, description: "Medical supply: Skin Staples (Piece)" },
+    { name: "NPWT (VAC) Foam (Piece)", price: 2000, description: "Medical supply: NPWT (VAC) Foam (Piece)" },
+    { name: "Opsite (Piece)", price: 6000, description: "Medical supply: Opsite (Piece)" },
+    { name: "Wound-Clex Solution 500ml (Carton)", price: 12500, description: "Medical supply: Wound-Clex Solution 500ml (Carton)" },
+    { name: "Wound-Clex Solution 500ml (Bottle)", price: 2300, description: "Medical supply: Wound-Clex Solution 500ml (Bottle)" }
   ];
 
   for (const product of products) {
     try {
+      // Extract unit of measure from product name
+      const unitMatch = product.name.match(/\(([^)]+)\)$/);
+      const unitOfMeasure = unitMatch ? unitMatch[1] : 'PCS';
+      
       await pool.query(
-        'INSERT INTO products (name, price, stock_quantity) VALUES ($1, $2, $3) ON CONFLICT (name) DO NOTHING',
-        [product.name, product.price, 100]
+        'INSERT INTO products (name, price, description, unit_of_measure, stock_quantity, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) ON CONFLICT (name) DO UPDATE SET price = $2, description = $3, unit_of_measure = $4, created_at = NOW()',
+        [product.name, product.price, product.description, unitOfMeasure, 100]
       );
+      console.log(`✅ Product: "${product.name}" - ₦${product.price}`);
     } catch (error) {
       console.error('Error inserting product:', product.name, error);
     }
   }
   
-  console.log('Default products inserted');
+  console.log('Default products inserted successfully');
 };
 
 // Run setup if called directly
