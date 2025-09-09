@@ -152,7 +152,9 @@ function removeItem(itemId) {
   }
 }
 
-// Calculate order total
+// ============================
+// Calculate numeric order total
+// ============================
 function calculateOrderTotal() {
   console.log('🧮 Calculating order total...');
   let subtotal = 0;
@@ -189,23 +191,20 @@ function calculateOrderTotal() {
   const vat = subtotal * 0.025;
   const total = subtotal + vat;
   
-  // Update global order total
+  // Update global order total object for display
   orderTotal = { subtotal, vat, total, items };
   
-  console.log('💰 Order Total:', {
-    subtotal: `₦${subtotal.toFixed(2)}`,
-    vat: `₦${vat.toFixed(2)}`,
-    total: `₦${total.toFixed(2)}`,
-    itemCount: items.length
-  });
+  console.log('💰 Calculated Total (number):', total);
   
   // Update display
   updateOrderTotalDisplay();
   
-  return orderTotal;
+  return total; // ✅ Return pure number, not object
 }
 
-// Update order total display
+// =====================================
+// Update order total display on frontend
+// =====================================
 function updateOrderTotalDisplay() {
   const totalDisplay = document.getElementById('orderTotal');
   const subtotalElement = document.getElementById('subtotalAmount');
@@ -218,7 +217,7 @@ function updateOrderTotalDisplay() {
     return;
   }
   
-  console.log('📊 Updating order total display:', orderTotal);
+  console.log('📊 Updated order total display:', orderTotal.total);
   
   if (orderTotal.items && orderTotal.items.length > 0) {
     totalDisplay.style.display = 'block';
@@ -319,14 +318,24 @@ async function handleFormSubmission(e) {
     }
     
     // Force calculation to ensure we have current totals
-    const currentTotals = calculateOrderTotal();
+    const currentTotal = calculateOrderTotal(); // ✅ Now returns pure number
+    
+    // Prepare complete order payload
+    const orderPayload = {
+      customerData,
+      orderData,
+      items,
+      total: currentTotal // ✅ Include numeric total
+    };
+    
+    console.log('🚀 Submitting payload:', JSON.stringify(orderPayload, null, 2));
     
     // Submit order
-    const result = await submitOrder({ customerData, orderData, items });
+    const result = await submitOrder(orderPayload);
     
     if (result.success) {
-      // Show order summary
-      displayOrderSummary(customerData, orderData, items, currentTotals);
+      // Show order summary (pass the orderTotal object for display)
+      displayOrderSummary(customerData, orderData, items, orderTotal);
       
       // Reset form
       e.target.reset();

@@ -6,7 +6,28 @@ const router = express.Router();
 // Create new order
 router.post('/', async (req, res) => {
   try {
-    const { customerData, orderData, items } = req.body;
+    console.log('📥 Received order submission:', JSON.stringify(req.body, null, 2));
+    
+    const { customerData, orderData, items, total } = req.body;
+    
+    // Validate required data
+    if (!customerData || !orderData || !items || !Array.isArray(items)) {
+      console.error('❌ Invalid request data structure');
+      return res.status(400).json({ 
+        error: 'Invalid request data', 
+        details: 'Missing customerData, orderData, or items array' 
+      });
+    }
+    
+    if (items.length === 0) {
+      console.error('❌ No items in order');
+      return res.status(400).json({ 
+        error: 'Invalid request data', 
+        details: 'No items in order' 
+      });
+    }
+    
+    console.log('👤 Processing customer...');
     
     // Check if customer exists or create new one
     let customer = null;
@@ -16,7 +37,12 @@ router.post('/', async (req, res) => {
     
     if (!customer) {
       customer = await Customer.create(customerData);
+      console.log('✅ Created new customer:', customer.id);
+    } else {
+      console.log('✅ Found existing customer:', customer.id);
     }
+    
+    console.log('📝 Creating order with items:', items.length);
     
     // Create order
     const order = await Order.create({
@@ -28,6 +54,8 @@ router.post('/', async (req, res) => {
       items: items
     });
     
+    console.log('✅ Order created successfully:', order.id);
+    
     res.status(201).json({
       message: 'Order created successfully',
       order: order,
@@ -35,8 +63,15 @@ router.post('/', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Error creating order:', error);
-    res.status(500).json({ error: 'Failed to create order' });
+    console.error('❌ Error creating order:', error.message);
+    console.error('📋 Error stack:', error.stack);
+    
+    // Return more detailed error information
+    res.status(500).json({ 
+      error: 'Failed to create order',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 

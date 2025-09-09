@@ -15,6 +15,16 @@ const databaseTestRoutes = require('./routes/database-test');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Add error handling for uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  console.error('📋 Stack:', error.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 // Middleware
 app.use(helmet({
   contentSecurityPolicy: {
