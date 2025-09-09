@@ -41,7 +41,13 @@ async function loadProducts() {
     if (response.ok) {
       productList = await response.json();
       console.log(`✅ Loaded ${productList.length} products from API`);
-      console.log('🔍 First 3 products:', productList.slice(0, 3).map(p => `${p.name} - ₦${p.price}`));
+      console.log('🔍 First 3 products:', productList.slice(0, 3).map(p => `"${p.name}" - ₦${p.price}`));
+      
+      // Look for Opsite and GAUZE products specifically
+      const opsiteProducts = productList.filter(p => p.name.toLowerCase().includes('opsite'));
+      const gauzeProducts = productList.filter(p => p.name.toLowerCase().includes('gauze'));
+      console.log('🔍 Opsite products:', opsiteProducts.map(p => `"${p.name}"`));
+      console.log('🔍 GAUZE products:', gauzeProducts.map(p => `"${p.name}"`));
     } else {
       console.warn('⚠️ Failed to load products from API, using fallback');
       loadFallbackProducts();

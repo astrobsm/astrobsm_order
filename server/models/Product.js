@@ -6,6 +6,15 @@ class Product {
       console.log('🔍 Product.getAll() called');
       const result = await pool.query('SELECT * FROM products ORDER BY name');
       console.log(`✅ Product.getAll() found ${result.rows.length} products`);
+      
+      // Log first few products for debugging
+      if (result.rows.length > 0) {
+        console.log('📋 First 5 products:');
+        result.rows.slice(0, 5).forEach((product, index) => {
+          console.log(`  ${index + 1}. "${product.name}" - ₦${product.price}`);
+        });
+      }
+      
       return result.rows;
     } catch (error) {
       console.error('❌ Product.getAll() error:', error);
@@ -18,6 +27,15 @@ class Product {
       console.log('🔍 Product.findAll() called');
       const result = await pool.query('SELECT * FROM products ORDER BY name');
       console.log(`✅ Product.findAll() found ${result.rows.length} products`);
+      
+      // Log first few products for debugging
+      if (result.rows.length > 0) {
+        console.log('📋 First 5 products (findAll):');
+        result.rows.slice(0, 5).forEach((product, index) => {
+          console.log(`  ${index + 1}. "${product.name}" - ₦${product.price}`);
+        });
+      }
+      
       return result.rows;
     } catch (error) {
       console.error('❌ Product.findAll() error:', error);

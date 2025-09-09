@@ -20,24 +20,43 @@ class Order {
       
       // Create order items
       for (const item of items) {
-        console.log('🔍 Looking for product:', item.product_name);
-        // Try exact match first, then case-insensitive match
-        let productResult = await client.query('SELECT * FROM products WHERE name = $1', [item.product_name]);
+        const searchName = item.product_name.trim();
+        console.log('🔍 Looking for product:', `"${searchName}"`);
+        
+        // Try exact match first
+        let productResult = await client.query('SELECT * FROM products WHERE name = $1', [searchName]);
         
         if (productResult.rows.length === 0) {
           console.log('⚠️ Exact match failed, trying case-insensitive...');
-          productResult = await client.query('SELECT * FROM products WHERE name ILIKE $1', [item.product_name]);
+          productResult = await client.query('SELECT * FROM products WHERE name ILIKE $1', [searchName]);
+        }
+        
+        // If still no match, try partial matches
+        if (productResult.rows.length === 0) {
+          console.log('⚠️ Case-insensitive failed, trying partial match...');
+          const searchTerms = searchName.split(' ');
+          const mainTerm = searchTerms[0]; // First word
+          productResult = await client.query('SELECT * FROM products WHERE name ILIKE $1', [`%${mainTerm}%`]);
+          
+          if (productResult.rows.length > 0) {
+            console.log(`🔄 Found ${productResult.rows.length} partial matches for "${mainTerm}":`, 
+              productResult.rows.map(p => `"${p.name}"`));
+            // Use the first match for now
+            productResult.rows = [productResult.rows[0]];
+          }
         }
         
         console.log('📦 Found products:', productResult.rows.length);
         const product = productResult.rows[0];
         
         if (!product) {
-          console.error('❌ Product not found:', item.product_name);
-          // Try to find similar products for debugging
-          const similarResult = await client.query('SELECT name FROM products WHERE name ILIKE $1 LIMIT 5', [`%${item.product_name.split(' ')[0]}%`]);
-          console.log('🔄 Similar products:', similarResult.rows.map(p => p.name));
-          throw new Error(`Product not found: ${item.product_name}`);
+          console.error('❌ Product not found:', `"${searchName}"`);
+          // List similar products for debugging
+          const similarResult = await client.query('SELECT name FROM products LIMIT 10');
+          console.log('🔄 Available products sample:', similarResult.rows.map(p => `"${p.name}"`));
+          throw new Error(`Product not found: ${searchName}`);
+        } else {
+          console.log('✅ Using product:', `"${product.name}" - ₦${product.price}`);
         }
         
         const itemSubtotal = product.price * item.quantity;
