@@ -261,16 +261,74 @@ function setupEventListeners() {
     adminBtn.addEventListener('click', (e) => {
       e.preventDefault();
       adminModal.style.display = 'block';
-      loadAllOrders();
+      // Show password section first
+      const passwordSection = document.getElementById('passwordSection');
+      const ordersSection = document.getElementById('ordersSection');
+      if (passwordSection) passwordSection.style.display = 'block';
+      if (ordersSection) ordersSection.style.display = 'none';
+    });
+  }
+
+  // Admin login functionality
+  const loginBtn = document.getElementById('loginBtn');
+  const adminPasswordInput = document.getElementById('adminPassword');
+  
+  if (loginBtn && adminPasswordInput) {
+    loginBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const password = adminPasswordInput.value;
+      
+      if (password === 'roseball') {
+        // Correct password - show admin interface
+        const passwordSection = document.getElementById('passwordSection');
+        const ordersSection = document.getElementById('ordersSection');
+        if (passwordSection) passwordSection.style.display = 'none';
+        if (ordersSection) ordersSection.style.display = 'block';
+        loadAllOrders();
+        showNotification('✅ Admin access granted', 'success');
+      } else {
+        // Wrong password
+        adminPasswordInput.value = '';
+        showNotification('❌ Invalid password', 'error');
+      }
+    });
+    
+    // Allow Enter key to submit password
+    adminPasswordInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        loginBtn.click();
+      }
     });
   }
   
-  // Close modal when clicking outside
+  // Close modal when clicking outside or close button
   window.addEventListener('click', (e) => {
     if (e.target === adminModal) {
       adminModal.style.display = 'none';
+      // Reset admin modal state
+      const passwordSection = document.getElementById('passwordSection');
+      const ordersSection = document.getElementById('ordersSection');
+      const adminPasswordInput = document.getElementById('adminPassword');
+      if (passwordSection) passwordSection.style.display = 'block';
+      if (ordersSection) ordersSection.style.display = 'none';
+      if (adminPasswordInput) adminPasswordInput.value = '';
     }
   });
+
+  // Close button for admin modal
+  const adminCloseBtn = adminModal?.querySelector('.close');
+  if (adminCloseBtn) {
+    adminCloseBtn.addEventListener('click', (e) => {
+      adminModal.style.display = 'none';
+      // Reset admin modal state
+      const passwordSection = document.getElementById('passwordSection');
+      const ordersSection = document.getElementById('ordersSection');
+      const adminPasswordInput = document.getElementById('adminPassword');
+      if (passwordSection) passwordSection.style.display = 'block';
+      if (ordersSection) ordersSection.style.display = 'none';
+      if (adminPasswordInput) adminPasswordInput.value = '';
+    });
+  }
 }
 
 // Handle form submission
