@@ -273,20 +273,34 @@ function setupEventListeners() {
   const loginBtn = document.getElementById('loginBtn');
   const adminPasswordInput = document.getElementById('adminPassword');
   
+  console.log('🔍 Debug: loginBtn element:', loginBtn);
+  console.log('🔍 Debug: adminPasswordInput element:', adminPasswordInput);
+  
   if (loginBtn && adminPasswordInput) {
+    console.log('✅ Admin login elements found, attaching event listeners...');
     loginBtn.addEventListener('click', (e) => {
       e.preventDefault();
+      console.log('🔐 Admin login button clicked');
       const password = adminPasswordInput.value;
+      console.log('🔍 Password entered:', password ? 'Yes' : 'No');
       
       if (password === 'roseball') {
+        console.log('✅ Password correct, granting access...');
         // Correct password - show admin interface
         const passwordSection = document.getElementById('passwordSection');
         const ordersSection = document.getElementById('ordersSection');
-        if (passwordSection) passwordSection.style.display = 'none';
-        if (ordersSection) ordersSection.style.display = 'block';
+        if (passwordSection) {
+          passwordSection.style.display = 'none';
+          console.log('✅ Password section hidden');
+        }
+        if (ordersSection) {
+          ordersSection.style.display = 'block';
+          console.log('✅ Orders section shown');
+        }
         loadAllOrders();
         showNotification('✅ Admin access granted', 'success');
       } else {
+        console.log('❌ Password incorrect');
         // Wrong password
         adminPasswordInput.value = '';
         showNotification('❌ Invalid password', 'error');
@@ -296,9 +310,14 @@ function setupEventListeners() {
     // Allow Enter key to submit password
     adminPasswordInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
+        console.log('⌨️ Enter key pressed, triggering login...');
         loginBtn.click();
       }
     });
+  } else {
+    console.log('❌ Admin login elements not found!');
+    console.log('   loginBtn:', loginBtn);
+    console.log('   adminPasswordInput:', adminPasswordInput);
   }
   
   // Close modal when clicking outside or close button
@@ -738,3 +757,50 @@ function showNotification(message, type = 'info') {
 }
 
 console.log('✅ ASTRO-BSM Order System loaded successfully');
+
+// Global functions for admin access (fallback)
+window.handleAdminLogin = function() {
+  console.log('🔐 handleAdminLogin called directly');
+  const adminPasswordInput = document.getElementById('adminPassword');
+  if (!adminPasswordInput) {
+    console.log('❌ Password input not found');
+    return;
+  }
+  
+  const password = adminPasswordInput.value;
+  console.log('🔍 Password entered:', password ? 'Yes' : 'No');
+  
+  if (password === 'roseball') {
+    console.log('✅ Password correct, granting access...');
+    const passwordSection = document.getElementById('passwordSection');
+    const ordersSection = document.getElementById('ordersSection');
+    
+    if (passwordSection) {
+      passwordSection.style.display = 'none';
+      console.log('✅ Password section hidden');
+    }
+    if (ordersSection) {
+      ordersSection.style.display = 'block';
+      console.log('✅ Orders section shown');
+    }
+    
+    loadAllOrders();
+    showNotification('✅ Admin access granted', 'success');
+  } else {
+    console.log('❌ Password incorrect');
+    adminPasswordInput.value = '';
+    showNotification('❌ Invalid password', 'error');
+  }
+};
+
+window.testAdminAccess = function() {
+  console.log('🧪 Test button clicked');
+  const passwordInput = document.getElementById('adminPassword');
+  if (passwordInput) {
+    passwordInput.value = 'roseball';
+    console.log('✅ Password automatically filled');
+    handleAdminLogin();
+  } else {
+    console.log('❌ Password input not found');
+  }
+};

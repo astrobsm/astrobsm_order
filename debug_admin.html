@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .debug-panel { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .status { padding: 10px; margin: 5px 0; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-test { background: #28a745; color: white; }
+        input { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Admin Login Debug Panel</h1>
+    
+    <div class="debug-panel">
+        <h2>Element Check</h2>
+        <div id="elementStatus"></div>
+        <button class="btn-test" onclick="checkElements()">Check Elements</button>
+    </div>
+    
+    <div class="debug-panel">
+        <h2>Login Test</h2>
+        <input type="password" id="testPassword" placeholder="Enter password" value="roseball">
+        <button class="btn-test" onclick="testLogin()">Test Login</button>
+        <div id="loginStatus"></div>
+    </div>
+    
+    <div class="debug-panel">
+        <h2>Main App Test</h2>
+        <button class="btn-primary" onclick="openMainApp()">Open Main App</button>
+        <button class="btn-test" onclick="testMainAppAdmin()">Test Main App Admin</button>
+        <div id="mainAppStatus"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            console.log(message);
+            const statusDiv = document.getElementById('elementStatus');
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.textContent = message;
+            statusDiv.appendChild(div);
+        }
+
+        function checkElements() {
+            document.getElementById('elementStatus').innerHTML = '';
+            
+            // Check if we can access the main app iframe
+            try {
+                fetch('/api/admin/products')
+                    .then(r => r.json())
+                    .then(data => {
+                        log(`✅ API accessible - ${data.length} products found`, 'success');
+                    })
+                    .catch(e => {
+                        log(`❌ API error: ${e.message}`, 'error');
+                    });
+            } catch (e) {
+                log(`❌ Fetch error: ${e.message}`, 'error');
+            }
+
+            // Test if we can create the admin elements
+            const testDiv = document.createElement('div');
+            testDiv.innerHTML = `
+                <div id="adminModal" class="modal" style="display: block;">
+                    <div class="modal-content">
+                        <h2>Admin Access</h2>
+                        <div id="passwordSection">
+                            <input type="password" id="adminPassword" placeholder="Password">
+                            <button id="loginBtn" class="btn-primary">Login</button>
+                        </div>
+                        <div id="ordersSection" style="display: none;">
+                            <h3>Admin Interface</h3>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(testDiv);
+            
+            const loginBtn = document.getElementById('loginBtn');
+            const adminPassword = document.getElementById('adminPassword');
+            
+            if (loginBtn && adminPassword) {
+                log('✅ Test elements created successfully', 'success');
+                
+                // Add event listener
+                loginBtn.addEventListener('click', function() {
+                    const password = adminPassword.value;
+                    log(`🔐 Test login clicked with password: ${password}`, 'info');
+                    
+                    if (password === 'roseball') {
+                        document.getElementById('passwordSection').style.display = 'none';
+                        document.getElementById('ordersSection').style.display = 'block';
+                        log('✅ Test login successful!', 'success');
+                    } else {
+                        log('❌ Test login failed - wrong password', 'error');
+                    }
+                });
+                
+                log('✅ Event listener attached to test elements', 'success');
+            } else {
+                log('❌ Failed to create test elements', 'error');
+            }
+        }
+
+        function testLogin() {
+            const password = document.getElementById('testPassword').value;
+            const statusDiv = document.getElementById('loginStatus');
+            statusDiv.innerHTML = '';
+            
+            const div = document.createElement('div');
+            div.className = 'status info';
+            div.textContent = `Testing login with password: ${password}`;
+            statusDiv.appendChild(div);
+            
+            // Simulate the login logic
+            if (password === 'roseball') {
+                const successDiv = document.createElement('div');
+                successDiv.className = 'status success';
+                successDiv.textContent = '✅ Login test passed!';
+                statusDiv.appendChild(successDiv);
+            } else {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'status error';
+                errorDiv.textContent = '❌ Login test failed!';
+                statusDiv.appendChild(errorDiv);
+            }
+        }
+
+        function openMainApp() {
+            window.open('/', '_blank');
+        }
+
+        function testMainAppAdmin() {
+            const statusDiv = document.getElementById('mainAppStatus');
+            statusDiv.innerHTML = '';
+            
+            const div = document.createElement('div');
+            div.className = 'status info';
+            div.textContent = 'Opening main app and testing admin functionality...';
+            statusDiv.appendChild(div);
+            
+            // Instructions
+            const instructions = document.createElement('div');
+            instructions.className = 'status info';
+            instructions.innerHTML = `
+                <strong>Test Steps:</strong><br>
+                1. Open main app in new tab<br>
+                2. Open browser console (F12)<br>
+                3. Click "Admin" button<br>
+                4. Enter password: roseball<br>
+                5. Check console for debug messages
+            `;
+            statusDiv.appendChild(instructions);
+        }
+    </script>
+</body>
+</html>
