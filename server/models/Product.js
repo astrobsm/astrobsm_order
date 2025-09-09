@@ -7,15 +7,19 @@ class Product {
       const result = await pool.query('SELECT * FROM products ORDER BY name');
       console.log(`✅ Product.getAll() found ${result.rows.length} products`);
       
+      // Filter out duplicate products - prefer clean names without extra formatting
+      const cleanProducts = this.filterCleanProducts(result.rows);
+      console.log(`🧹 Filtered to ${cleanProducts.length} clean products`);
+      
       // Log first few products for debugging
-      if (result.rows.length > 0) {
-        console.log('📋 First 5 products:');
-        result.rows.slice(0, 5).forEach((product, index) => {
+      if (cleanProducts.length > 0) {
+        console.log('📋 First 5 clean products:');
+        cleanProducts.slice(0, 5).forEach((product, index) => {
           console.log(`  ${index + 1}. "${product.name}" - ₦${product.price}`);
         });
       }
       
-      return result.rows;
+      return cleanProducts;
     } catch (error) {
       console.error('❌ Product.getAll() error:', error);
       throw error;
@@ -28,15 +32,19 @@ class Product {
       const result = await pool.query('SELECT * FROM products ORDER BY name');
       console.log(`✅ Product.findAll() found ${result.rows.length} products`);
       
+      // Filter out duplicate products - prefer clean names
+      const cleanProducts = this.filterCleanProducts(result.rows);
+      console.log(`🧹 Filtered to ${cleanProducts.length} clean products`);
+      
       // Log first few products for debugging
-      if (result.rows.length > 0) {
-        console.log('📋 First 5 products (findAll):');
-        result.rows.slice(0, 5).forEach((product, index) => {
+      if (cleanProducts.length > 0) {
+        console.log('📋 First 5 clean products (findAll):');
+        cleanProducts.slice(0, 5).forEach((product, index) => {
           console.log(`  ${index + 1}. "${product.name}" - ₦${product.price}`);
         });
       }
       
-      return result.rows;
+      return cleanProducts;
     } catch (error) {
       console.error('❌ Product.findAll() error:', error);
       throw error;
@@ -172,6 +180,64 @@ class Product {
       [quantity, id]
     );
     return result.rows[0];
+  }
+
+  // Filter out duplicate products and return only clean, standardized names
+  static filterCleanProducts(products) {
+    // Define the exact clean product names we want to keep
+    const cleanProductNames = [
+      "Wound-Care Honey Gauze Big (Carton)",
+      "Wound-Care Honey Gauze Big (Packet)",
+      "Wound-Care Honey Gauze Small (Carton)",
+      "Wound-Care Honey Gauze Small (Packet)",
+      "Hera Wound-Gel 100g (Carton)",
+      "Hera Wound-Gel 100g (Tube)",
+      "Hera Wound-Gel 40g (Carton)",
+      "Hera Wound-Gel 40g (Tube)",
+      "Coban Bandage 6 inch (Piece)",
+      "Coban Bandage 6 inch (Carton)",
+      "Coban Bandage 4 inch (Piece)",
+      "Coban Bandage 4 inch (Carton)",
+      "Silicone Scar Sheet (Packet)",
+      "Silicone Scar Sheet (Block)",
+      "Silicone Foot Pad (Pair)",
+      "Sterile Dressing Pack (Bag)",
+      "Sterile Dressing Pack (Piece)",
+      "Sterile Gauze-Only Pack (Bag)",
+      "Sterile Gauze-Only Pack (Piece)",
+      "Skin Staples (Piece)",
+      "NPWT (VAC) Foam (Piece)",
+      "Opsite (Piece)",
+      "Wound-Clex Solution 500ml (Carton)",
+      "Wound-Clex Solution 500ml (Bottle)"
+    ];
+
+    // Filter products to only include clean names
+    const cleanProducts = products.filter(product => 
+      cleanProductNames.includes(product.name)
+    );
+
+    // If we don't have all clean products, add missing ones from similar products
+    cleanProductNames.forEach(cleanName => {
+      if (!cleanProducts.find(p => p.name === cleanName)) {
+        // Try to find a similar product with a different format
+        const similarProduct = products.find(p => {
+          const baseName = cleanName.replace(/\s*\([^)]*\)$/, '').toLowerCase();
+          return p.name.toLowerCase().includes(baseName.split(' ')[0]);
+        });
+        
+        if (similarProduct) {
+          console.log(`🔄 Using "${similarProduct.name}" as substitute for "${cleanName}"`);
+          // Create a clean version of the similar product
+          cleanProducts.push({
+            ...similarProduct,
+            name: cleanName // Use the clean name
+          });
+        }
+      }
+    });
+
+    return cleanProducts;
   }
 }
 
