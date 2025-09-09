@@ -7,13 +7,28 @@ class Order {
     try {
       await client.query('BEGIN');
       
-      const { customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status, items } = orderData;
+      const { customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status, delivery_address, items } = orderData;
       
-      // Create order
-      const orderResult = await client.query(
-        'INSERT INTO orders (customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-        [customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status]
-      );
+      // Create order with delivery_address
+      let orderResult;
+      try {
+        // Try to insert with delivery_address column
+        orderResult = await client.query(
+          'INSERT INTO orders (customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status, delivery_address) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+          [customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status, delivery_address]
+        );
+      } catch (error) {
+        // If delivery_address column doesn't exist, try without it
+        if (error.message.includes('column "delivery_address"') && error.message.includes('does not exist')) {
+          console.log('📝 Delivery_address column not found in orders table, creating order without it...');
+          orderResult = await client.query(
+            'INSERT INTO orders (customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status]
+          );
+        } else {
+          throw error;
+        }
+      }
       
       const order = orderResult.rows[0];
       let subtotal = 0;

@@ -44,13 +44,14 @@ router.post('/', async (req, res) => {
     
     console.log('📝 Creating order with items:', items.length);
     
-    // Create order
+    // Create order (include delivery_address from customerData)
     const order = await Order.create({
       customer_id: customer.id,
       delivery_date: orderData.delivery_date,
       delivery_route: orderData.delivery_route,
       preferred_delivery_method: orderData.preferred_delivery_method,
       request_status: orderData.request_status,
+      delivery_address: customerData.delivery_address, // ✅ Move delivery_address to orders
       items: items
     });
     

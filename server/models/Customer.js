@@ -2,14 +2,14 @@ const pool = require('../database/db');
 
 class Customer {
   static async create(customerData) {
-    const { name, phone, delivery_address } = customerData;
+    const { name, phone } = customerData;
     
     try {
       // First try with email column (for complete schema)
       const { email } = customerData;
       const result = await pool.query(
-        'INSERT INTO customers (name, email, phone, delivery_address) VALUES ($1, $2, $3, $4) RETURNING *',
-        [name, email || null, phone, delivery_address]
+        'INSERT INTO customers (name, email, phone) VALUES ($1, $2, $3) RETURNING *',
+        [name, email || null, phone]
       );
       return result.rows[0];
     } catch (error) {
@@ -18,8 +18,8 @@ class Customer {
         console.log('📝 Email column not found, creating customer without email...');
         try {
           const result = await pool.query(
-            'INSERT INTO customers (name, phone, delivery_address) VALUES ($1, $2, $3) RETURNING *',
-            [name, phone, delivery_address]
+            'INSERT INTO customers (name, phone) VALUES ($1, $2) RETURNING *',
+            [name, phone]
           );
           return result.rows[0];
         } catch (fallbackError) {
