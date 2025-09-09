@@ -628,14 +628,21 @@ function displayOrderSummary(customerData, orderData, items, totals) {
 async function loadAllOrders() {
   try {
     console.log('📋 Loading orders for admin view...');
+    console.log('🔗 API URL:', `${API_BASE_URL}/orders`);
+    
     const response = await fetch(`${API_BASE_URL}/orders`);
+    console.log('📡 Response status:', response.status);
+    console.log('📡 Response ok:', response.ok);
     
     if (response.ok) {
       const orders = await response.json();
       console.log(`✅ Loaded ${orders.length} orders`);
+      console.log('📋 Orders data:', orders);
       displayOrdersList(orders);
     } else {
-      console.error('❌ Failed to load orders');
+      const errorText = await response.text();
+      console.error('❌ Failed to load orders - Status:', response.status);
+      console.error('❌ Error response:', errorText);
       showNotification('Failed to load orders', 'error');
     }
   } catch (error) {
@@ -647,25 +654,54 @@ async function loadAllOrders() {
 // Display orders list in admin modal
 function displayOrdersList(orders) {
   const ordersSection = document.getElementById('ordersSection');
-  if (!ordersSection) return;
-  
-  if (orders.length === 0) {
-    ordersSection.innerHTML = '<p>No orders found.</p>';
+  if (!ordersSection) {
+    console.error('❌ Orders section element not found');
     return;
   }
   
-  const ordersHTML = orders.map(order => `
-    <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px;">
-      <h4>Order #${order.id} - ${order.customer_name}</h4>
-      <p><strong>Date:</strong> ${new Date(order.created_at).toLocaleDateString()}</p>
-      <p><strong>Phone:</strong> ${order.customer_phone}</p>
-      <p><strong>Status:</strong> ${order.request_status}</p>
-      <p><strong>Delivery:</strong> ${order.preferred_delivery_method}</p>
-      <p><strong>Address:</strong> ${order.delivery_address}</p>
-    </div>
-  `).join('');
+  console.log('📋 Displaying orders list, count:', orders.length);
   
-  ordersSection.innerHTML = ordersHTML;
+  if (orders.length === 0) {
+    ordersSection.innerHTML = `
+      <h3>All Orders</h3>
+      <div style="margin-bottom: 20px;">
+        <button id="manageProductsBtn" class="btn-secondary">🛠️ Manage Products</button>
+      </div>
+      <div id="ordersList">
+        <p style="text-align: center; padding: 20px; color: #666;">No orders found in the database.</p>
+      </div>
+    `;
+    return;
+  }
+  
+  const ordersHTML = orders.map(order => {
+    console.log('📄 Processing order:', order.id, order);
+    return `
+      <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; background: #f9f9f9;">
+        <h4 style="margin: 0 0 10px 0; color: #1e3a8a;">Order #${order.id} - ${order.customer_name || order.name || 'Unknown Customer'}</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+          <p><strong>Date:</strong> ${new Date(order.created_at).toLocaleDateString()}</p>
+          <p><strong>Phone:</strong> ${order.phone || 'Not provided'}</p>
+          <p><strong>Email:</strong> ${order.email || 'Not provided'}</p>
+          <p><strong>Status:</strong> ${order.request_status || 'Not specified'}</p>
+        </div>
+        <p><strong>Delivery Method:</strong> ${order.preferred_delivery_method || 'Not specified'}</p>
+        <p><strong>Delivery Date:</strong> ${order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : 'Not specified'}</p>
+        <p><strong>Address:</strong> ${order.delivery_address || order.address || 'Not provided'}</p>
+        ${order.delivery_route ? `<p><strong>Route:</strong> ${order.delivery_route}</p>` : ''}
+      </div>
+    `;
+  }).join('');
+  
+  ordersSection.innerHTML = `
+    <h3>All Orders</h3>
+    <div style="margin-bottom: 20px;">
+      <button id="manageProductsBtn" class="btn-secondary">🛠️ Manage Products</button>
+    </div>
+    <div id="ordersList">
+      ${ordersHTML}
+    </div>
+  `;
 }
 
 // Number to words conversion

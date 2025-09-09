@@ -79,16 +79,18 @@ router.post('/', async (req, res) => {
 // Get all orders
 router.get('/', async (req, res) => {
   try {
-    console.log('Fetching all orders...');
+    console.log('📋 GET /api/orders - Fetching all orders...');
     const orders = await Order.getAll();
-    console.log('Orders fetched successfully:', orders.length);
+    console.log('✅ Orders fetched successfully:', orders.length);
+    console.log('📋 First order sample:', orders.length > 0 ? orders[0] : 'No orders');
     res.json(orders);
   } catch (error) {
-    console.error('Error fetching orders:', error);
+    console.error('❌ Error fetching orders:', error.message);
+    console.error('❌ Full error:', error);
     
     // Check if it's a table not found error
     if (error.message.includes('does not exist') || error.code === '42P01') {
-      console.log('Orders table does not exist, returning empty array');
+      console.log('⚠️ Orders table does not exist, returning empty array');
       res.json([]);
     } else {
       res.status(500).json({ error: 'Failed to fetch orders', details: error.message });
