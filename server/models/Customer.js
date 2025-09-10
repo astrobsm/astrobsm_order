@@ -1,7 +1,4 @@
-// Updated Customer.js file for manual deployment via GitHub web interface
-// Copy this entire content and replace the existing Customer.js file
-
-const pool = require('../db');
+const pool = require('../database/db');
 
 class Customer {
     static async create(customerData) {
