@@ -1,5 +1,5 @@
-// Updated Customer.js file for manual deployment via GitHub web interface
-// Copy this entire content and replace the existing Customer.js file
+// COMPLETE FIX - Customer.js with correct database path
+// Copy this entire content and replace the existing Customer.js file via GitHub
 
 const pool = require('../database/db');
 
