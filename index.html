@@ -41,7 +41,10 @@
     <div class="header-container">
       <img src="public/company_logo.PNG" alt="ASTRO-BSM Logo" class="logo">
       <h1>ASTRO-BSM Product Order System</h1>
-      <button id="adminBtn" class="btn-admin">Admin</button>
+      <div class="header-buttons">
+        <button id="productsBtn" class="btn-products">Manage Products</button>
+        <button id="adminBtn" class="btn-admin">Admin</button>
+      </div>
     </div>
   </header>
 
@@ -224,13 +227,80 @@
         <div id="productsList"></div>
       </div>
     </div>
+
+    <!-- Standalone Product Management Modal -->
+    <div id="standaloneProductModal" class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Product Management System</h2>
+        
+        <div id="productPasswordSection">
+          <div style="margin-bottom: 20px; padding: 15px; background-color: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 4px;">
+            <div style="font-weight: bold; color: #1565c0; margin-bottom: 5px;">🔐 Product Management Access</div>
+            <div style="color: #424242; font-size: 0.9em;">
+              Enter the management password to access product configuration tools.
+            </div>
+          </div>
+          
+          <label for="productPassword">Management Password:</label>
+          <input type="password" id="productPassword" placeholder="Enter password">
+          <button type="button" id="productLoginBtn" class="btn-primary">Access Product Management</button>
+          <div id="productPasswordError" style="display: none; color: #d32f2f; margin-top: 8px; font-size: 0.9em;">
+            ❌ Incorrect password. Please try again.
+          </div>
+        </div>
+        
+        <div id="productManagementSection" style="display: none;">
+          <div style="margin-bottom: 20px; padding: 10px; background-color: #f1f8e9; border-left: 4px solid #8bc34a; border-radius: 4px;">
+            <div style="font-weight: bold; color: #33691e; margin-bottom: 5px;">✅ Access Granted</div>
+            <div style="color: #424242; font-size: 0.9em;">You can now manage products, prices, and inventory.</div>
+          </div>
+          
+          <div style="margin-bottom: 20px;">
+            <button id="addProductBtnStandalone" class="btn-primary">+ Add New Product</button>
+            <button id="refreshProductsBtn" class="btn-secondary">🔄 Refresh List</button>
+          </div>
+
+          <!-- Add Product Form -->
+          <div id="addProductFormStandalone" style="display: none; margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; background-color: #fafafa;">
+            <h3>Add New Product</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+              <input type="text" id="newProductNameStandalone" placeholder="Product Name" required>
+              <input type="number" id="newProductPriceStandalone" placeholder="Price (₦)" min="0" step="0.01" required>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+              <select id="newProductUnitStandalone">
+                <option value="PCS">Piece (PCS)</option>
+                <option value="CTN">Carton (CTN)</option>
+                <option value="Tube">Tube</option>
+                <option value="Bottle">Bottle</option>
+                <option value="Bag">Bag</option>
+                <option value="Block">Block</option>
+                <option value="Pair">Pair</option>
+                <option value="Box">Box</option>
+                <option value="Pack">Pack</option>
+              </select>
+              <input type="number" id="newProductStockStandalone" placeholder="Stock Quantity" min="0" value="100">
+            </div>
+            <textarea id="newProductDescriptionStandalone" placeholder="Description (optional)" rows="3"></textarea>
+            <div style="margin-top: 10px;">
+              <button id="saveProductBtnStandalone" class="btn-primary">Save Product</button>
+              <button id="cancelProductBtnStandalone" class="btn-secondary">Cancel</button>
+            </div>
+          </div>
+
+          <!-- Products Management List -->
+          <div id="productsListStandalone"></div>
+        </div>
+      </div>
+    </div>
   </main>
 
   <footer>
     <p>&copy; 2025 ASTRO-BSM. All rights reserved.</p>
   </footer>
 
-      <script src="app.js?v=29&t=202509101640"></script>
+      <script src="app.js?v=31&t=202509101700&force=true"></script>
   <script src="html2canvas.min.js"></script>
 </body>
 </html>

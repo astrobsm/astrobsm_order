@@ -11,6 +11,8 @@ const itemsContainer = document.getElementById('itemsContainer'); // Fixed: corr
 const addItemBtn = document.getElementById('addItemBtn');
 const adminBtn = document.getElementById('adminBtn');
 const adminModal = document.getElementById('adminModal');
+const productsBtn = document.getElementById('productsBtn');
+const standaloneProductModal = document.getElementById('standaloneProductModal');
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async function() {
@@ -363,6 +365,118 @@ function setupEventListeners() {
       if (adminPasswordInput) adminPasswordInput.value = '';
     });
   }
+
+  // Product Management Button and Modal
+  setupProductManagement();
+}
+
+// Setup Product Management System
+function setupProductManagement() {
+  const productsBtn = document.getElementById('productsBtn');
+  const standaloneProductModal = document.getElementById('standaloneProductModal');
+  
+  if (!productsBtn || !standaloneProductModal) {
+    console.warn('Product management elements not found');
+    return;
+  }
+
+  // Products button click
+  productsBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    standaloneProductModal.style.display = 'block';
+    // Reset to password section
+    const passwordSection = document.getElementById('productPasswordSection');
+    const managementSection = document.getElementById('productManagementSection');
+    const productPasswordInput = document.getElementById('productPassword');
+    const passwordError = document.getElementById('productPasswordError');
+    
+    if (passwordSection) passwordSection.style.display = 'block';
+    if (managementSection) managementSection.style.display = 'none';
+    if (productPasswordInput) productPasswordInput.value = '';
+    if (passwordError) passwordError.style.display = 'none';
+  });
+
+  // Product login functionality
+  const productLoginBtn = document.getElementById('productLoginBtn');
+  const productPasswordInput = document.getElementById('productPassword');
+  
+  if (productLoginBtn) {
+    productLoginBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      handleProductLogin();
+    });
+  }
+
+  if (productPasswordInput) {
+    productPasswordInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleProductLogin();
+      }
+    });
+  }
+
+  // Close button for product modal
+  const productCloseBtn = standaloneProductModal.querySelector('.close');
+  if (productCloseBtn) {
+    productCloseBtn.addEventListener('click', (e) => {
+      standaloneProductModal.style.display = 'none';
+      resetProductModal();
+    });
+  }
+
+  // Window click to close
+  window.addEventListener('click', (e) => {
+    if (e.target === standaloneProductModal) {
+      standaloneProductModal.style.display = 'none';
+      resetProductModal();
+    }
+  });
+
+  // Product management form handlers
+  setupProductManagementHandlers();
+}
+
+// Handle product login
+function handleProductLogin() {
+  const passwordInput = document.getElementById('productPassword');
+  const passwordError = document.getElementById('productPasswordError');
+  const passwordSection = document.getElementById('productPasswordSection');
+  const managementSection = document.getElementById('productManagementSection');
+  
+  if (!passwordInput) return;
+  
+  const password = passwordInput.value.trim();
+  
+  if (password === 'bluevelvet') {
+    // Correct password
+    if (passwordError) passwordError.style.display = 'none';
+    if (passwordSection) passwordSection.style.display = 'none';
+    if (managementSection) managementSection.style.display = 'block';
+    
+    // Load products
+    loadProductsForManagement();
+  } else {
+    // Incorrect password
+    if (passwordError) passwordError.style.display = 'block';
+    passwordInput.value = '';
+    passwordInput.focus();
+  }
+}
+
+// Reset product modal to initial state
+function resetProductModal() {
+  const passwordSection = document.getElementById('productPasswordSection');
+  const managementSection = document.getElementById('productManagementSection');
+  const productPasswordInput = document.getElementById('productPassword');
+  const passwordError = document.getElementById('productPasswordError');
+  const addForm = document.getElementById('addProductFormStandalone');
+  
+  if (passwordSection) passwordSection.style.display = 'block';
+  if (managementSection) managementSection.style.display = 'none';
+  if (productPasswordInput) productPasswordInput.value = '';
+  if (passwordError) passwordError.style.display = 'none';
+  if (addForm) addForm.style.display = 'none';
 }
 
 // Handle form submission
@@ -872,3 +986,184 @@ window.testAdminAccess = function() {
     console.log('❌ Password input not found');
   }
 };
+
+// Product Management Functions
+function setupProductManagementHandlers() {
+  // Add Product Button
+  const addProductBtn = document.getElementById('addProductBtnStandalone');
+  const addProductForm = document.getElementById('addProductFormStandalone');
+  const saveProductBtn = document.getElementById('saveProductBtnStandalone');
+  const cancelProductBtn = document.getElementById('cancelProductBtnStandalone');
+  const refreshProductsBtn = document.getElementById('refreshProductsBtn');
+
+  if (addProductBtn && addProductForm) {
+    addProductBtn.addEventListener('click', () => {
+      addProductForm.style.display = addProductForm.style.display === 'none' ? 'block' : 'none';
+      if (addProductForm.style.display === 'block') {
+        document.getElementById('newProductNameStandalone').focus();
+      }
+    });
+  }
+
+  if (saveProductBtn) {
+    saveProductBtn.addEventListener('click', saveNewProduct);
+  }
+
+  if (cancelProductBtn && addProductForm) {
+    cancelProductBtn.addEventListener('click', () => {
+      addProductForm.style.display = 'none';
+      clearProductForm();
+    });
+  }
+
+  if (refreshProductsBtn) {
+    refreshProductsBtn.addEventListener('click', loadProductsForManagement);
+  }
+}
+
+async function loadProductsForManagement() {
+  console.log('📦 Loading products for management...');
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/products`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const products = await response.json();
+    console.log('✅ Products loaded for management:', products.length);
+    displayProductsForManagement(products);
+  } catch (error) {
+    console.error('❌ Error loading products for management:', error);
+    const productsList = document.getElementById('productsListStandalone');
+    if (productsList) {
+      productsList.innerHTML = '<div style="color: #d32f2f; padding: 20px; text-align: center;">❌ Error loading products: ' + error.message + '</div>';
+    }
+  }
+}
+
+function displayProductsForManagement(products) {
+  const productsList = document.getElementById('productsListStandalone');
+  if (!productsList) return;
+
+  if (products.length === 0) {
+    productsList.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">No products found</div>';
+    return;
+  }
+
+  const productsHTML = products.map(product => `
+    <div class="product-item" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 10px; background: white;">
+      <div style="display: flex; justify-content: between; align-items: start; gap: 15px;">
+        <div style="flex: 1;">
+          <h4 style="margin: 0 0 8px 0; color: #1565c0;">${product.name}</h4>
+          <p style="margin: 0 0 8px 0; color: #666; font-size: 0.9em;">${product.description || 'No description'}</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; font-size: 0.9em;">
+            <div><strong>Price:</strong> ₦${parseFloat(product.price).toLocaleString()}</div>
+            <div><strong>Unit:</strong> ${product.unit_of_measure || 'PCS'}</div>
+            <div><strong>Stock:</strong> ${product.stock_quantity || 0}</div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          <button onclick="editProduct(${product.id})" class="btn-secondary" style="font-size: 0.8em; padding: 5px 10px;">✏️ Edit</button>
+          <button onclick="deleteProduct(${product.id}, '${product.name.replace(/'/g, "\\'")}')" class="btn-danger" style="font-size: 0.8em; padding: 5px 10px; background: #d32f2f; color: white; border: none; border-radius: 4px; cursor: pointer;">🗑️ Delete</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  productsList.innerHTML = productsHTML;
+}
+
+async function saveNewProduct() {
+  const name = document.getElementById('newProductNameStandalone').value.trim();
+  const price = document.getElementById('newProductPriceStandalone').value.trim();
+  const unit = document.getElementById('newProductUnitStandalone').value;
+  const stock = document.getElementById('newProductStockStandalone').value.trim();
+  const description = document.getElementById('newProductDescriptionStandalone').value.trim();
+
+  if (!name || !price) {
+    alert('Please fill in product name and price');
+    return;
+  }
+
+  try {
+    const productData = {
+      name,
+      price: parseFloat(price),
+      unit_of_measure: unit,
+      stock_quantity: parseInt(stock) || 0,
+      description: description || ''
+    };
+
+    console.log('💾 Saving new product:', productData);
+    
+    const response = await fetch(`${API_BASE_URL}/admin/products`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(productData)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ Product saved successfully:', result);
+
+    // Clear form and hide it
+    clearProductForm();
+    document.getElementById('addProductFormStandalone').style.display = 'none';
+
+    // Refresh products list
+    await loadProductsForManagement();
+
+    alert('✅ Product added successfully!');
+  } catch (error) {
+    console.error('❌ Error saving product:', error);
+    alert('❌ Error saving product: ' + error.message);
+  }
+}
+
+function clearProductForm() {
+  document.getElementById('newProductNameStandalone').value = '';
+  document.getElementById('newProductPriceStandalone').value = '';
+  document.getElementById('newProductUnitStandalone').value = 'PCS';
+  document.getElementById('newProductStockStandalone').value = '100';
+  document.getElementById('newProductDescriptionStandalone').value = '';
+}
+
+async function editProduct(productId) {
+  console.log('✏️ Edit product functionality - ID:', productId);
+  alert('Edit functionality will be implemented in the next version. For now, you can delete and recreate the product.');
+}
+
+async function deleteProduct(productId, productName) {
+  if (!confirm(`Are you sure you want to delete "${productName}"?\n\nThis action cannot be undone.`)) {
+    return;
+  }
+
+  try {
+    console.log('🗑️ Deleting product:', productId, productName);
+    
+    const response = await fetch(`${API_BASE_URL}/admin/products/${productId}`, {
+      method: 'DELETE'
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `HTTP ${response.status}`);
+    }
+
+    console.log('✅ Product deleted successfully');
+    
+    // Refresh products list
+    await loadProductsForManagement();
+    
+    alert('✅ Product deleted successfully!');
+  } catch (error) {
+    console.error('❌ Error deleting product:', error);
+    alert('❌ Error deleting product: ' + error.message);
+  }
+}

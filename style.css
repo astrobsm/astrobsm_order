@@ -84,6 +84,28 @@ header h1 {
   background: #d97706;
 }
 
+.header-buttons {
+  display: flex;
+  gap: var(--spacing-xs);
+  align-items: center;
+}
+
+.btn-products {
+  background: var(--secondary-color);
+  color: var(--white);
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--border-radius);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-products:hover {
+  background: var(--primary-color);
+}
+
 /* Main Container */
 .container {
   max-width: 800px;
@@ -315,6 +337,15 @@ footer {
   }
   
   .btn-admin {
+    font-size: 0.75rem;
+    padding: 6px 12px;
+  }
+
+  .header-buttons {
+    gap: 4px;
+  }
+
+  .btn-products {
     font-size: 0.75rem;
     padding: 6px 12px;
   }
