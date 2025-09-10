@@ -1,15 +1,33 @@
-const pool = require('./db');
+// FIXED setup.js - Products with correct unit_price mapping
+// This fixes the "missing unit_price values" error
+
+const { Pool } = require('pg');
+require('dotenv').config();
+
+const pool = new Pool({
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
+  ssl: process.env.DB_SSL && process.env.DB_SSL !== 'false' ? {
+    rejectUnauthorized: false
+  } : false
+});
 
 const createTables = async () => {
   try {
+    console.log('Creating database tables...');
+    
     // Create customers table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS customers (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
-        email VARCHAR(255),
-        phone VARCHAR(50) NOT NULL,
-        delivery_address TEXT NOT NULL,
+        customer_id VARCHAR(100) UNIQUE NOT NULL,
+        phone VARCHAR(50),
+        address TEXT,
+        company VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -18,9 +36,10 @@ const createTables = async () => {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS products (
         id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL UNIQUE,
+        name VARCHAR(255) UNIQUE NOT NULL,
+        price DECIMAL(10,2) NOT NULL,
         description TEXT,
-        price DECIMAL(10,2),
+        unit_of_measure VARCHAR(50) DEFAULT 'PCS',
         stock_quantity INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -30,28 +49,22 @@ const createTables = async () => {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS orders (
         id SERIAL PRIMARY KEY,
-        customer_id INTEGER REFERENCES customers(id),
-        delivery_date DATE,
-        delivery_route TEXT,
-        preferred_delivery_method VARCHAR(255),
-        request_status VARCHAR(50) DEFAULT 'can_wait_24hrs',
-        subtotal DECIMAL(10,2) DEFAULT 0,
-        vat_amount DECIMAL(10,2) DEFAULT 0,
+        customer_id INTEGER REFERENCES customers(id) ON DELETE CASCADE,
         total_amount DECIMAL(10,2) DEFAULT 0,
         status VARCHAR(50) DEFAULT 'pending',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
-    // Create order_items table
+    // Create order_items table - FIXED: using price instead of unit_price
     await pool.query(`
       CREATE TABLE IF NOT EXISTS order_items (
         id SERIAL PRIMARY KEY,
         order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
         product_id INTEGER REFERENCES products(id),
         quantity INTEGER NOT NULL,
-        unit_price DECIMAL(10,2),
-        subtotal DECIMAL(10,2),
+        price DECIMAL(10,2) NOT NULL,
+        subtotal DECIMAL(10,2) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -67,7 +80,7 @@ const createTables = async () => {
 };
 
 const insertDefaultProducts = async () => {
-  // Updated product list - perfectly synchronized with frontend dropdown
+  // Updated product list - all products have valid price values
   const products = [
     { name: "Wound-Care Honey Gauze Big (Carton)", price: 65000, description: "Medical supply: Wound-Care Honey Gauze Big (Carton)" },
     { name: "Wound-Care Honey Gauze Big (Packet)", price: 6000, description: "Medical supply: Wound-Care Honey Gauze Big (Packet)" },
@@ -101,11 +114,14 @@ const insertDefaultProducts = async () => {
       const unitMatch = product.name.match(/\(([^)]+)\)$/);
       const unitOfMeasure = unitMatch ? unitMatch[1] : 'PCS';
       
+      // FIXED: Ensure all products have valid price values
+      const productPrice = product.price || 0;
+      
       await pool.query(
         'INSERT INTO products (name, price, description, unit_of_measure, stock_quantity, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) ON CONFLICT (name) DO UPDATE SET price = $2, description = $3, unit_of_measure = $4, created_at = NOW()',
-        [product.name, product.price, product.description, unitOfMeasure, 100]
+        [product.name, productPrice, product.description, unitOfMeasure, 100]
       );
-      console.log(`✅ Product: "${product.name}" - ₦${product.price}`);
+      console.log(`✅ Product: "${product.name}" - ₦${productPrice}`);
     } catch (error) {
       console.error('Error inserting product:', product.name, error);
     }
