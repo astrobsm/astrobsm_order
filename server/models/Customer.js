@@ -1,71 +1,97 @@
-const pool = require('../database/db');
+// Updated Customer.js file for manual deployment via GitHub web interface
+// Copy this entire content and replace the existing Customer.js file
+
+const pool = require('../db');
 
 class Customer {
-  static async create(customerData) {
-    const { name, phone, email } = customerData;
-    
-    console.log('👤 Creating customer:', { name, phone, email: email ? 'provided' : 'none' });
-    
-    try {
-      // Try the most basic approach first - name and phone only (production schema)
-      let result = await pool.query(
-        'INSERT INTO customers (name, phone) VALUES ($1, $2) RETURNING *',
-        [name, phone]
-      );
-      console.log('✅ Customer created with basic schema:', result.rows[0]);
-      return result.rows[0];
-    } catch (basicError) {
-      console.log('⚠️ Basic schema failed, trying with email column...', basicError.message);
-      
-      // If basic approach fails, try with email (local schema)
-      try {
-        const result = await pool.query(
-          'INSERT INTO customers (name, email, phone) VALUES ($1, $2, $3) RETURNING *',
-          [name, email || null, phone]
-        );
-        console.log('✅ Customer created with email schema:', result.rows[0]);
-        return result.rows[0];
-      } catch (emailError) {
-        console.error('❌ Both customer creation attempts failed');
-        console.error('📋 Basic error:', basicError.message);
-        console.error('📋 Email error:', emailError.message);
-        
-        // Check if this is a constraint violation on ID column
-        if (basicError.message.includes('customer_id') || emailError.message.includes('customer_id')) {
-          console.error('🔴 CRITICAL: customer_id constraint error suggests table schema corruption');
-          console.error('💡 This should not happen - customer_id should be auto-generated');
+    static async create(customerData) {
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            
+            // Generate unique customer_id (required by production schema)
+            const customerId = 'CUST_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+            
+            // Production schema: id, name, customer_id (NOT NULL), phone, address, company
+            const customerQuery = `
+                INSERT INTO customers (name, customer_id, phone, address, company) 
+                VALUES ($1, $2, $3, $4, $5) 
+                RETURNING id, name, customer_id, phone, address, company`;
+            
+            const customerValues = [
+                customerData.customerName || customerData.name,
+                customerId,  // Always provide unique customer_id
+                customerData.customerPhone || customerData.phone,
+                customerData.customerAddress || customerData.address,
+                customerData.customerCompany || customerData.company
+            ];
+            
+            const customerResult = await client.query(customerQuery, customerValues);
+            await client.query('COMMIT');
+            
+            return customerResult.rows[0];
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error('Error creating customer:', error);
+            throw error;
+        } finally {
+            client.release();
         }
-        
-        throw new Error(`Customer creation failed: ${basicError.message}`);
-      }
     }
-  }
-
-  static async findByEmail(email) {
-    if (!email) return null;
     
-    console.log('🔍 Looking up customer by email:', email);
-    
-    try {
-      // Try basic lookup first
-      const result = await pool.query('SELECT * FROM customers WHERE email = $1', [email]);
-      console.log('✅ Email lookup successful, found:', result.rows.length, 'customers');
-      return result.rows[0];
-    } catch (error) {
-      // If email column doesn't exist, return null (will create new customer)
-      if (error.message.includes('column "email"') && error.message.includes('does not exist')) {
-        console.log('📝 Email column not found, skipping email lookup...');
-        return null;
-      }
-      console.error('❌ Customer email lookup error:', error.message);
-      return null; // Don't throw, just return null to create new customer
+    static async getAll() {
+        const client = await pool.connect();
+        try {
+            // Handle both schema variants for compatibility
+            let query = 'SELECT * FROM customers ORDER BY id DESC';
+            
+            // First, check what columns exist
+            const schemaQuery = `
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'customers' 
+                ORDER BY ordinal_position`;
+            
+            const schemaResult = await client.query(schemaQuery);
+            const columns = schemaResult.rows.map(row => row.column_name);
+            
+            console.log('Customer table columns:', columns);
+            
+            // Adjust query based on available columns
+            if (columns.includes('customer_id')) {
+                query = 'SELECT id, name, customer_id, phone, address, company FROM customers ORDER BY id DESC';
+            }
+            
+            const result = await client.query(query);
+            return result.rows;
+        } catch (error) {
+            console.error('Error fetching customers:', error);
+            
+            // Fallback: try basic query
+            try {
+                const fallbackResult = await client.query('SELECT * FROM customers LIMIT 10');
+                return fallbackResult.rows;
+            } catch (fallbackError) {
+                console.error('Fallback query also failed:', fallbackError);
+                return [];
+            }
+        } finally {
+            client.release();
+        }
     }
-  }
-
-  static async findById(id) {
-    const result = await pool.query('SELECT * FROM customers WHERE id = $1', [id]);
-    return result.rows[0];
-  }
+    
+    static async getById(id) {
+        const client = await pool.connect();
+        try {
+            const result = await client.query('SELECT * FROM customers WHERE id = $1', [id]);
+            return result.rows[0];
+        } catch (error) {
+            console.error('Error fetching customer by ID:', error);
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
 }
 
 module.exports = Customer;
