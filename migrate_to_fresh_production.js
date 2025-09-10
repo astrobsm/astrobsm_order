@@ -10,7 +10,7 @@ require('dotenv').config();
 const { Pool } = require('pg');
 
 // Update this with your NEW Digital Ocean app URL
-const NEW_PRODUCTION_URL = 'https://your-new-app.ondigitalocean.app'; // UPDATE THIS!
+const NEW_PRODUCTION_URL = 'https://astrobsm-order-placement-fykxb.ondigitalocean.app'; // CURRENT PRODUCTION URL
 
 // Local database connection
 const localPool = new Pool({
