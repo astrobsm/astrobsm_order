@@ -15,6 +15,21 @@ const adminModal = document.getElementById('adminModal');
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async function() {
   console.log('🚀 Initializing ASTRO-BSM Order System...');
+  console.log('📅 Cache version: v30 (2025-09-10 16:15)');
+  console.log('🔗 API Base URL:', API_BASE_URL);
+  console.log('🌐 Full API URL will be:', window.location.origin + API_BASE_URL);
+  
+  // Test API connectivity immediately
+  console.log('🔍 Testing API connectivity...');
+  try {
+    const response = await fetch(`${API_BASE_URL}/orders`);
+    console.log('✅ API connectivity test - Status:', response.status);
+    const data = await response.json();
+    console.log('✅ API connectivity test - Orders count:', data.length);
+    console.log('📋 API connectivity test - Sample data:', data[0] || 'No orders');
+  } catch (error) {
+    console.error('❌ API connectivity test failed:', error);
+  }
   
   // Register service worker for PWA functionality
   if ('serviceWorker' in navigator) {
