@@ -1,139 +1,222 @@
+// OPTIMIZED Order.js model with correct schema and error handling
+
 const pool = require('../database/db');
+const Customer = require('./Customer');
 
 class Order {
-  static async create(orderData) {
-    const client = await pool.connect();
-    
-    try {
-      await client.query('BEGIN');
-      
-      const { customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status, delivery_address, items } = orderData;
-      
-      // Create order with delivery_address
-      let orderResult;
-      try {
-        // Try to insert with delivery_address column
-        orderResult = await client.query(
-          'INSERT INTO orders (customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status, delivery_address) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-          [customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status, delivery_address]
-        );
-      } catch (error) {
-        // If delivery_address column doesn't exist, try without it
-        if (error.message.includes('column "delivery_address"') && error.message.includes('does not exist')) {
-          console.log('📝 Delivery_address column not found in orders table, creating order without it...');
-          orderResult = await client.query(
-            'INSERT INTO orders (customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status]
-          );
-        } else {
-          throw error;
+    static async create(orderData) {
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            
+            console.log('Creating order with data:', orderData);
+            
+            // Create customer first
+            const customer = await Customer.create({
+                customerName: orderData.customerName,
+                customerPhone: orderData.customerPhone,
+                customerAddress: orderData.customerAddress,
+                customerCompany: orderData.customerCompany
+            });
+            
+            console.log('Customer created for order:', customer);
+            
+            // Calculate total amount
+            let totalAmount = 0;
+            if (orderData.items && Array.isArray(orderData.items)) {
+                totalAmount = orderData.items.reduce((sum, item) => {
+                    const itemPrice = parseFloat(item.price || 0);
+                    const itemQuantity = parseInt(item.quantity || 1);
+                    return sum + (itemPrice * itemQuantity);
+                }, 0);
+            }
+            
+            console.log('Calculated total amount:', totalAmount);
+            
+            // Create order
+            const orderQuery = `
+                INSERT INTO orders (customer_id, total_amount, status) 
+                VALUES ($1, $2, $3) 
+                RETURNING id, customer_id, total_amount, status, created_at`;
+            
+            const orderResult = await client.query(orderQuery, [
+                customer.id,
+                totalAmount,
+                'pending'
+            ]);
+            
+            const order = orderResult.rows[0];
+            console.log('Order created:', order);
+            
+            // Create order items
+            if (orderData.items && Array.isArray(orderData.items)) {
+                for (const item of orderData.items) {
+                    const itemPrice = parseFloat(item.price || 0);
+                    const itemQuantity = parseInt(item.quantity || 1);
+                    const subtotal = itemPrice * itemQuantity;
+                    
+                    // Find product ID by name
+                    const productQuery = 'SELECT id FROM products WHERE name = $1';
+                    const productResult = await client.query(productQuery, [item.name]);
+                    
+                    const productId = productResult.rows.length > 0 ? productResult.rows[0].id : null;
+                    
+                    const itemQuery = `
+                        INSERT INTO order_items (order_id, product_id, product_name, quantity, price, subtotal) 
+                        VALUES ($1, $2, $3, $4, $5, $6)`;
+                    
+                    await client.query(itemQuery, [
+                        order.id,
+                        productId,
+                        item.name,
+                        itemQuantity,
+                        itemPrice,
+                        subtotal
+                    ]);
+                    
+                    console.log(`Order item created: ${item.name} x${itemQuantity} = ₦${subtotal}`);
+                }
+            }
+            
+            await client.query('COMMIT');
+            
+            console.log('Order creation completed successfully');
+            
+            // Return complete order with customer info
+            return {
+                orderId: order.id,
+                customerId: customer.id,
+                customerInfo: customer,
+                totalAmount: order.total_amount,
+                status: order.status,
+                createdAt: order.created_at,
+                items: orderData.items
+            };
+            
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error('Error creating order:', error);
+            throw error;
+        } finally {
+            client.release();
         }
-      }
-      
-      const order = orderResult.rows[0];
-      let subtotal = 0;
-      
-      // Create order items
-      for (const item of items) {
-        const searchName = item.product_name.trim();
-        console.log('🔍 Looking for product:', `"${searchName}"`);
-        
-        // Try exact match first
-        let productResult = await client.query('SELECT * FROM products WHERE name = $1', [searchName]);
-        
-        if (productResult.rows.length === 0) {
-          console.log('⚠️ Exact match failed, trying case-insensitive...');
-          productResult = await client.query('SELECT * FROM products WHERE name ILIKE $1', [searchName]);
-        }
-        
-        // If still no match, try partial matches
-        if (productResult.rows.length === 0) {
-          console.log('⚠️ Case-insensitive failed, trying partial match...');
-          const searchTerms = searchName.split(' ');
-          const mainTerm = searchTerms[0]; // First word
-          productResult = await client.query('SELECT * FROM products WHERE name ILIKE $1', [`%${mainTerm}%`]);
-          
-          if (productResult.rows.length > 0) {
-            console.log(`🔄 Found ${productResult.rows.length} partial matches for "${mainTerm}":`, 
-              productResult.rows.map(p => `"${p.name}"`));
-            // Use the first match for now
-            productResult.rows = [productResult.rows[0]];
-          }
-        }
-        
-        console.log('📦 Found products:', productResult.rows.length);
-        const product = productResult.rows[0];
-        
-        if (!product) {
-          console.error('❌ Product not found:', `"${searchName}"`);
-          // List similar products for debugging
-          const similarResult = await client.query('SELECT name FROM products LIMIT 10');
-          console.log('🔄 Available products sample:', similarResult.rows.map(p => `"${p.name}"`));
-          throw new Error(`Product not found: ${searchName}`);
-        } else {
-          console.log('✅ Using product:', `"${product.name}" - ₦${product.price}`);
-        }
-        
-        const itemSubtotal = product.price * item.quantity;
-        subtotal += itemSubtotal;
-        
-        await client.query(
-          'INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal) VALUES ($1, $2, $3, $4, $5)',
-          [order.id, product.id, item.quantity, product.price, itemSubtotal]
-        );
-      }
-      
-      // Calculate VAT (2.5%)
-      const vatAmount = subtotal * 0.025;
-      const totalAmount = subtotal + vatAmount;
-      
-      // Update order with subtotal, VAT, and total
-      await client.query(
-        'UPDATE orders SET subtotal = $1, vat_amount = $2, total_amount = $3 WHERE id = $4',
-        [subtotal, vatAmount, totalAmount, order.id]
-      );
-      
-      await client.query('COMMIT');
-      
-      return { ...order, subtotal, vat_amount: vatAmount, total_amount: totalAmount };
-      
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
     }
-  }
-
-  static async findById(id) {
-    const result = await pool.query(`
-      SELECT o.*, c.name as customer_name, c.email, c.phone, c.address, c.hospital_name
-      FROM orders o 
-      JOIN customers c ON o.customer_id = c.id 
-      WHERE o.id = $1
-    `, [id]);
-    return result.rows[0];
-  }
-
-  static async getOrderItems(orderId) {
-    const result = await pool.query(`
-      SELECT oi.*, p.name as product_name 
-      FROM order_items oi 
-      JOIN products p ON oi.product_id = p.id 
-      WHERE oi.order_id = $1
-    `, [orderId]);
-    return result.rows;
-  }
-
-  static async getAll() {
-    const result = await pool.query(`
-      SELECT o.*, c.name as customer_name, c.email, c.phone, c.delivery_address as customer_delivery_address
-      FROM orders o 
-      JOIN customers c ON o.customer_id = c.id 
-      ORDER BY o.created_at DESC
-    `);
-    return result.rows;
-  }
+    
+    static async getAll() {
+        const client = await pool.connect();
+        try {
+            console.log('Fetching all orders with customer and item details...');
+            
+            const ordersQuery = `
+                SELECT 
+                    o.id,
+                    o.total_amount,
+                    o.status,
+                    o.created_at,
+                    c.name as customer_name,
+                    c.customer_id,
+                    c.phone as customer_phone,
+                    c.address as customer_address,
+                    c.company as customer_company
+                FROM orders o
+                JOIN customers c ON o.customer_id = c.id
+                ORDER BY o.created_at DESC`;
+            
+            const ordersResult = await client.query(ordersQuery);
+            
+            console.log(`Found ${ordersResult.rows.length} orders`);
+            
+            // Get items for each order
+            const ordersWithItems = [];
+            for (const order of ordersResult.rows) {
+                const itemsQuery = `
+                    SELECT 
+                        oi.product_name,
+                        oi.quantity,
+                        oi.price,
+                        oi.subtotal,
+                        p.description
+                    FROM order_items oi
+                    LEFT JOIN products p ON oi.product_id = p.id
+                    WHERE oi.order_id = $1`;
+                
+                const itemsResult = await client.query(itemsQuery, [order.id]);
+                
+                ordersWithItems.push({
+                    ...order,
+                    items: itemsResult.rows
+                });
+            }
+            
+            console.log('Orders with items fetched successfully');
+            return ordersWithItems;
+            
+        } catch (error) {
+            console.error('Error fetching orders:', error);
+            return [];
+        } finally {
+            client.release();
+        }
+    }
+    
+    static async getById(orderId) {
+        const client = await pool.connect();
+        try {
+            console.log('Fetching order by ID:', orderId);
+            
+            const orderQuery = `
+                SELECT 
+                    o.id,
+                    o.total_amount,
+                    o.status,
+                    o.created_at,
+                    c.name as customer_name,
+                    c.customer_id,
+                    c.phone as customer_phone,
+                    c.address as customer_address,
+                    c.company as customer_company
+                FROM orders o
+                JOIN customers c ON o.customer_id = c.id
+                WHERE o.id = $1`;
+            
+            const orderResult = await client.query(orderQuery, [orderId]);
+            
+            if (orderResult.rows.length === 0) {
+                console.log('Order not found with ID:', orderId);
+                return null;
+            }
+            
+            const order = orderResult.rows[0];
+            
+            // Get order items
+            const itemsQuery = `
+                SELECT 
+                    oi.product_name,
+                    oi.quantity,
+                    oi.price,
+                    oi.subtotal,
+                    p.description
+                FROM order_items oi
+                LEFT JOIN products p ON oi.product_id = p.id
+                WHERE oi.order_id = $1`;
+            
+            const itemsResult = await client.query(itemsQuery, [orderId]);
+            
+            const completeOrder = {
+                ...order,
+                items: itemsResult.rows
+            };
+            
+            console.log('Order found:', completeOrder);
+            return completeOrder;
+            
+        } catch (error) {
+            console.error('Error fetching order by ID:', error);
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
 }
 
 module.exports = Order;
