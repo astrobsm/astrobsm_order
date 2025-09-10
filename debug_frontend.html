@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Debug - ASTRO BSM Orders</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .debug-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        #results { background: #f5f5f5; padding: 15px; margin-top: 10px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>🔧 ASTRO BSM Frontend Debug</h1>
+    
+    <div class="debug-section">
+        <h3>📡 API Connection Test</h3>
+        <button onclick="testOrdersAPI()">Test Orders API</button>
+        <button onclick="testProductsAPI()">Test Products API</button>
+        <div id="results"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h3>🔐 Admin Login Test</h3>
+        <input type="password" id="testPassword" placeholder="Enter password" value="roseball">
+        <button onclick="testAdminAccess()">Test Admin Access</button>
+        <div id="adminResults"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = '/api';
+        
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const timestamp = new Date().toLocaleTimeString();
+            results.innerHTML += `[${timestamp}] ${message}\n`;
+            console.log(`[${type}] ${message}`);
+        }
+        
+        async function testOrdersAPI() {
+            document.getElementById('results').innerHTML = '';
+            log('🔍 Testing Orders API...', 'info');
+            
+            try {
+                log(`📡 Fetching from: ${API_BASE_URL}/orders`, 'info');
+                const response = await fetch(`${API_BASE_URL}/orders`);
+                log(`📊 Response status: ${response.status}`, 'info');
+                log(`✅ Response ok: ${response.ok}`, 'info');
+                
+                if (response.ok) {
+                    const orders = await response.json();
+                    log(`✅ Orders loaded: ${orders.length}`, 'success');
+                    
+                    if (orders.length > 0) {
+                        const firstOrder = orders[0];
+                        log(`📋 First order:`, 'info');
+                        log(`  - ID: ${firstOrder.id}`, 'info');
+                        log(`  - Customer: ${firstOrder.customer_name || 'Unknown'}`, 'info');
+                        log(`  - Phone: ${firstOrder.phone || 'Not provided'}`, 'info');
+                        log(`  - Total: ${firstOrder.total_amount || 'N/A'}`, 'info');
+                        log(`  - Date: ${firstOrder.created_at || 'N/A'}`, 'info');
+                    } else {
+                        log('❌ No orders found in response', 'error');
+                    }
+                } else {
+                    const errorText = await response.text();
+                    log(`❌ API Error: ${errorText}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Network Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testProductsAPI() {
+            log('🛍️ Testing Products API...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/products`);
+                log(`📊 Products API status: ${response.status}`, 'info');
+                
+                if (response.ok) {
+                    const products = await response.json();
+                    log(`✅ Products loaded: ${products.length}`, 'success');
+                    
+                    if (products.length > 0) {
+                        const firstProduct = products[0];
+                        log(`📦 First product: ${firstProduct.name} - ₦${firstProduct.price}`, 'info');
+                    }
+                } else {
+                    const errorText = await response.text();
+                    log(`❌ Products API Error: ${errorText}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Products Network Error: ${error.message}`, 'error');
+            }
+        }
+        
+        function testAdminAccess() {
+            const password = document.getElementById('testPassword').value;
+            const resultsDiv = document.getElementById('adminResults');
+            
+            resultsDiv.innerHTML = '';
+            resultsDiv.innerHTML += `<p class="info">Testing password: "${password}"</p>`;
+            
+            if (password === 'roseball') {
+                resultsDiv.innerHTML += `<p class="success">✅ Password correct! Admin access should be granted.</p>`;
+                resultsDiv.innerHTML += `<p class="info">Now testing order loading...</p>`;
+                testOrdersAPI();
+            } else {
+                resultsDiv.innerHTML += `<p class="error">❌ Password incorrect. Expected "roseball".</p>`;
+            }
+        }
+        
+        // Auto-run tests on page load
+        window.onload = function() {
+            log('🚀 Debug page loaded. Testing APIs...', 'info');
+            testOrdersAPI();
+        };
+    </script>
+</body>
+</html>

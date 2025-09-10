@@ -629,25 +629,34 @@ async function loadAllOrders() {
   try {
     console.log('📋 Loading orders for admin view...');
     console.log('🔗 API URL:', `${API_BASE_URL}/orders`);
+    console.log('🌐 Full URL will be:', window.location.origin + `${API_BASE_URL}/orders`);
     
     const response = await fetch(`${API_BASE_URL}/orders`);
     console.log('📡 Response status:', response.status);
     console.log('📡 Response ok:', response.ok);
+    console.log('📡 Response headers:', [...response.headers.entries()]);
     
     if (response.ok) {
       const orders = await response.json();
       console.log(`✅ Loaded ${orders.length} orders`);
-      console.log('📋 Orders data:', orders);
-      displayOrdersList(orders);
+      console.log('📋 Raw orders data:', JSON.stringify(orders, null, 2));
+      
+      if (orders && Array.isArray(orders)) {
+        displayOrdersList(orders);
+      } else {
+        console.error('❌ Orders response is not an array:', typeof orders, orders);
+        showNotification('Invalid orders data format', 'error');
+      }
     } else {
       const errorText = await response.text();
       console.error('❌ Failed to load orders - Status:', response.status);
       console.error('❌ Error response:', errorText);
-      showNotification('Failed to load orders', 'error');
+      showNotification(`Failed to load orders (${response.status})`, 'error');
     }
   } catch (error) {
     console.error('❌ Error loading orders:', error);
-    showNotification('Error loading orders', 'error');
+    console.error('❌ Error stack:', error.stack);
+    showNotification('Network error loading orders', 'error');
   }
 }
 
@@ -656,21 +665,29 @@ function displayOrdersList(orders) {
   const ordersSection = document.getElementById('ordersSection');
   if (!ordersSection) {
     console.error('❌ Orders section element not found');
+    console.error('Available elements:', document.querySelectorAll('[id*="order"]'));
     return;
   }
   
   console.log('📋 Displaying orders list, count:', orders.length);
+  console.log('📋 Orders data type:', typeof orders, Array.isArray(orders));
+  console.log('📋 First few orders:', orders.slice(0, 2));
   
-  if (orders.length === 0) {
-    ordersSection.innerHTML = `
+  if (!orders || orders.length === 0) {
+    const noOrdersHTML = `
       <h3>All Orders</h3>
       <div style="margin-bottom: 20px;">
         <button id="manageProductsBtn" class="btn-secondary">🛠️ Manage Products</button>
       </div>
       <div id="ordersList">
-        <p style="text-align: center; padding: 20px; color: #666;">No orders found in the database.</p>
+        <p style="text-align: center; padding: 20px; color: #666; background: #f9f9f9; border: 1px solid #ddd; border-radius: 5px;">
+          📭 No orders found in the database.<br>
+          <small>Orders will appear here once customers submit their orders.</small>
+        </p>
       </div>
     `;
+    ordersSection.innerHTML = noOrdersHTML;
+    console.log('📋 Displayed "no orders" message');
     return;
   }
   
