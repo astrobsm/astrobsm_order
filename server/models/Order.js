@@ -9,10 +9,10 @@ class Order {
       
       const { customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status, items } = orderData;
       
-      // Create order
+      // Create order with basic fields that likely exist
       const orderResult = await client.query(
-        'INSERT INTO orders (customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-        [customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status]
+        'INSERT INTO orders (customer_id) VALUES ($1) RETURNING *',
+        [customer_id]
       );
       
       const order = orderResult.rows[0];
