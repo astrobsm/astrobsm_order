@@ -9,6 +9,16 @@ class Order {
       
       const { customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status, items } = orderData;
       
+      // Enhanced validation logging
+      console.log('🔍 Order creation started:', {
+        customer_id,
+        delivery_date,
+        delivery_route,
+        preferred_delivery_method,
+        request_status,
+        items_count: items?.length || 0
+      });
+      
       // Create order
       const orderResult = await client.query(
         'INSERT INTO orders (customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
@@ -16,40 +26,57 @@ class Order {
       );
       
       const order = orderResult.rows[0];
+      console.log('✅ Order created with ID:', order.id);
+      
       let subtotal = 0;
       
       // Create order items with proper validation
       for (const item of items) {
+        console.log('🔍 Processing item:', item.product_name);
+        
         const productResult = await client.query('SELECT * FROM products WHERE name = $1', [item.product_name]);
         
         if (!productResult.rows || productResult.rows.length === 0) {
+          console.error('❌ Product not found:', item.product_name);
           throw new Error(`Product not found: ${item.product_name}`);
         }
         
         const product = productResult.rows[0];
+        console.log('📋 Product found:', { id: product.id, name: product.name, price: product.price });
+        
         const unitPrice = parseFloat(product.price) || 0;
         const quantity = parseInt(item.quantity) || 0;
         
+        console.log('🔢 Parsed values:', { unitPrice, quantity });
+        
         if (unitPrice <= 0) {
+          console.error('❌ Invalid price for product:', item.product_name, 'Price:', unitPrice);
           throw new Error(`Invalid price for product: ${item.product_name}`);
         }
         
         if (quantity <= 0) {
+          console.error('❌ Invalid quantity for product:', item.product_name, 'Quantity:', quantity);
           throw new Error(`Invalid quantity for product: ${item.product_name}`);
         }
         
         const itemSubtotal = unitPrice * quantity;
         subtotal += itemSubtotal;
         
+        console.log('💰 Item subtotal:', itemSubtotal);
+        
         await client.query(
           'INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal) VALUES ($1, $2, $3, $4, $5)',
           [order.id, product.id, quantity, unitPrice, itemSubtotal]
         );
+        
+        console.log('✅ Order item created for product:', product.name);
       }
       
       // Calculate VAT (2.5%)
       const vatAmount = subtotal * 0.025;
       const totalAmount = subtotal + vatAmount;
+      
+      console.log('💰 Final calculations:', { subtotal, vatAmount, totalAmount });
       
       // Update order with subtotal, VAT, and total
       await client.query(
@@ -59,11 +86,15 @@ class Order {
       
       await client.query('COMMIT');
       
+      console.log('🎉 Order creation completed successfully:', order.id);
+      
       return { ...order, subtotal, vat_amount: vatAmount, total_amount: totalAmount };
       
     } catch (error) {
       await client.query('ROLLBACK');
-      console.error('Error creating order:', error);
+      console.error('❌ Error creating order:', error.message);
+      console.error('📋 Error stack:', error.stack);
+      console.error('📋 Order data that failed:', JSON.stringify(orderData, null, 2));
       throw error;
     } finally {
       client.release();
