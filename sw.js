@@ -21,6 +21,12 @@ self.addEventListener('fetch', event => {
     return;
   }
   
+  // Skip external CDN requests to avoid CSP issues
+  const url = new URL(event.request.url);
+  if (url.hostname !== location.hostname) {
+    return; // Let the browser handle external requests normally
+  }
+  
   event.respondWith(
     caches.match(event.request).then(response => {
       if (response) {
