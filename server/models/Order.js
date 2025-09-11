@@ -16,9 +16,8 @@ class Order {
       );
       
       const order = orderResult.rows[0];
-      let subtotal = 0;
       
-      // Create order items with proper validation
+      // Create order items with minimal validation
       for (const item of items) {
         const productResult = await client.query('SELECT * FROM products WHERE name = $1', [item.product_name]);
         
@@ -27,19 +26,11 @@ class Order {
         }
         
         const product = productResult.rows[0];
-        const unitPrice = parseFloat(product.price) || 0;
         const quantity = parseInt(item.quantity) || 0;
-        
-        if (unitPrice <= 0) {
-          throw new Error(`Invalid price for product: ${item.product_name}`);
-        }
         
         if (quantity <= 0) {
           throw new Error(`Invalid quantity for product: ${item.product_name}`);
         }
-        
-        const itemSubtotal = unitPrice * quantity;
-        subtotal += itemSubtotal;
         
         await client.query(
           'INSERT INTO order_items (order_id, product_id, quantity) VALUES ($1, $2, $3)',
