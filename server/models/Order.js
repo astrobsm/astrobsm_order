@@ -27,7 +27,7 @@ class Order {
         }
         
         const product = productResult.rows[0];
-        const unitPrice = parseFloat(product.unit_price) || 0;
+        const unitPrice = parseFloat(product.price) || 0;
         const quantity = parseInt(item.quantity) || 0;
         
         if (unitPrice <= 0) {
