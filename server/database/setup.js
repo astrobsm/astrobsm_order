@@ -1,5 +1,5 @@
-// FIXED setup.js - Products with correct unit_price mapping
-// This fixes the "missing unit_price values" error
+// COMPLETE DATABASE SETUP FIX - setup.js replacement
+// This fixes all schema issues and database setup problems
 
 const { Pool } = require('pg');
 require('dotenv').config();
@@ -16,12 +16,23 @@ const pool = new Pool({
 });
 
 const createTables = async () => {
+  const client = await pool.connect();
+  
   try {
-    console.log('Creating database tables...');
+    console.log('🔄 Starting complete database reset...');
     
-    // Create customers table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS customers (
+    // STEP 1: Drop all existing tables to start fresh
+    console.log('🗑️ Dropping existing tables...');
+    await client.query('DROP TABLE IF EXISTS order_items CASCADE;');
+    await client.query('DROP TABLE IF EXISTS orders CASCADE;');
+    await client.query('DROP TABLE IF EXISTS products CASCADE;');
+    await client.query('DROP TABLE IF EXISTS customers CASCADE;');
+    console.log('✅ All existing tables dropped');
+
+    // STEP 2: Create customers table with correct schema
+    console.log('🏗️ Creating customers table...');
+    await client.query(`
+      CREATE TABLE customers (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         customer_id VARCHAR(100) UNIQUE NOT NULL,
@@ -31,23 +42,27 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    console.log('✅ Customers table created');
 
-    // Create products table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS products (
+    // STEP 3: Create products table (using PRICE, not unit_price)
+    console.log('🏗️ Creating products table...');
+    await client.query(`
+      CREATE TABLE products (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) UNIQUE NOT NULL,
         price DECIMAL(10,2) NOT NULL,
         description TEXT,
         unit_of_measure VARCHAR(50) DEFAULT 'PCS',
-        stock_quantity INTEGER DEFAULT 0,
+        stock_quantity INTEGER DEFAULT 100,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    console.log('✅ Products table created');
 
-    // Create orders table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS orders (
+    // STEP 4: Create orders table
+    console.log('🏗️ Creating orders table...');
+    await client.query(`
+      CREATE TABLE orders (
         id SERIAL PRIMARY KEY,
         customer_id INTEGER REFERENCES customers(id) ON DELETE CASCADE,
         total_amount DECIMAL(10,2) DEFAULT 0,
@@ -55,32 +70,40 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    console.log('✅ Orders table created');
 
-    // Create order_items table - FIXED: using price instead of unit_price
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS order_items (
+    // STEP 5: Create order_items table (using PRICE, not unit_price)
+    console.log('🏗️ Creating order_items table...');
+    await client.query(`
+      CREATE TABLE order_items (
         id SERIAL PRIMARY KEY,
         order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
         product_id INTEGER REFERENCES products(id),
+        product_name VARCHAR(255) NOT NULL,
         quantity INTEGER NOT NULL,
         price DECIMAL(10,2) NOT NULL,
         subtotal DECIMAL(10,2) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    console.log('✅ Order_items table created');
 
-    console.log('Tables created successfully');
+    console.log('📦 Inserting products...');
     
-    // Insert default products
-    await insertDefaultProducts();
+    // Insert default products with proper error handling
+    await insertDefaultProducts(client);
+    
+    console.log('🎉 Database setup completed successfully!');
     
   } catch (error) {
-    console.error('Error creating tables:', error);
+    console.error('❌ Error creating tables:', error);
+    throw error;
+  } finally {
+    client.release();
   }
 };
 
-const insertDefaultProducts = async () => {
-  // Updated product list - all products have valid price values
+const insertDefaultProducts = async (client) => {
   const products = [
     { name: "Wound-Care Honey Gauze Big (Carton)", price: 65000, description: "Medical supply: Wound-Care Honey Gauze Big (Carton)" },
     { name: "Wound-Care Honey Gauze Big (Packet)", price: 6000, description: "Medical supply: Wound-Care Honey Gauze Big (Packet)" },
@@ -108,35 +131,52 @@ const insertDefaultProducts = async () => {
     { name: "Wound-Clex Solution 500ml (Bottle)", price: 2300, description: "Medical supply: Wound-Clex Solution 500ml (Bottle)" }
   ];
 
+  let successCount = 0;
+  let errorCount = 0;
+
   for (const product of products) {
     try {
       // Extract unit of measure from product name
       const unitMatch = product.name.match(/\(([^)]+)\)$/);
       const unitOfMeasure = unitMatch ? unitMatch[1] : 'PCS';
       
-      // FIXED: Ensure all products have valid price values
-      const productPrice = product.price || 0;
+      // Ensure price is valid
+      const productPrice = parseFloat(product.price) || 0;
       
-      await pool.query(
-        'INSERT INTO products (name, price, description, unit_of_measure, stock_quantity, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) ON CONFLICT (name) DO UPDATE SET price = $2, description = $3, unit_of_measure = $4, created_at = NOW()',
+      if (productPrice <= 0) {
+        console.log(`⚠️ Warning: Product "${product.name}" has invalid price: ${product.price}`);
+        continue;
+      }
+      
+      await client.query(
+        'INSERT INTO products (name, price, description, unit_of_measure, stock_quantity) VALUES ($1, $2, $3, $4, $5)',
         [product.name, productPrice, product.description, unitOfMeasure, 100]
       );
-      console.log(`✅ Product: "${product.name}" - ₦${productPrice}`);
+      
+      console.log(`✅ Product: "${product.name}" - ₦${productPrice.toLocaleString()}`);
+      successCount++;
+      
     } catch (error) {
-      console.error('Error inserting product:', product.name, error);
+      console.error(`❌ Error inserting product "${product.name}":`, error.message);
+      errorCount++;
     }
   }
   
-  console.log('Default products inserted successfully');
+  console.log(`📊 Product insertion complete: ${successCount} successful, ${errorCount} failed`);
+  
+  if (errorCount > 0) {
+    throw new Error(`Failed to insert ${errorCount} products`);
+  }
 };
 
 // Run setup if called directly
 if (require.main === module) {
+  console.log('🚀 Starting database setup...');
   createTables().then(() => {
-    console.log('Database setup complete');
+    console.log('✅ Database setup complete');
     process.exit(0);
   }).catch(error => {
-    console.error('Database setup failed:', error);
+    console.error('❌ Database setup failed:', error);
     process.exit(1);
   });
 }
