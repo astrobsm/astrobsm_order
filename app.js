@@ -325,7 +325,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (loginBtn) {
       loginBtn.addEventListener('click', async () => {
         const password = adminPassword.value;
-        if (password === 'roseball') {
+        if (password === 'bluevelvet') {
           passwordSection.style.display = 'none';
           ordersSection.style.display = 'block';
           await loadAllOrders();
@@ -343,7 +343,54 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
     }
-    
+
+    // Set up Product Management button
+    const manageProductsBtn = document.getElementById('manageProductsBtn');
+    if (manageProductsBtn) {
+      manageProductsBtn.addEventListener('click', () => {
+        const password = prompt('Enter password for product management:');
+        if (password === 'bluevelvet') {
+          if (productModal) {
+            productModal.style.display = 'block';
+            loadProductManagement();
+          }
+        } else if (password !== null) {
+          alert('Incorrect password');
+        }
+      });
+    }
+
+    // Set up Product Management form buttons
+    const addProductBtn = document.getElementById('addProductBtn');
+    const saveProductBtn = document.getElementById('saveProductBtn');
+    const cancelProductBtn = document.getElementById('cancelProductBtn');
+    const addProductForm = document.getElementById('addProductForm');
+
+    if (addProductBtn && addProductForm) {
+      addProductBtn.addEventListener('click', () => {
+        addProductForm.style.display = 'block';
+        // Reset form
+        document.getElementById('newProductName').value = '';
+        document.getElementById('newProductPrice').value = '';
+        document.getElementById('newProductDescription').value = '';
+        // Reset save button
+        if (saveProductBtn) {
+          saveProductBtn.onclick = () => saveProduct();
+          saveProductBtn.textContent = 'Save Product';
+        }
+      });
+    }
+
+    if (cancelProductBtn && addProductForm) {
+      cancelProductBtn.addEventListener('click', () => {
+        addProductForm.style.display = 'none';
+      });
+    }
+
+    if (saveProductBtn) {
+      saveProductBtn.addEventListener('click', () => saveProduct());
+    }
+
     console.log('Application initialized successfully');
   } catch (error) {
     console.error('Error initializing application:', error);
@@ -890,6 +937,148 @@ function printOrder() {
     printWindow.print();
     printWindow.close();
   }, 500);
+}
+
+// Load product management
+async function loadProductManagement() {
+  try {
+    // Show existing products
+    const productsList = document.getElementById('productsList');
+    if (productsList) {
+      let productsHtml = '<h3>Current Products:</h3>';
+      productList.forEach((product, index) => {
+        productsHtml += `
+          <div class="product-item">
+            <span>${product.name} - ₦${product.unit_price}</span>
+            <button onclick="editProduct(${index})" class="btn-secondary">Edit</button>
+            <button onclick="deleteProduct(${index})" class="btn-danger">Delete</button>
+          </div>
+        `;
+      });
+      productsList.innerHTML = productsHtml;
+    }
+  } catch (error) {
+    console.error('Error loading product management:', error);
+  }
+}
+
+// Edit product
+function editProduct(index) {
+  const product = productList[index];
+  const nameInput = document.getElementById('newProductName');
+  const priceInput = document.getElementById('newProductPrice');
+  const descInput = document.getElementById('newProductDescription');
+  const addForm = document.getElementById('addProductForm');
+  
+  if (nameInput && priceInput && addForm) {
+    nameInput.value = product.name;
+    priceInput.value = product.unit_price;
+    descInput.value = product.description || '';
+    addForm.style.display = 'block';
+    
+    // Update save button to edit mode
+    const saveBtn = document.getElementById('saveProductBtn');
+    if (saveBtn) {
+      saveBtn.onclick = () => saveProduct(index);
+      saveBtn.textContent = 'Update Product';
+    }
+  }
+}
+
+// Delete product
+async function deleteProduct(index) {
+  if (confirm('Are you sure you want to delete this product?')) {
+    try {
+      const product = productList[index];
+      const response = await fetch(`${API_BASE_URL}/products/${product.id}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        productList.splice(index, 1);
+        loadProductManagement();
+        alert('Product deleted successfully');
+      } else {
+        throw new Error('Failed to delete product');
+      }
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      alert('Error deleting product: ' + error.message);
+    }
+  }
+}
+
+// Save product (add or update)
+async function saveProduct(editIndex = null) {
+  const nameInput = document.getElementById('newProductName');
+  const priceInput = document.getElementById('newProductPrice');
+  const descInput = document.getElementById('newProductDescription');
+  
+  if (!nameInput || !priceInput) return;
+  
+  const name = nameInput.value.trim();
+  const price = parseFloat(priceInput.value);
+  const description = descInput.value.trim();
+  
+  if (!name || !price || price <= 0) {
+    alert('Please enter valid product name and price');
+    return;
+  }
+  
+  try {
+    const productData = {
+      name: name,
+      unit_price: price,
+      description: description
+    };
+    
+    let response;
+    if (editIndex !== null) {
+      // Update existing product
+      const product = productList[editIndex];
+      response = await fetch(`${API_BASE_URL}/products/${product.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData)
+      });
+    } else {
+      // Add new product
+      response = await fetch(`${API_BASE_URL}/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData)
+      });
+    }
+    
+    if (response.ok) {
+      // Refresh product list
+      await loadProducts();
+      loadProductManagement();
+      
+      // Reset form
+      nameInput.value = '';
+      priceInput.value = '';
+      descInput.value = '';
+      
+      // Hide form
+      const addForm = document.getElementById('addProductForm');
+      if (addForm) addForm.style.display = 'none';
+      
+      // Reset save button
+      const saveBtn = document.getElementById('saveProductBtn');
+      if (saveBtn) {
+        saveBtn.onclick = () => saveProduct();
+        saveBtn.textContent = 'Save Product';
+      }
+      
+      alert(editIndex !== null ? 'Product updated successfully' : 'Product added successfully');
+    } else {
+      throw new Error('Failed to save product');
+    }
+  } catch (error) {
+    console.error('Error saving product:', error);
+    alert('Error saving product: ' + error.message);
+  }
 }
 
 // Load all orders function

@@ -1,0 +1,354 @@
+// COMPLETE CORRECTED SERVER.JS - Fixes "app is not defined" error
+// Replace the entire server.js file with this content
+
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const path = require('path');
+require('dotenv').config();
+
+const productRoutes = require('./routes/products');
+const orderRoutes = require('./routes/orders');
+const adminRoutes = require('./routes/admin');
+const databaseRoutes = require('./routes/database');
+const diagnosticsRoutes = require('./routes/diagnostics');
+const databaseTestRoutes = require('./routes/database-test');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Add error handling for uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
+// Security and middleware setup
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https:"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https:"],
+      fontSrc: ["'self'", "https:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+}));
+
+app.use(morgan('combined'));
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Static file serving with cache control
+app.use(express.static(path.join(__dirname, '../'), {
+  setHeaders: (res, path) => {
+    if (path.includes('.js') || path.includes('.css')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+    if (path.includes('app.js')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+    if (path.includes('manifest.json') || path.includes('sw.js')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+  }
+}));
+
+app.use('/public', express.static(path.join(__dirname, '../public')));
+
+// API Routes
+app.use('/api/products', productRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/database', databaseRoutes);
+app.use('/api/diagnostics', diagnosticsRoutes);
+app.use('/api/db-test', databaseTestRoutes);
+
+// Health check endpoints
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', message: 'Server is running', timestamp: new Date().toISOString() });
+});
+
+// Database reset endpoint for production
+app.post('/api/reset-database', async (req, res) => {
+  console.log('🔄 Database reset requested...');
+  
+  try {
+    const { Pool } = require('pg');
+    
+    const pool = new Pool({
+      user: process.env.DB_USER,
+      host: process.env.DB_HOST,
+      database: process.env.DB_NAME,
+      password: process.env.DB_PASSWORD,
+      port: process.env.DB_PORT,
+      ssl: process.env.DB_SSL && process.env.DB_SSL !== 'false' ? {
+        rejectUnauthorized: false
+      } : false
+    });
+
+    const client = await pool.connect();
+    
+    try {
+      console.log('🗑️ Dropping all existing tables...');
+      
+      // Drop all tables in correct order
+      await client.query('DROP TABLE IF EXISTS order_items CASCADE;');
+      await client.query('DROP TABLE IF EXISTS orders CASCADE;');
+      await client.query('DROP TABLE IF EXISTS products CASCADE;');
+      await client.query('DROP TABLE IF EXISTS customers CASCADE;');
+      
+      console.log('🏗️ Creating fresh tables...');
+      
+      // Create customers table
+      await client.query(`
+        CREATE TABLE customers (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          customer_id VARCHAR(100) UNIQUE NOT NULL,
+          phone VARCHAR(50),
+          address TEXT,
+          company VARCHAR(255),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      // Create products table with PRICE column (not unit_price)
+      await client.query(`
+        CREATE TABLE products (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) UNIQUE NOT NULL,
+          price DECIMAL(10,2) NOT NULL,
+          description TEXT,
+          unit_of_measure VARCHAR(50) DEFAULT 'PCS',
+          stock_quantity INTEGER DEFAULT 100,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      // Create orders table
+      await client.query(`
+        CREATE TABLE orders (
+          id SERIAL PRIMARY KEY,
+          customer_id INTEGER REFERENCES customers(id) ON DELETE CASCADE,
+          total_amount DECIMAL(10,2) DEFAULT 0,
+          status VARCHAR(50) DEFAULT 'pending',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      // Create order_items table with PRICE column (not unit_price)
+      await client.query(`
+        CREATE TABLE order_items (
+          id SERIAL PRIMARY KEY,
+          order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
+          product_id INTEGER REFERENCES products(id),
+          product_name VARCHAR(255) NOT NULL,
+          quantity INTEGER NOT NULL,
+          price DECIMAL(10,2) NOT NULL,
+          subtotal DECIMAL(10,2) NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      console.log('📦 Inserting fresh product data...');
+      
+      // Insert all products with correct pricing
+      const products = [
+        { name: "Wound-Care Honey Gauze Big (Carton)", price: 65000, description: "Medical supply: Wound-Care Honey Gauze Big (Carton)" },
+        { name: "Wound-Care Honey Gauze Big (Packet)", price: 6000, description: "Medical supply: Wound-Care Honey Gauze Big (Packet)" },
+        { name: "Wound-Care Honey Gauze Small (Carton)", price: 61250, description: "Medical supply: Wound-Care Honey Gauze Small (Carton)" },
+        { name: "Wound-Care Honey Gauze Small (Packet)", price: 3500, description: "Medical supply: Wound-Care Honey Gauze Small (Packet)" },
+        { name: "Hera Wound-Gel 100g (Carton)", price: 65000, description: "Medical supply: Hera Wound-Gel 100g (Carton)" },
+        { name: "Hera Wound-Gel 100g (Tube)", price: 3250, description: "Medical supply: Hera Wound-Gel 100g (Tube)" },
+        { name: "Hera Wound-Gel 40g (Carton)", price: 48000, description: "Medical supply: Hera Wound-Gel 40g (Carton)" },
+        { name: "Hera Wound-Gel 40g (Tube)", price: 2000, description: "Medical supply: Hera Wound-Gel 40g (Tube)" },
+        { name: "Coban Bandage 6 inch (Piece)", price: 4500, description: "Medical supply: Coban Bandage 6 inch (Piece)" },
+        { name: "Coban Bandage 6 inch (Carton)", price: 48500, description: "Medical supply: Coban Bandage 6 inch (Carton)" },
+        { name: "Coban Bandage 4 inch (Piece)", price: 3500, description: "Medical supply: Coban Bandage 4 inch (Piece)" },
+        { name: "Coban Bandage 4 inch (Carton)", price: 37500, description: "Medical supply: Coban Bandage 4 inch (Carton)" },
+        { name: "Silicone Scar Sheet (Packet)", price: 10000, description: "Medical supply: Silicone Scar Sheet (Packet)" },
+        { name: "Silicone Scar Sheet (Block)", price: 90000, description: "Medical supply: Silicone Scar Sheet (Block)" },
+        { name: "Silicone Foot Pad (Pair)", price: 2000, description: "Medical supply: Silicone Foot Pad (Pair)" },
+        { name: "Sterile Dressing Pack (Bag)", price: 10000, description: "Medical supply: Sterile Dressing Pack (Bag)" },
+        { name: "Sterile Dressing Pack (Piece)", price: 600, description: "Medical supply: Sterile Dressing Pack (Piece)" },
+        { name: "Sterile Gauze-Only Pack (Bag)", price: 10000, description: "Medical supply: Sterile Gauze-Only Pack (Bag)" },
+        { name: "Sterile Gauze-Only Pack (Piece)", price: 600, description: "Medical supply: Sterile Gauze-Only Pack (Piece)" },
+        { name: "Skin Staples (Piece)", price: 4000, description: "Medical supply: Skin Staples (Piece)" },
+        { name: "NPWT (VAC) Foam (Piece)", price: 2000, description: "Medical supply: NPWT (VAC) Foam (Piece)" },
+        { name: "Opsite (Piece)", price: 6000, description: "Medical supply: Opsite (Piece)" },
+        { name: "Wound-Clex Solution 500ml (Carton)", price: 12500, description: "Medical supply: Wound-Clex Solution 500ml (Carton)" },
+        { name: "Wound-Clex Solution 500ml (Bottle)", price: 2300, description: "Medical supply: Wound-Clex Solution 500ml (Bottle)" }
+      ];
+
+      for (const product of products) {
+        const unitMatch = product.name.match(/\(([^)]+)\)$/);
+        const unitOfMeasure = unitMatch ? unitMatch[1] : 'PCS';
+        
+        await client.query(
+          'INSERT INTO products (name, price, description, unit_of_measure, stock_quantity) VALUES ($1, $2, $3, $4, $5)',
+          [product.name, product.price, product.description, unitOfMeasure, 100]
+        );
+      }
+      
+      // Get final counts
+      const productCount = await client.query('SELECT COUNT(*) FROM products');
+      const customerCount = await client.query('SELECT COUNT(*) FROM customers');
+      const orderCount = await client.query('SELECT COUNT(*) FROM orders');
+      
+      console.log('✅ Database reset completed successfully');
+      console.log(`📊 Products: ${productCount.rows[0].count}, Customers: ${customerCount.rows[0].count}, Orders: ${orderCount.rows[0].count}`);
+      
+      res.json({
+        success: true,
+        message: 'Database reset completed successfully',
+        statistics: {
+          products: parseInt(productCount.rows[0].count),
+          customers: parseInt(customerCount.rows[0].count),
+          orders: parseInt(orderCount.rows[0].count)
+        }
+      });
+      
+    } finally {
+      client.release();
+      await pool.end();
+    }
+    
+  } catch (error) {
+    console.error('❌ Database reset failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Database reset failed',
+      error: error.message
+    });
+  }
+});
+
+// Schema setup endpoint (temporary)
+app.post('/api/setup-schema', async (req, res) => {
+  console.log('🔧 Schema setup requested...');
+  
+  try {
+    const { Pool } = require('pg');
+    
+    const pool = new Pool({
+      user: process.env.DB_USER,
+      host: process.env.DB_HOST,
+      database: process.env.DB_NAME,
+      password: process.env.DB_PASSWORD,
+      port: process.env.DB_PORT,
+      ssl: process.env.DB_SSL && process.env.DB_SSL !== 'false' ? {
+        rejectUnauthorized: false
+      } : false
+    });
+
+    const client = await pool.connect();
+    
+    try {
+      // Check if customer_id column exists
+      const columnCheck = await client.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'customers' AND column_name = 'customer_id'
+      `);
+      
+      if (columnCheck.rows.length === 0) {
+        console.log('Adding customer_id column...');
+        await client.query('ALTER TABLE customers ADD COLUMN customer_id VARCHAR(100) UNIQUE');
+        
+        // Update existing customers with unique customer_id
+        const existingCustomers = await client.query('SELECT id FROM customers WHERE customer_id IS NULL');
+        for (const customer of existingCustomers.rows) {
+          const customerId = 'CUST_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+          await client.query('UPDATE customers SET customer_id = $1 WHERE id = $2', [customerId, customer.id]);
+        }
+      }
+      
+      console.log('✅ Schema setup completed');
+      
+      res.json({
+        success: true,
+        message: 'Schema setup completed successfully'
+      });
+      
+    } finally {
+      client.release();
+      await pool.end();
+    }
+    
+  } catch (error) {
+    console.error('❌ Schema setup failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Schema setup failed',
+      error: error.message
+    });
+  }
+});
+
+// Serve favicon
+app.get('/favicon.ico', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/favicon.ico'));
+});
+
+// Main page
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../index.html'));
+});
+
+// Admin tools page
+app.get('/admin-tools', (req, res) => {
+  res.sendFile(path.join(__dirname, '../admin-tools.html'));
+});
+
+// Serve quick price update script
+app.get('/quick-price-update.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.sendFile(path.join(__dirname, '../quick-price-update.js'));
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('❌ Server Error:', err.stack);
+  res.status(500).json({
+    success: false,
+    message: 'Internal Server Error',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  console.log('❌ 404 Not Found:', req.originalUrl);
+  res.status(404).json({
+    success: false,
+    message: 'Not Found',
+    path: req.originalUrl
+  });
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`✅ ASTRO-BSM Order System running on port ${PORT}`);
+  console.log(`🌐 Server URL: http://localhost:${PORT}`);
+  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔧 Database Host: ${process.env.DB_HOST || 'localhost'}`);
+});
