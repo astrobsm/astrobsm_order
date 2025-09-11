@@ -497,10 +497,14 @@ button:focus {
 .order-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: var(--spacing-sm);
   flex-wrap: wrap;
   gap: var(--spacing-xs);
+}
+
+.order-header .export-buttons {
+  margin-left: auto;
 }
 
 .order-id {
@@ -645,11 +649,55 @@ button:focus {
   background: #6d28d9;
 }
 
+/* Export buttons in admin panel */
+.export-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-export-pdf {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-export-pdf:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.btn-export-pdf:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* Responsive button layout */
 @media (max-width: 768px) {
   .btn-secondary {
     width: 100%;
     margin: 5px 0;
+    justify-content: center;
+  }
+  
+  .export-buttons {
+    width: 100%;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  
+  .btn-export-pdf {
+    flex: 1;
     justify-content: center;
   }
 }

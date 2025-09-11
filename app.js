@@ -931,11 +931,16 @@ async function loadAllOrders() {
       const orderWithItems = await itemsResponse.json();
       
       ordersHtml += `
-        <div class="order-card">
+        <div class="order-card" id="order-${order.id}">
           <div class="order-header">
             <span class="order-id">Order #${order.id}</span>
             <span class="order-status status-${order.status}">${order.status}</span>
             <span class="urgency-badge urgency-${order.request_status}">${urgencyNames[order.request_status] || order.request_status}</span>
+            <div class="export-buttons">
+              <button class="btn-export-pdf" onclick="exportOrderAsPDF(${order.id}, '${order.customer_name.replace(/'/g, "\\'")}')">
+                📄 Export PDF
+              </button>
+            </div>
           </div>
           <div class="order-details">
             <div><strong>Customer:</strong> ${order.customer_name}</div>
@@ -1165,6 +1170,188 @@ function clearProductForm() {
   document.getElementById('newProductName').value = '';
   document.getElementById('newProductPrice').value = '';
   document.getElementById('newProductDescription').value = '';
+}
+
+// Export order as PDF
+async function exportOrderAsPDF(orderId, customerName) {
+  try {
+    // Fetch the complete order data
+    const response = await fetch(`${API_BASE_URL}/orders/${orderId}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch order data');
+    }
+    
+    const orderData = await response.json();
+    console.log('Order data for PDF:', orderData);
+    
+    // Initialize jsPDF
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Company header
+    doc.setFontSize(20);
+    doc.setTextColor(40, 40, 40);
+    doc.text('ASTRO-BSM PROFESSIONAL MEDICAL SUPPLIES', 20, 25);
+    
+    doc.setFontSize(12);
+    doc.setTextColor(100, 100, 100);
+    doc.text('Medical Equipment • Laboratory Supplies • Healthcare Solutions', 20, 35);
+    
+    // Order title
+    doc.setFontSize(16);
+    doc.setTextColor(40, 40, 40);
+    doc.text(`ORDER CONFIRMATION #${orderId}`, 20, 55);
+    
+    // Customer information
+    doc.setFontSize(12);
+    doc.setTextColor(40, 40, 40);
+    let yPos = 75;
+    
+    doc.text('CUSTOMER INFORMATION:', 20, yPos);
+    yPos += 10;
+    doc.text(`Name: ${orderData.customer_name}`, 25, yPos);
+    yPos += 8;
+    if (orderData.email) {
+      doc.text(`Email: ${orderData.email}`, 25, yPos);
+      yPos += 8;
+    }
+    doc.text(`Phone: ${orderData.phone}`, 25, yPos);
+    yPos += 8;
+    doc.text(`Address: ${orderData.delivery_address}`, 25, yPos);
+    yPos += 8;
+    if (orderData.company) {
+      doc.text(`Company: ${orderData.company}`, 25, yPos);
+      yPos += 8;
+    }
+    
+    // Order details
+    yPos += 5;
+    doc.text('ORDER DETAILS:', 20, yPos);
+    yPos += 10;
+    doc.text(`Order Date: ${new Date(orderData.created_at).toLocaleDateString()}`, 25, yPos);
+    yPos += 8;
+    if (orderData.delivery_date) {
+      doc.text(`Delivery Date: ${new Date(orderData.delivery_date).toLocaleDateString()}`, 25, yPos);
+      yPos += 8;
+    }
+    if (orderData.preferred_delivery_method) {
+      const deliveryMethodNames = {
+        'pickup': 'Pickup from Store',
+        'delivery': 'Home/Office Delivery',
+        'shipping': 'Courier Shipping'
+      };
+      doc.text(`Delivery Method: ${deliveryMethodNames[orderData.preferred_delivery_method] || orderData.preferred_delivery_method}`, 25, yPos);
+      yPos += 8;
+    }
+    if (orderData.delivery_route) {
+      doc.text(`Delivery Instructions: ${orderData.delivery_route}`, 25, yPos);
+      yPos += 8;
+    }
+    if (orderData.request_status) {
+      const urgencyNames = {
+        'can_wait_24hrs': 'Can wait for 24 hours',
+        'urgent': 'Urgent',
+        'very_urgent': 'Very Urgent'
+      };
+      doc.text(`Urgency: ${urgencyNames[orderData.request_status] || orderData.request_status}`, 25, yPos);
+      yPos += 8;
+    }
+    
+    // Items table header
+    yPos += 10;
+    doc.text('ORDERED ITEMS:', 20, yPos);
+    yPos += 10;
+    
+    // Table header
+    doc.setFillColor(240, 240, 240);
+    doc.rect(20, yPos, 170, 8, 'F');
+    doc.setTextColor(40, 40, 40);
+    doc.text('Item', 25, yPos + 6);
+    doc.text('Qty', 120, yPos + 6);
+    doc.text('Unit Price', 140, yPos + 6);
+    doc.text('Total', 170, yPos + 6);
+    yPos += 15;
+    
+    // Items
+    let subtotal = 0;
+    if (orderData.items && orderData.items.length > 0) {
+      orderData.items.forEach(item => {
+        const itemTotal = parseFloat(item.unit_price) * parseInt(item.quantity);
+        subtotal += itemTotal;
+        
+        doc.text(item.product_name, 25, yPos);
+        doc.text(item.quantity.toString(), 125, yPos);
+        doc.text(`₦${parseFloat(item.unit_price).toFixed(2)}`, 140, yPos);
+        doc.text(`₦${itemTotal.toFixed(2)}`, 170, yPos);
+        yPos += 8;
+      });
+    }
+    
+    // Totals
+    yPos += 5;
+    doc.line(20, yPos, 190, yPos); // Horizontal line
+    yPos += 10;
+    
+    const vat = subtotal * 0.025;
+    const total = subtotal + vat;
+    
+    doc.text('Subtotal:', 140, yPos);
+    doc.text(`₦${subtotal.toFixed(2)}`, 170, yPos);
+    yPos += 8;
+    doc.text('VAT (2.5%):', 140, yPos);
+    doc.text(`₦${vat.toFixed(2)}`, 170, yPos);
+    yPos += 8;
+    doc.setFontSize(14);
+    doc.text('TOTAL:', 140, yPos);
+    doc.text(`₦${total.toFixed(2)}`, 170, yPos);
+    
+    // Payment instructions
+    yPos += 20;
+    doc.setFontSize(12);
+    doc.setTextColor(40, 40, 40);
+    doc.text('PAYMENT INSTRUCTIONS:', 20, yPos);
+    yPos += 10;
+    doc.setFontSize(10);
+    doc.text('Please make payment to any of these accounts:', 25, yPos);
+    yPos += 8;
+    doc.text('ACCOUNT NAME: BONNESANTE MEDICALS', 25, yPos);
+    yPos += 6;
+    doc.text('Account 1: 8259518195 - MONIEPOINT MICROFINANCE BANK', 25, yPos);
+    yPos += 6;
+    doc.text('Account 2: 2402979199 - ZENITH BANK', 25, yPos);
+    yPos += 6;
+    doc.text('Account 3: 0110395969 - GTBANK', 25, yPos);
+    
+    // Footer
+    yPos += 15;
+    doc.setTextColor(100, 100, 100);
+    doc.text('Thank you for choosing ASTRO-BSM Professional Medical Supplies!', 20, yPos);
+    yPos += 6;
+    doc.text('For inquiries, contact us at: info@astrobsm.com', 20, yPos);
+    
+    // Generate filename and save
+    const orderDate = new Date(orderData.created_at).toISOString().split('T')[0];
+    const safeCustomerName = customerName.replace(/[^a-zA-Z0-9]/g, '_');
+    const filename = `ASTRO-BSM_Order_${orderId}_${safeCustomerName}_${orderDate}.pdf`;
+    
+    doc.save(filename);
+    
+    // Show success message
+    const btn = document.querySelector(`button[onclick*="exportOrderAsPDF(${orderId}"]`);
+    if (btn) {
+      const originalText = btn.textContent;
+      btn.textContent = '✅ Downloaded!';
+      btn.disabled = true;
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }, 3000);
+    }
+    
+  } catch (error) {
+    console.error('Error exporting PDF:', error);
+    alert('Error exporting PDF: ' + error.message);
+  }
 }
 
 // PWA: Register service worker
