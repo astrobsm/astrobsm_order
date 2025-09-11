@@ -95,80 +95,155 @@ function numberToWords(num) {
   return result + ' Only';
 }
 
-// Load products from API
+// Load products from API with comprehensive error handling
 async function loadProducts() {
   try {
+    console.log('🔍 Loading products from database...');
+    
     const response = await fetch(`${API_BASE_URL}/products`);
-    if (response.ok) {
-      productList = await response.json();
-    } else {
-      // Fallback to hardcoded list if API fails
-      productList = [
-        "Wound-Care Honey Gauze Big (CTN)",
-        "Wound-Care Honey Gauze Big (Packets)",
-        "Wound-Care Honey Gauze Small (CTN)",
-        "Wound-Care Honey Gauze Small (Packets)",
-        "Hera Wound-Gel 100g (CTN)",
-        "Hera Wound-Gel 100g (Tubes)",
-        "Hera Wound-Gel 40g (CTN)",
-        "Hera Wound-Gel 40g (Tubes)",
-        "Coban Bandage 6inc (PCS)",
-        "Coban Bandage 4inc (PCS)",
-        "Silicone Scar Sheet (Packet)",
-        "Opsite (PCS)",
-        "Wound-Clex Solution 500ml (CTN)",
-        "Wound-Clex Solution 500ml (Bottles)",
-        "Sterile Dressing Packs (PCS)"
-      ];
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
+    
+    const products = await response.json();
+    
+    if (!Array.isArray(products)) {
+      throw new Error('Invalid product data format received');
+    }
+    
+    if (products.length === 0) {
+      throw new Error('No products found in database');
+    }
+    
+    // Validate product structure
+    const validProducts = products.filter(product => {
+      return product && 
+             typeof product.name === 'string' && 
+             product.name.trim() !== '' &&
+             (product.price !== undefined || product.unit_price !== undefined) &&
+             product.id !== undefined;
+    });
+    
+    if (validProducts.length === 0) {
+      throw new Error('No valid products found (missing required fields)');
+    }
+    
+    // Normalize price field - use 'price' as the standard field
+    productList = validProducts.map(product => ({
+      ...product,
+      price: product.price || product.unit_price,
+      displayPrice: parseFloat(product.price || product.unit_price || 0).toFixed(2)
+    }));
+    
+    console.log(`✅ Successfully loaded ${productList.length} products from database`);
+    
+    // Trigger UI update
+    updateProductSelectors();
+    
   } catch (error) {
-    console.error('Error loading products:', error);
-    // Use fallback list
-    productList = [
-      "Wound-Care Honey Gauze Big (CTN)",
-      "Wound-Care Honey Gauze Big (Packets)",
-      "Wound-Care Honey Gauze Small (CTN)",
-      "Wound-Care Honey Gauze Small (Packets)",
-      "Hera Wound-Gel 100g (CTN)",
-      "Hera Wound-Gel 100g (Tubes)",
-      "Hera Wound-Gel 40g (CTN)",
-      "Hera Wound-Gel 40g (Tubes)",
-      "Coban Bandage 6inc (PCS)",
-      "Coban Bandage 4inc (PCS)",
-      "Silicone Scar Sheet (Packet)",
-      "Opsite (PCS)",
-      "Wound-Clex Solution 500ml (CTN)",
-      "Wound-Clex Solution 500ml (Bottles)",
-      "Sterile Dressing Packs (PCS)"
-    ];
+    console.error('❌ Error loading products:', error.message);
+    
+    // Show user-friendly error message
+    showProductLoadError(error.message);
+    
+    // Clear product list to prevent using outdated data
+    productList = [];
+    
+    // Update UI to show error state
+    updateProductSelectors();
   }
 }
 
-// Create item row with improved styling
+// Show error message to user when products fail to load
+function showProductLoadError(message) {
+  const errorDiv = document.createElement('div');
+  errorDiv.className = 'error-message';
+  errorDiv.style.cssText = `
+    background-color: #fee;
+    border: 1px solid #fcc;
+    color: #c33;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    text-align: center;
+  `;
+  errorDiv.innerHTML = `
+    <strong>⚠️ Unable to load products</strong><br>
+    ${message}<br>
+    <small>Please refresh the page or contact support if the problem persists.</small>
+  `;
+  
+  // Insert error message at the top of the form
+  const form = document.getElementById('orderForm');
+  if (form) {
+    form.insertBefore(errorDiv, form.firstChild);
+  }
+}
+
+// Update all product selectors when product list changes
+function updateProductSelectors() {
+  const selectors = document.querySelectorAll('select[name^="item"]');
+  selectors.forEach(selector => {
+    updateProductSelector(selector);
+  });
+}
+
+// Update a single product selector with current product list
+function updateProductSelector(selector) {
+  if (!selector) return;
+  
+  const currentValue = selector.value;
+  
+  // Clear existing options
+  selector.innerHTML = '<option value="">Select product</option>';
+  
+  if (!Array.isArray(productList) || productList.length === 0) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = 'No products available - Please refresh page';
+    option.disabled = true;
+    selector.appendChild(option);
+    return;
+  }
+  
+  // Add products with price information
+  productList.forEach(product => {
+    const option = document.createElement('option');
+    option.value = product.name;
+    option.textContent = `${product.name} - ₦${product.displayPrice}`;
+    option.dataset.price = product.price;
+    option.dataset.productId = product.id;
+    
+    // Restore previous selection if it exists
+    if (product.name === currentValue) {
+      option.selected = true;
+    }
+    
+    selector.appendChild(option);
+  });
+}
+
+// Create item row with improved styling and dynamic products
 function createItemRow() {
   itemCount++;
   const div = document.createElement('div');
   div.className = 'item-row fade-in';
-  
-  const productOptions = Array.isArray(productList) && productList.length > 0 
-    ? productList.map(item => {
-        const itemName = typeof item === 'object' ? item.name : item;
-        return `<option value="${itemName}">${itemName}</option>`;
-      }).join('')
-    : '<option value="">No products available</option>';
 
   div.innerHTML = `
     <div>
       <label for="item${itemCount}">Product</label>
       <select id="item${itemCount}" name="item${itemCount}" required>
         <option value="">Select product</option>
-        ${productOptions}
       </select>
     </div>
     <div>
       <label for="quantity${itemCount}">Quantity</label>
       <input type="number" id="quantity${itemCount}" name="quantity${itemCount}" 
              min="1" placeholder="Qty" required>
+    </div>
+    <div class="price-display">
+      <span class="item-price" id="price${itemCount}">₦0.00</span>
     </div>
     <div>
       <button type="button" class="btn-danger removeItemBtn">Remove</button>
@@ -177,11 +252,52 @@ function createItemRow() {
   
   itemsContainer.appendChild(div);
   
+  // Populate the product selector
+  const productSelect = div.querySelector(`select[name="item${itemCount}"]`);
+  updateProductSelector(productSelect);
+  
+  // Add event listeners for dynamic price updates
+  productSelect.addEventListener('change', function() {
+    updateItemPrice(itemCount);
+    calculateOrderTotal();
+  });
+  
+  const quantityInput = div.querySelector(`input[name="quantity${itemCount}"]`);
+  quantityInput.addEventListener('input', function() {
+    updateItemPrice(itemCount);
+    calculateOrderTotal();
+  });
+  
   // Add remove functionality
   div.querySelector('.removeItemBtn').addEventListener('click', () => {
     div.style.animation = 'fadeOut 0.3s ease-out';
-    setTimeout(() => div.remove(), 300);
+    setTimeout(() => {
+      div.remove();
+      calculateOrderTotal();
+    }, 300);
   });
+}
+
+// Update item price display based on selected product and quantity
+function updateItemPrice(itemNumber) {
+  const productSelect = document.querySelector(`select[name="item${itemNumber}"]`);
+  const quantityInput = document.querySelector(`input[name="quantity${itemNumber}"]`);
+  const priceDisplay = document.getElementById(`price${itemNumber}`);
+  
+  if (!productSelect || !quantityInput || !priceDisplay) return;
+  
+  const selectedOption = productSelect.selectedOptions[0];
+  const quantity = parseInt(quantityInput.value) || 0;
+  
+  if (!selectedOption || !selectedOption.dataset.price || quantity <= 0) {
+    priceDisplay.textContent = '₦0.00';
+    return;
+  }
+  
+  const unitPrice = parseFloat(selectedOption.dataset.price) || 0;
+  const totalPrice = unitPrice * quantity;
+  
+  priceDisplay.textContent = `₦${totalPrice.toFixed(2)}`;
 }
 
 // Add fadeOut animation
@@ -190,6 +306,15 @@ style.textContent = `
   @keyframes fadeOut {
     from { opacity: 1; transform: translateY(0); }
     to { opacity: 0; transform: translateY(-20px); }
+  }
+  .price-display {
+    text-align: center;
+    font-weight: bold;
+    color: #2c3e50;
+  }
+  .item-price {
+    font-size: 1.1em;
+    color: #27ae60;
   }
 `;
 document.head.appendChild(style);
@@ -942,16 +1067,31 @@ function printOrder() {
 // Load product management
 async function loadProductManagement() {
   try {
+    // Reload products from database to ensure we have fresh data
+    await loadProducts();
+    
     // Show existing products
     const productsList = document.getElementById('productsList');
     if (productsList) {
+      if (productList.length === 0) {
+        productsList.innerHTML = '<p class="no-products">No products found. Add some products to get started.</p>';
+        return;
+      }
+      
       let productsHtml = '<h3>Current Products:</h3>';
       productList.forEach((product, index) => {
+        const price = product.price || product.unit_price || 0;
         productsHtml += `
-          <div class="product-item">
-            <span>${product.name} - ₦${product.unit_price}</span>
-            <button onclick="editProduct(${index})" class="btn-secondary">Edit</button>
-            <button onclick="deleteProduct(${index})" class="btn-danger">Delete</button>
+          <div class="product-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
+            <div>
+              <strong>${product.name}</strong><br>
+              <small>Price: ₦${parseFloat(price).toFixed(2)}</small><br>
+              <small>ID: ${product.id}</small>
+            </div>
+            <div>
+              <button onclick="editProduct(${index})" class="btn-secondary">Edit</button>
+              <button onclick="deleteProduct(${index})" class="btn-danger">Delete</button>
+            </div>
           </div>
         `;
       });
@@ -959,6 +1099,10 @@ async function loadProductManagement() {
     }
   } catch (error) {
     console.error('Error loading product management:', error);
+    const productsList = document.getElementById('productsList');
+    if (productsList) {
+      productsList.innerHTML = '<p class="error">Error loading products. Please try again.</p>';
+    }
   }
 }
 
@@ -972,7 +1116,10 @@ function editProduct(index) {
   
   if (nameInput && priceInput && addForm) {
     nameInput.value = product.name;
-    priceInput.value = product.unit_price;
+    priceInput.value = product.price || product.unit_price || 0;
+    if (descInput) {
+      descInput.value = product.description || '';
+    }
     descInput.value = product.description || '';
     addForm.style.display = 'block';
     

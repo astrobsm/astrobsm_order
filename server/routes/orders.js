@@ -6,47 +6,19 @@ const router = express.Router();
 // Create new order
 router.post('/', async (req, res) => {
   try {
-    console.log('🔍 Order API called with data:', JSON.stringify(req.body, null, 2));
-    
     const { customerData, orderData, items } = req.body;
-    
-    // Enhanced validation
-    if (!customerData) {
-      console.error('❌ Missing customerData');
-      return res.status(400).json({ error: 'Customer data is required' });
-    }
-    
-    if (!orderData) {
-      console.error('❌ Missing orderData');
-      return res.status(400).json({ error: 'Order data is required' });
-    }
-    
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      console.error('❌ Missing or invalid items');
-      return res.status(400).json({ error: 'Order items are required' });
-    }
-    
-    console.log('✅ Basic validation passed');
     
     // Check if customer exists or create new one
     let customer = null;
     if (customerData.email) {
-      console.log('🔍 Looking for existing customer with email:', customerData.email);
       customer = await Customer.findByEmail(customerData.email);
-      
-      if (customer) {
-        console.log('✅ Found existing customer:', customer.id);
-      }
     }
     
     if (!customer) {
-      console.log('🔍 Creating new customer:', customerData.name);
       customer = await Customer.create(customerData);
-      console.log('✅ New customer created:', customer.id);
     }
     
-    // Create order with customer ID
-    console.log('🔍 Creating order for customer:', customer.id);
+    // Create order
     const order = await Order.create({
       customer_id: customer.id,
       delivery_date: orderData.delivery_date,
@@ -56,8 +28,6 @@ router.post('/', async (req, res) => {
       items: items
     });
     
-    console.log('🎉 Order created successfully:', order.id);
-    
     res.status(201).json({
       message: 'Order created successfully',
       order: order,
@@ -65,17 +35,13 @@ router.post('/', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ Error creating order:', error.message);
-    console.error('📋 Error stack:', error.stack);
-    console.error('📋 Request body that failed:', JSON.stringify(req.body, null, 2));
-    console.error('📋 Full error object:', error);
-    
-    // Send detailed error response
+    console.error('Error creating order:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Request body:', JSON.stringify(req.body, null, 2));
     res.status(500).json({ 
       error: 'Failed to create order', 
       details: error.message,
-      timestamp: new Date().toISOString(),
-      ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+      timestamp: new Date().toISOString()
     });
   }
 });
