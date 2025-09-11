@@ -63,9 +63,61 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`App available at http://localhost:${PORT}`);
-});
+// Test database connection on startup
+const pool = require('./database/db');
+
+async function startServer() {
+  try {
+    // Test database connection with retry logic
+    console.log('🔄 Testing database connection...');
+    
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        await pool.testConnection();
+        break;
+      } catch (error) {
+        retries--;
+        if (retries === 0) {
+          throw error;
+        }
+        console.log(`⚠️ Database connection failed, retrying... (${retries} attempts left)`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+    
+    // Start server
+    const server = app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 ASTRO-BSM Server running on port ${PORT}`);
+      console.log(`📱 App available at http://localhost:${PORT}`);
+      console.log(`🔗 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`💾 Database: Connected and ready`);
+    });
+    
+    // Handle server shutdown gracefully
+    process.on('SIGTERM', () => {
+      console.log('🛑 SIGTERM received, shutting down gracefully');
+      server.close(() => {
+        console.log('📴 Server closed');
+        pool.end(() => {
+          console.log('💾 Database connections closed');
+          process.exit(0);
+        });
+      });
+    });
+    
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    console.error('💡 Please check:');
+    console.error('   - DATABASE_URL environment variable is set');
+    console.error('   - Database server is running and accessible');
+    console.error('   - Database credentials are correct');
+    console.error('   - Network connectivity to database host');
+    process.exit(1);
+  }
+}
+
+// Start the server
+startServer();
 
 module.exports = app;
