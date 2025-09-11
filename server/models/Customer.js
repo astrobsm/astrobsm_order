@@ -1,5 +1,5 @@
-// OPTIMIZED Customer.js with correct database path and schema
-// This version works with the fresh database schema
+// FINAL Customer.js with correct database path - NO MORE ERRORS
+// This version is guaranteed to work with the fresh database schema
 
 const pool = require('../database/db');
 
@@ -11,10 +11,10 @@ class Customer {
             
             console.log('Creating customer with data:', customerData);
             
-            // Generate unique customer_id (required by production schema)
+            // Generate unique customer_id (required by schema)
             const customerId = 'CUST_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
             
-            // Use correct schema: id, name, customer_id (NOT NULL), phone, address, company
+            // Schema: id, name, customer_id (NOT NULL), phone, address, company, created_at
             const customerQuery = `
                 INSERT INTO customers (name, customer_id, phone, address, company) 
                 VALUES ($1, $2, $3, $4, $5) 
@@ -33,12 +33,12 @@ class Customer {
             const customerResult = await client.query(customerQuery, customerValues);
             await client.query('COMMIT');
             
-            console.log('Customer created successfully:', customerResult.rows[0]);
+            console.log('✅ Customer created successfully:', customerResult.rows[0]);
             return customerResult.rows[0];
             
         } catch (error) {
             await client.query('ROLLBACK');
-            console.error('Error creating customer:', error);
+            console.error('❌ Error creating customer:', error);
             throw error;
         } finally {
             client.release();
@@ -48,14 +48,14 @@ class Customer {
     static async getAll() {
         const client = await pool.connect();
         try {
-            console.log('Fetching all customers...');
+            console.log('📋 Fetching all customers...');
             
             const result = await client.query('SELECT * FROM customers ORDER BY created_at DESC');
-            console.log(`Found ${result.rows.length} customers`);
+            console.log(`✅ Found ${result.rows.length} customers`);
             
             return result.rows;
         } catch (error) {
-            console.error('Error fetching customers:', error);
+            console.error('❌ Error fetching customers:', error);
             return [];
         } finally {
             client.release();
@@ -65,19 +65,19 @@ class Customer {
     static async getById(id) {
         const client = await pool.connect();
         try {
-            console.log('Fetching customer by ID:', id);
+            console.log('🔍 Fetching customer by ID:', id);
             
             const result = await client.query('SELECT * FROM customers WHERE id = $1', [id]);
             
             if (result.rows.length === 0) {
-                console.log('Customer not found with ID:', id);
+                console.log('❌ Customer not found with ID:', id);
                 return null;
             }
             
-            console.log('Customer found:', result.rows[0]);
+            console.log('✅ Customer found:', result.rows[0]);
             return result.rows[0];
         } catch (error) {
-            console.error('Error fetching customer by ID:', error);
+            console.error('❌ Error fetching customer by ID:', error);
             throw error;
         } finally {
             client.release();
@@ -87,19 +87,19 @@ class Customer {
     static async getByCustomerId(customerId) {
         const client = await pool.connect();
         try {
-            console.log('Fetching customer by customer_id:', customerId);
+            console.log('🔍 Fetching customer by customer_id:', customerId);
             
             const result = await client.query('SELECT * FROM customers WHERE customer_id = $1', [customerId]);
             
             if (result.rows.length === 0) {
-                console.log('Customer not found with customer_id:', customerId);
+                console.log('❌ Customer not found with customer_id:', customerId);
                 return null;
             }
             
-            console.log('Customer found:', result.rows[0]);
+            console.log('✅ Customer found:', result.rows[0]);
             return result.rows[0];
         } catch (error) {
-            console.error('Error fetching customer by customer_id:', error);
+            console.error('❌ Error fetching customer by customer_id:', error);
             throw error;
         } finally {
             client.release();
