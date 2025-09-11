@@ -36,7 +36,13 @@ router.post('/', async (req, res) => {
     
   } catch (error) {
     console.error('Error creating order:', error);
-    res.status(500).json({ error: 'Failed to create order' });
+    console.error('Error stack:', error.stack);
+    console.error('Request body:', JSON.stringify(req.body, null, 2));
+    res.status(500).json({ 
+      error: 'Failed to create order', 
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 

@@ -2,6 +2,9 @@ const { Pool } = require('pg');
 const { parse } = require('pg-connection-string');
 require('dotenv').config();
 
+// Mock mode for UI testing without database
+const MOCK_MODE = process.env.MOCK_MODE === 'true';
+
 // Enhanced SSL configuration for production environments with self-signed certificates
 function getSSLConfig(mode = 'default') {
   // Allow explicit SSL disabling via environment variable
@@ -158,4 +161,25 @@ pool.testConnection = async () => {
   throw lastError;
 };
 
-module.exports = pool;
+// Export mock pool if in mock mode
+if (MOCK_MODE) {
+  console.log('🧪 Running in MOCK MODE - Database connections will be simulated');
+  
+  const mockPool = {
+    query: async (text, params) => {
+      console.log('🧪 Mock query:', text, params);
+      return { rows: [], rowCount: 0 };
+    },
+    testConnection: async () => {
+      console.log('🧪 Mock database connection test - SUCCESS');
+      return Promise.resolve();
+    },
+    end: async () => {
+      console.log('🧪 Mock database connection ended');
+    }
+  };
+  
+  module.exports = mockPool;
+} else {
+  module.exports = pool;
+}
