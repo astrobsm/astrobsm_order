@@ -8,15 +8,9 @@ router.post('/', async (req, res) => {
   try {
     const { customerData, orderData, items } = req.body;
     
-    // Check if customer exists or create new one
-    let customer = null;
-    if (customerData.email) {
-      customer = await Customer.findByEmail(customerData.email);
-    }
-    
-    if (!customer) {
-      customer = await Customer.create(customerData);
-    }
+    // For now, always create a new customer since email lookup may fail
+    // TODO: Implement proper customer lookup by phone or other unique identifier
+    let customer = await Customer.create(customerData);
     
     // Create order
     const order = await Order.create({
@@ -35,9 +29,13 @@ router.post('/', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Error creating order:', error);
-    console.error('Error stack:', error.stack);
-    console.error('Request body:', JSON.stringify(req.body, null, 2));
+    console.error('❌ Error creating order:', error.message);
+    console.error('❌ Error stack:', error.stack);
+    console.error('📋 Request body received:', JSON.stringify(req.body, null, 2));
+    console.error('📋 CustomerData keys:', Object.keys(req.body.customerData || {}));
+    console.error('📋 OrderData keys:', Object.keys(req.body.orderData || {}));
+    console.error('📋 Items count:', req.body.items ? req.body.items.length : 0);
+    
     res.status(500).json({ 
       error: 'Failed to create order', 
       details: error.message,
