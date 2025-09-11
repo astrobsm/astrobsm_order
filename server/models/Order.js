@@ -42,24 +42,14 @@ class Order {
         subtotal += itemSubtotal;
         
         await client.query(
-          'INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal) VALUES ($1, $2, $3, $4, $5)',
-          [order.id, product.id, quantity, unitPrice, itemSubtotal]
+          'INSERT INTO order_items (order_id, product_id, quantity) VALUES ($1, $2, $3)',
+          [order.id, product.id, quantity]
         );
       }
       
-      // Calculate VAT (2.5%)
-      const vatAmount = subtotal * 0.025;
-      const totalAmount = subtotal + vatAmount;
-      
-      // Update order with subtotal, VAT, and total
-      await client.query(
-        'UPDATE orders SET subtotal = $1, vat_amount = $2, total_amount = $3 WHERE id = $4',
-        [subtotal, vatAmount, totalAmount, order.id]
-      );
-      
       await client.query('COMMIT');
       
-      return { ...order, subtotal, vat_amount: vatAmount, total_amount: totalAmount };
+      return order;
       
     } catch (error) {
       await client.query('ROLLBACK');
