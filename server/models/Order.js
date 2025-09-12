@@ -62,7 +62,7 @@ class Order {
   static async findById(id) {
     try {
       const orderResult = await pool.query(`
-        SELECT o.*, c.name as customer_name, c.email, c.phone, c.delivery_address, c.company
+        SELECT o.*, c.name as customer_name, c.phone, c.address, c.company
         FROM orders o 
         JOIN customers c ON o.customer_id = c.id 
         WHERE o.id = $1
