@@ -28,13 +28,20 @@ class Order {
         const product = productResult.rows[0];
         const quantity = parseInt(item.quantity) || 0;
         
+        console.log('📦 Product found:', product);
+        console.log('💰 Product price:', product.price, 'Type:', typeof product.price);
+        
         if (quantity <= 0) {
           throw new Error(`Invalid quantity for product: ${item.product_name}`);
         }
         
+        // Ensure price is a valid number
+        const price = parseFloat(product.price) || 0;
+        console.log('💰 Final price:', price);
+        
         await client.query(
           'INSERT INTO order_items (order_id, product_id, quantity, product_name, price) VALUES ($1, $2, $3, $4, $5)',
-          [order.id, product.id, quantity, product.name, product.price]
+          [order.id, product.id, quantity, product.name, price]
         );
       }
       
