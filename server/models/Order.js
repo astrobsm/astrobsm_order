@@ -33,8 +33,8 @@ class Order {
         }
         
         await client.query(
-          'INSERT INTO order_items (order_id, product_id, quantity, product_name) VALUES ($1, $2, $3, $4)',
-          [order.id, product.id, quantity, product.name]
+          'INSERT INTO order_items (order_id, product_id, quantity, product_name, price) VALUES ($1, $2, $3, $4, $5)',
+          [order.id, product.id, quantity, product.name, product.price]
         );
       }
       
