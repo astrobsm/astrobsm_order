@@ -41,6 +41,7 @@ class Order {
         const itemSubtotal = price * quantity;
         orderSubtotal += itemSubtotal;
         console.log('💰 Final price:', price, 'Quantity:', quantity, 'Item Subtotal:', itemSubtotal, 'Order Subtotal:', orderSubtotal);
+        console.log('🔄 About to insert order item with subtotal:', itemSubtotal);
         
         await client.query(
           'INSERT INTO order_items (order_id, product_id, quantity, product_name, price, subtotal) VALUES ($1, $2, $3, $4, $5, $6)',
