@@ -1757,20 +1757,54 @@ function generateInvoice(order) {
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF();
   
-  // Company Header
-  pdf.setFontSize(20);
-  pdf.setFont(undefined, 'bold');
-  pdf.text('ASTRO-BSM', 105, 30, null, null, 'center');
+  console.log('Generating invoice with order data:', order);
+  
+  // Load and add company logo
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    try {
+      // Add logo to PDF (top left corner)
+      pdf.addImage(img, 'PNG', 15, 15, 25, 25);
+      
+      // Generate the rest of the invoice after logo is loaded
+      generateInvoiceContent(pdf, order);
+      
+    } catch (error) {
+      console.log('Error adding logo to PDF:', error);
+      // Generate invoice without logo if there's an error
+      generateInvoiceContent(pdf, order);
+    }
+  };
+  
+  img.onerror = function() {
+    console.log('Logo could not be loaded, generating invoice without logo');
+    generateInvoiceContent(pdf, order);
+  };
+  
+  // Try to load the logo
+  img.src = '/public/company_logo.PNG';
+}
+
+// Generate Invoice Content Function
+function generateInvoiceContent(pdf, order) {
+  // Company Header (positioned to accommodate logo)
+  pdf.setFontSize(24);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('ASTRO-BSM', 50, 25);
   
   pdf.setFontSize(12);
-  pdf.setFont(undefined, 'normal');
-  pdf.text('Business Solutions & Management', 105, 40, null, null, 'center');
-  pdf.text('Professional Order Management System', 105, 50, null, null, 'center');
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('Business Solutions & Management', 50, 33);
+  pdf.text('Professional Order Management System', 50, 41);
   
   // Invoice Details
-  pdf.setFont(undefined, 'bold');
+  pdf.setFontSize(16);
+  pdf.setFont('helvetica', 'bold');
   pdf.text('INVOICE', 20, 70);
-  pdf.setFont(undefined, 'normal');
+  
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
   pdf.text(`Invoice #: INV-${order.id || 'N/A'}`, 20, 80);
   pdf.text(`Date: ${new Date().toLocaleDateString()}`, 20, 90);
   pdf.text(`Order Date: ${order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}`, 20, 100);
@@ -1799,19 +1833,29 @@ function generateInvoice(order) {
   let yPos = 195;
   let itemTotal = 0;
   
+  console.log('Order items:', order.items);
+  
   if (order.items && Array.isArray(order.items)) {
-    order.items.forEach(item => {
-      const itemPrice = parseFloat(item.price) || 0;
-      const itemQty = parseInt(item.quantity) || 1;
+    order.items.forEach((item, index) => {
+      console.log(`Item ${index}:`, item);
+      
+      // Try different possible property names for item data
+      const itemName = item.name || item.product_name || item.item_name || 'Unknown Item';
+      const itemPrice = parseFloat(item.price || item.product_price || item.unit_price || 0);
+      const itemQty = parseInt(item.quantity || item.qty || 1);
       const lineTotal = itemPrice * itemQty;
       itemTotal += lineTotal;
       
-      pdf.text(`${item.name || 'N/A'}`, 20, yPos);
+      // Use proper Naira symbol (Unicode: \u20A6)
+      pdf.text(itemName, 20, yPos);
       pdf.text(`${itemQty}`, 100, yPos);
-      pdf.text(`₦${itemPrice.toFixed(2)}`, 130, yPos);
-      pdf.text(`₦${lineTotal.toFixed(2)}`, 160, yPos);
+      pdf.text(`\u20A6${itemPrice.toFixed(2)}`, 130, yPos);
+      pdf.text(`\u20A6${lineTotal.toFixed(2)}`, 160, yPos);
       yPos += 10;
     });
+  } else {
+    console.log('No items found or items is not an array');
+    pdf.text('No items found', 20, yPos);
   }
   
   // Totals Section
@@ -1824,22 +1868,22 @@ function generateInvoice(order) {
   const total = parseFloat(order.total) || (subtotal + vat);
   
   pdf.text('Subtotal:', 130, yPos);
-  pdf.text(`₦${subtotal.toFixed(2)}`, 160, yPos);
+  pdf.text(`\u20A6${subtotal.toFixed(2)}`, 160, yPos);
   yPos += 10;
   
   pdf.text('VAT (7.5%):', 130, yPos);
-  pdf.text(`₦${vat.toFixed(2)}`, 160, yPos);
+  pdf.text(`\u20A6${vat.toFixed(2)}`, 160, yPos);
   yPos += 10;
   
-  pdf.setFont(undefined, 'bold');
+  pdf.setFont('helvetica', 'bold');
   pdf.text('Total:', 130, yPos);
-  pdf.text(`₦${total.toFixed(2)}`, 160, yPos);
+  pdf.text(`\u20A6${total.toFixed(2)}`, 160, yPos);
   
   // Payment Information
   yPos += 20;
-  pdf.setFont(undefined, 'bold');
+  pdf.setFont('helvetica', 'bold');
   pdf.text('Payment Information:', 20, yPos);
-  pdf.setFont(undefined, 'normal');
+  pdf.setFont('helvetica', 'normal');
   yPos += 10;
   pdf.text('Account Name: BONNESANTE MEDICALS', 20, yPos);
   yPos += 10;
@@ -1850,6 +1894,7 @@ function generateInvoice(order) {
   // Footer
   yPos += 20;
   pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'italic');
   pdf.text('Thank you for your business!', 105, yPos, null, null, 'center');
   yPos += 10;
   pdf.text('For inquiries, contact us at info@astro-bsm.com', 105, yPos, null, null, 'center');
