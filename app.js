@@ -1261,6 +1261,9 @@ async function loadAllOrders() {
     
     const orders = await response.json();
     
+    // Store orders globally for invoice generation
+    window.currentOrders = orders;
+    
     if (orders.length === 0) {
       ordersList.innerHTML = '<p>No orders found.</p>';
       return;
@@ -1717,12 +1720,22 @@ async function exportOrderAsPDF(orderId, customerName) {
 // Generate Invoice for Order ID
 async function generateInvoiceForOrder(orderId) {
   try {
+    console.log('Generating invoice for order ID:', orderId);
+    console.log('Available orders:', window.currentOrders);
+    
     // Find the order from the current orders list
-    const order = window.currentOrders?.find(o => o.id === orderId);
+    const order = window.currentOrders?.find(o => {
+      console.log('Comparing:', o.id, 'with', orderId, 'Types:', typeof o.id, typeof orderId);
+      return o.id == orderId; // Use == instead of === for type coercion
+    });
+    
     if (!order) {
-      alert('Order not found');
+      console.error('Order not found. Order ID:', orderId, 'Available orders:', window.currentOrders?.map(o => o.id));
+      alert(`Order not found. Order ID: ${orderId}`);
       return;
     }
+    
+    console.log('Found order:', order);
     
     // Fetch complete order details with items
     const response = await fetch(`/api/orders/${orderId}`);
