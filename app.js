@@ -1293,6 +1293,9 @@ async function loadAllOrders() {
               <button class="btn-export-pdf" onclick="exportOrderAsPDF(${order.id}, '${order.customer_name.replace(/'/g, "\\'")}')">
                 📄 Export PDF
               </button>
+              <button class="btn-generate-invoice" onclick="generateInvoiceForOrder(${order.id})">
+                📄 Generate Invoice
+              </button>
             </div>
           </div>
           <div class="order-details">
@@ -1705,6 +1708,139 @@ async function exportOrderAsPDF(orderId, customerName) {
     console.error('Error exporting PDF:', error);
     alert('Error exporting PDF: ' + error.message);
   }
+}
+
+// Generate Invoice for Order ID
+async function generateInvoiceForOrder(orderId) {
+  try {
+    // Find the order from the current orders list
+    const order = window.currentOrders?.find(o => o.id === orderId);
+    if (!order) {
+      alert('Order not found');
+      return;
+    }
+    
+    // Fetch complete order details with items
+    const response = await fetch(`/api/orders/${orderId}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch order details');
+    }
+    
+    const orderWithItems = await response.json();
+    generateInvoice(orderWithItems);
+    
+  } catch (error) {
+    console.error('Error generating invoice:', error);
+    alert('Failed to generate invoice. Please try again.');
+  }
+}
+
+// Generate Invoice Function
+function generateInvoice(order) {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF();
+  
+  // Company Header
+  pdf.setFontSize(20);
+  pdf.setFont(undefined, 'bold');
+  pdf.text('ASTRO-BSM', 105, 30, null, null, 'center');
+  
+  pdf.setFontSize(12);
+  pdf.setFont(undefined, 'normal');
+  pdf.text('Business Solutions & Management', 105, 40, null, null, 'center');
+  pdf.text('Professional Order Management System', 105, 50, null, null, 'center');
+  
+  // Invoice Details
+  pdf.setFont(undefined, 'bold');
+  pdf.text('INVOICE', 20, 70);
+  pdf.setFont(undefined, 'normal');
+  pdf.text(`Invoice #: INV-${order.id || 'N/A'}`, 20, 80);
+  pdf.text(`Date: ${new Date().toLocaleDateString()}`, 20, 90);
+  pdf.text(`Order Date: ${order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}`, 20, 100);
+  
+  // Customer Information
+  pdf.setFont(undefined, 'bold');
+  pdf.text('Bill To:', 20, 120);
+  pdf.setFont(undefined, 'normal');
+  pdf.text(`${order.customer_name || 'N/A'}`, 20, 130);
+  pdf.text(`${order.email || 'N/A'}`, 20, 140);
+  pdf.text(`${order.phone || 'N/A'}`, 20, 150);
+  pdf.text(`${order.address || 'N/A'}`, 20, 160);
+  
+  // Order Items Table Header
+  pdf.setFont(undefined, 'bold');
+  pdf.text('Item', 20, 180);
+  pdf.text('Qty', 100, 180);
+  pdf.text('Price', 130, 180);
+  pdf.text('Total', 160, 180);
+  
+  // Draw line under header
+  pdf.line(20, 185, 190, 185);
+  
+  // Order Items
+  pdf.setFont(undefined, 'normal');
+  let yPos = 195;
+  let itemTotal = 0;
+  
+  if (order.items && Array.isArray(order.items)) {
+    order.items.forEach(item => {
+      const itemPrice = parseFloat(item.price) || 0;
+      const itemQty = parseInt(item.quantity) || 1;
+      const lineTotal = itemPrice * itemQty;
+      itemTotal += lineTotal;
+      
+      pdf.text(`${item.name || 'N/A'}`, 20, yPos);
+      pdf.text(`${itemQty}`, 100, yPos);
+      pdf.text(`₦${itemPrice.toFixed(2)}`, 130, yPos);
+      pdf.text(`₦${lineTotal.toFixed(2)}`, 160, yPos);
+      yPos += 10;
+    });
+  }
+  
+  // Totals Section
+  yPos += 10;
+  pdf.line(130, yPos, 190, yPos); // Line above totals
+  yPos += 10;
+  
+  const subtotal = parseFloat(order.subtotal) || itemTotal;
+  const vat = parseFloat(order.vat) || (subtotal * 0.075);
+  const total = parseFloat(order.total) || (subtotal + vat);
+  
+  pdf.text('Subtotal:', 130, yPos);
+  pdf.text(`₦${subtotal.toFixed(2)}`, 160, yPos);
+  yPos += 10;
+  
+  pdf.text('VAT (7.5%):', 130, yPos);
+  pdf.text(`₦${vat.toFixed(2)}`, 160, yPos);
+  yPos += 10;
+  
+  pdf.setFont(undefined, 'bold');
+  pdf.text('Total:', 130, yPos);
+  pdf.text(`₦${total.toFixed(2)}`, 160, yPos);
+  
+  // Payment Information
+  yPos += 20;
+  pdf.setFont(undefined, 'bold');
+  pdf.text('Payment Information:', 20, yPos);
+  pdf.setFont(undefined, 'normal');
+  yPos += 10;
+  pdf.text('Account Name: BONNESANTE MEDICALS', 20, yPos);
+  yPos += 10;
+  pdf.text('Account 1: 8259518195 - MONIEPOINT MICROFINANCE BANK', 20, yPos);
+  yPos += 10;
+  pdf.text('Account 2: 1379643548 - ACCESS BANK', 20, yPos);
+  
+  // Footer
+  yPos += 20;
+  pdf.setFontSize(10);
+  pdf.text('Thank you for your business!', 105, yPos, null, null, 'center');
+  yPos += 10;
+  pdf.text('For inquiries, contact us at info@astro-bsm.com', 105, yPos, null, null, 'center');
+  
+  // Save PDF with customer name
+  const customerName = (order.customer_name || 'Customer').replace(/[^a-zA-Z0-9]/g, '_');
+  const fileName = `Invoice_${customerName}_${order.id || 'N/A'}.pdf`;
+  pdf.save(fileName);
 }
 
 // PWA: Register service worker
