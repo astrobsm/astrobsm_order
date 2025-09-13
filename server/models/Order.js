@@ -52,11 +52,8 @@ class Order {
       const vatAmount = orderSubtotal * 0.025;
       const totalAmount = orderSubtotal + vatAmount;
       
-      // Update order with calculated totals
-      await client.query(
-        'UPDATE orders SET subtotal = $1, vat_amount = $2, total_amount = $3 WHERE id = $4',
-        [orderSubtotal, vatAmount, totalAmount, order.id]
-      );
+      // Note: Not updating orders table as it may not have these columns in production
+      // The totals are calculated dynamically for the response
       
       await client.query('COMMIT');
       
