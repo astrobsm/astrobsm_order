@@ -43,8 +43,8 @@ class Order {
         console.log('💰 Final price:', price, 'Quantity:', quantity, 'Item Subtotal:', itemSubtotal, 'Order Subtotal:', orderSubtotal);
         
         await client.query(
-          'INSERT INTO order_items (order_id, product_id, quantity, product_name, price) VALUES ($1, $2, $3, $4, $5)',
-          [order.id, product.id, quantity, product.name, price]
+          'INSERT INTO order_items (order_id, product_id, quantity, product_name, price, subtotal) VALUES ($1, $2, $3, $4, $5, $6)',
+          [order.id, product.id, quantity, product.name, price, itemSubtotal]
         );
       }
       
