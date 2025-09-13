@@ -534,6 +534,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     console.log('Application initialized successfully');
+    
+    // Add event listeners for dynamically created buttons
+    setupDynamicEventListeners();
+    
   } catch (error) {
     console.error('Error initializing application:', error);
   }
@@ -1106,8 +1110,8 @@ async function loadProductManagement() {
               <small>ID: ${product.id}</small>
             </div>
             <div>
-              <button onclick="editProduct(${index})" class="btn-secondary">Edit</button>
-              <button onclick="deleteProduct(${index})" class="btn-danger">Delete</button>
+              <button class="btn-edit-product btn-secondary" data-product-index="${index}">Edit</button>
+              <button class="btn-delete-product btn-danger" data-product-index="${index}">Delete</button>
             </div>
           </div>
         `;
@@ -1290,10 +1294,10 @@ async function loadAllOrders() {
             <span class="order-status status-${order.status}">${order.status}</span>
             <span class="urgency-badge urgency-${order.request_status}">${urgencyNames[order.request_status] || order.request_status}</span>
             <div class="export-buttons">
-              <button class="btn-export-pdf" onclick="exportOrderAsPDF(${order.id}, '${order.customer_name.replace(/'/g, "\\'")}')">
+              <button class="btn-export-pdf" data-order-id="${order.id}" data-customer-name="${order.customer_name}">
                 📄 Export PDF
               </button>
-              <button class="btn-generate-invoice" onclick="generateInvoiceForOrder(${order.id})">
+              <button class="btn-generate-invoice" data-order-id="${order.id}">
                 📄 Generate Invoice
               </button>
             </div>
@@ -1372,8 +1376,8 @@ function displayProductsList(products) {
           ${product.description ? `<div style="color: #6b7280; font-size: 0.9em;">${product.description}</div>` : ''}
         </div>
         <div class="product-actions">
-          <button class="btn-edit" onclick="editProduct(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price}, '${(product.description || '').replace(/'/g, "\\'")}')">Edit</button>
-          <button class="btn-delete" onclick="deleteProduct(${product.id}, '${product.name.replace(/'/g, "\\'")}')">Delete</button>
+          <button class="btn-edit-admin-product" data-product-id="${product.id}" data-product-name="${product.name}" data-product-price="${product.price}" data-product-description="${product.description || ''}">Edit</button>
+          <button class="btn-delete-admin-product" data-product-id="${product.id}" data-product-name="${product.name}">Delete</button>
         </div>
       </div>
     `;
@@ -1841,6 +1845,49 @@ function generateInvoice(order) {
   const customerName = (order.customer_name || 'Customer').replace(/[^a-zA-Z0-9]/g, '_');
   const fileName = `Invoice_${customerName}_${order.id || 'N/A'}.pdf`;
   pdf.save(fileName);
+}
+
+// Setup event listeners for dynamically created buttons
+function setupDynamicEventListeners() {
+  // Use event delegation for admin panel export buttons
+  document.addEventListener('click', (e) => {
+    if (e.target.matches('.btn-export-pdf')) {
+      const orderId = e.target.getAttribute('data-order-id');
+      const customerName = e.target.getAttribute('data-customer-name');
+      exportOrderAsPDF(parseInt(orderId), customerName);
+    }
+    
+    if (e.target.matches('.btn-generate-invoice')) {
+      const orderId = e.target.getAttribute('data-order-id');
+      generateInvoiceForOrder(parseInt(orderId));
+    }
+    
+    // Product management buttons in admin quick products
+    if (e.target.matches('.btn-edit-product')) {
+      const index = e.target.getAttribute('data-product-index');
+      editProduct(parseInt(index));
+    }
+    
+    if (e.target.matches('.btn-delete-product')) {
+      const index = e.target.getAttribute('data-product-index');
+      deleteProduct(parseInt(index));
+    }
+    
+    // Product management buttons in admin products management
+    if (e.target.matches('.btn-edit-admin-product')) {
+      const id = e.target.getAttribute('data-product-id');
+      const name = e.target.getAttribute('data-product-name');
+      const price = e.target.getAttribute('data-product-price');
+      const description = e.target.getAttribute('data-product-description');
+      editProduct(parseInt(id), name, parseFloat(price), description);
+    }
+    
+    if (e.target.matches('.btn-delete-admin-product')) {
+      const id = e.target.getAttribute('data-product-id');
+      const name = e.target.getAttribute('data-product-name');
+      deleteProduct(parseInt(id), name);
+    }
+  });
 }
 
 // PWA: Register service worker
