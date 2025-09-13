@@ -357,6 +357,23 @@ function calculateOrderTotal() {
   return orderTotal;
 }
 
+// Calculate total from order items array (for admin panel)
+function calculateOrderTotalFromItems(items) {
+  if (!items || items.length === 0) return '0.00';
+  
+  let subtotal = 0;
+  items.forEach(item => {
+    const price = parseFloat(item.price || item.unit_price || 0);
+    const quantity = parseInt(item.quantity || 0);
+    subtotal += price * quantity;
+  });
+  
+  const vat = subtotal * 0.025;
+  const total = subtotal + vat;
+  
+  return total.toFixed(2);
+}
+
 function updateOrderTotalDisplay() {
   const totalDisplay = document.getElementById('orderTotal');
   const subtotalElement = document.getElementById('subtotalAmount');
@@ -1280,20 +1297,19 @@ async function loadAllOrders() {
           </div>
           <div class="order-details">
             <div><strong>Customer:</strong> ${order.customer_name}</div>
-            <div><strong>Email:</strong> ${order.email || 'Not provided'}</div>
-            <div><strong>Phone:</strong> ${order.phone}</div>
-            <div><strong>Total:</strong> ₦${parseFloat(order.total_amount || 0).toFixed(2)}</div>
+            <div><strong>Email:</strong> Not provided</div>
+            <div><strong>Phone:</strong> ${order.phone || 'Not provided'}</div>
+            <div><strong>Total:</strong> ₦${calculateOrderTotalFromItems(orderWithItems.items || [])}</div>
             <div><strong>Order Date:</strong> ${new Date(order.created_at).toLocaleDateString()}</div>
-            <div><strong>Delivery Date:</strong> ${order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : 'Not specified'}</div>
-            <div><strong>Delivery Method:</strong> ${deliveryMethodNames[order.preferred_delivery_method] || order.preferred_delivery_method || 'Not specified'}</div>
-            ${order.delivery_route ? `<div><strong>Delivery Instructions:</strong> ${order.delivery_route}</div>` : ''}
-            <div><strong>Address:</strong> ${order.delivery_address}</div>
+            <div><strong>Delivery Date:</strong> Not specified</div>
+            <div><strong>Delivery Method:</strong> Not specified</div>
+            <div><strong>Address:</strong> ${order.address || 'Not provided'}</div>
           </div>
           <div class="order-items">
             <strong>Items:</strong>
             <ul>
               ${orderWithItems.items ? orderWithItems.items.map(item => 
-                `<li>${item.product_name} - Qty: ${item.quantity} @ ₦${parseFloat(item.unit_price).toFixed(2)}</li>`
+                `<li>${item.product_name} - Qty: ${item.quantity} @ ₦${parseFloat(item.price || 0).toFixed(2)}</li>`
               ).join('') : 'No items found'}
             </ul>
           </div>
@@ -1553,7 +1569,7 @@ async function exportOrderAsPDF(orderId, customerName) {
     }
     doc.text(`Phone: ${orderData.phone}`, 25, yPos);
     yPos += 8;
-    doc.text(`Address: ${orderData.delivery_address}`, 25, yPos);
+    doc.text(`Address: ${orderData.address || 'Not provided'}`, 25, yPos);
     yPos += 8;
     if (orderData.company) {
       doc.text(`Company: ${orderData.company}`, 25, yPos);
@@ -1612,12 +1628,13 @@ async function exportOrderAsPDF(orderId, customerName) {
     let subtotal = 0;
     if (orderData.items && orderData.items.length > 0) {
       orderData.items.forEach(item => {
-        const itemTotal = parseFloat(item.unit_price) * parseInt(item.quantity);
+        const price = parseFloat(item.price || item.unit_price || 0);
+        const itemTotal = price * parseInt(item.quantity);
         subtotal += itemTotal;
         
         doc.text(item.product_name, 25, yPos);
         doc.text(item.quantity.toString(), 125, yPos);
-        doc.text(`₦${parseFloat(item.unit_price).toFixed(2)}`, 140, yPos);
+        doc.text(`₦${price.toFixed(2)}`, 140, yPos);
         doc.text(`₦${itemTotal.toFixed(2)}`, 170, yPos);
         yPos += 8;
       });
