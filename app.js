@@ -683,15 +683,15 @@ function displayOrderSummary(customerData, orderData, items, order) {
           <tfoot>
             <tr style="background: #f8fafc;">
               <td colspan="3" style="border: 1px solid #e5e7eb; padding: 10px; text-align: right; font-weight: bold;">Subtotal:</td>
-              <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: right; font-weight: bold;">₦${order?.subtotal?.toFixed(2) || '0.00'}</td>
+              <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: right; font-weight: bold;">₦${parseFloat(order?.subtotal || 0).toFixed(2)}</td>
             </tr>
             <tr style="background: #f8fafc;">
               <td colspan="3" style="border: 1px solid #e5e7eb; padding: 10px; text-align: right; font-weight: bold;">VAT (2.5%):</td>
-              <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: right; font-weight: bold;">₦${order?.vat_amount?.toFixed(2) || '0.00'}</td>
+              <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: right; font-weight: bold;">₦${parseFloat(order?.vat_amount || 0).toFixed(2)}</td>
             </tr>
             <tr style="background: #1e3a8a; color: white;">
               <td colspan="3" style="border: 1px solid #e5e7eb; padding: 10px; text-align: right; font-weight: bold;">TOTAL AMOUNT:</td>
-              <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: right; font-weight: bold; font-size: 1.2em;">₦${order?.total_amount?.toFixed(2) || '0.00'}</td>
+              <td style="border: 1px solid #e5e7eb; padding: 10px; text-align: right; font-weight: bold; font-size: 1.2em;">₦${parseFloat(order?.total_amount || 0).toFixed(2)}</td>
             </tr>
             <tr style="background: #1e3a8a; color: white;">
               <td colspan="4" style="border: 1px solid #e5e7eb; padding: 10px; text-align: center; font-weight: bold; font-style: italic;">
