@@ -16,8 +16,9 @@ class Order {
       );
       
       const order = orderResult.rows[0];
+      let orderSubtotal = 0;
       
-      // Create order items with minimal validation
+      // Create order items and calculate totals
       for (const item of items) {
         const productResult = await client.query('SELECT * FROM products WHERE name = $1', [item.product_name]);
         
@@ -37,18 +38,34 @@ class Order {
         
         // Ensure price is a valid number
         const price = parseFloat(product.price) || 0;
-        const subtotal = price * quantity;
-        console.log('💰 Final price:', price, 'Quantity:', quantity, 'Subtotal:', subtotal);
+        const itemSubtotal = price * quantity;
+        orderSubtotal += itemSubtotal;
+        console.log('💰 Final price:', price, 'Quantity:', quantity, 'Item Subtotal:', itemSubtotal, 'Order Subtotal:', orderSubtotal);
         
         await client.query(
           'INSERT INTO order_items (order_id, product_id, quantity, product_name, price, subtotal) VALUES ($1, $2, $3, $4, $5, $6)',
-          [order.id, product.id, quantity, product.name, price, subtotal]
+          [order.id, product.id, quantity, product.name, price, itemSubtotal]
         );
       }
       
+      // Calculate VAT (2.5%) and total
+      const vatAmount = orderSubtotal * 0.025;
+      const totalAmount = orderSubtotal + vatAmount;
+      
+      // Update order with calculated totals
+      await client.query(
+        'UPDATE orders SET subtotal = $1, vat_amount = $2, total_amount = $3 WHERE id = $4',
+        [orderSubtotal, vatAmount, totalAmount, order.id]
+      );
+      
       await client.query('COMMIT');
       
-      return order;
+      return { 
+        ...order, 
+        subtotal: orderSubtotal, 
+        vat_amount: vatAmount, 
+        total_amount: totalAmount 
+      };
       
     } catch (error) {
       await client.query('ROLLBACK');
