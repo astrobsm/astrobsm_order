@@ -2041,6 +2041,11 @@ function initializeNotificationSystem() {
   if (markAllRead) {
     markAllRead.addEventListener('click', markAllNotificationsRead);
   }
+  
+  // Add event delegation for notification action buttons
+  if (notificationsList) {
+    notificationsList.addEventListener('click', handleNotificationAction);
+  }
 
   // Start checking for pending orders
   startNotificationPolling();
@@ -2191,8 +2196,8 @@ function renderNotifications() {
           <strong>Status:</strong> <span style="color: ${statusColor}">${statusText}</span>
         </div>
         <div class="notification-actions">
-          ${!notification.invoiceGenerated ? `<button class="btn-notification-action" onclick="generateInvoiceFromNotification(${notification.orderId})">Generate Invoice</button>` : ''}
-          <button class="btn-notification-action" onclick="markNotificationRead(${notification.id})">Mark Read</button>
+          ${!notification.invoiceGenerated ? `<button class="btn-notification-action btn-generate-invoice" data-order-id="${notification.orderId}">Generate Invoice</button>` : ''}
+          <button class="btn-notification-action btn-mark-read" data-notification-id="${notification.id}">Mark Read</button>
         </div>
       </div>
     `;
@@ -2231,6 +2236,20 @@ function clearAllNotificationHistory() {
     updateNotificationBadge();
     renderNotifications();
     notificationBtn.style.display = 'none';
+  }
+}
+
+function handleNotificationAction(event) {
+  // Handle Generate Invoice button
+  if (event.target.classList.contains('btn-generate-invoice')) {
+    const orderId = parseInt(event.target.getAttribute('data-order-id'));
+    generateInvoiceFromNotification(orderId);
+  }
+  
+  // Handle Mark Read button
+  if (event.target.classList.contains('btn-mark-read')) {
+    const notificationId = parseInt(event.target.getAttribute('data-notification-id'));
+    markNotificationRead(notificationId);
   }
 }
 
