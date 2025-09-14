@@ -98,6 +98,17 @@ async function startServer() {
       }
     }
     
+    // Initialize stock management tables on startup
+    console.log('🔄 Checking stock management tables...');
+    try {
+      const { createStockTables } = require('./database/production-stock-setup');
+      await createStockTables();
+      console.log('✅ Stock management tables ready');
+    } catch (error) {
+      console.log('⚠️ Stock table setup issue (may already exist):', error.message);
+      // Don't fail startup if tables already exist
+    }
+    
     // Start server
     const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 ASTRO-BSM Server running on port ${PORT}`);
