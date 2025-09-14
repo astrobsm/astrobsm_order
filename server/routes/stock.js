@@ -6,6 +6,23 @@ const { updateProductStock, checkLowStockAlert } = require('../database/stock-se
 // Get all stock levels with product information
 router.get('/levels', async (req, res) => {
   try {
+    console.log('📊 Stock levels request received');
+    
+    // First check if the tables exist
+    const tablesExist = await pool.query(`
+      SELECT COUNT(*) as count FROM information_schema.tables 
+      WHERE table_name = 'stock_inventory' AND table_schema = 'public'
+    `);
+    
+    if (parseInt(tablesExist.rows[0].count) === 0) {
+      console.log('❌ stock_inventory table does not exist yet');
+      return res.json({
+        success: true,
+        data: [],
+        message: 'Stock inventory table not ready yet - deployment in progress'
+      });
+    }
+
     const result = await pool.query(`
       SELECT 
         p.id,
@@ -27,13 +44,15 @@ router.get('/levels', async (req, res) => {
       ORDER BY p.name
     `);
 
+    console.log('✅ Stock levels query successful:', result.rows.length, 'products found');
+
     res.json({
       success: true,
       data: result.rows,
       message: 'Stock levels retrieved successfully'
     });
   } catch (error) {
-    console.error('Error getting stock levels:', error);
+    console.error('❌ Error getting stock levels:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve stock levels',
@@ -279,6 +298,23 @@ router.put('/reorder-level/:productId', async (req, res) => {
 // Get low stock alerts
 router.get('/alerts', async (req, res) => {
   try {
+    console.log('🚨 Stock alerts request received:', req.query);
+    
+    // First check if the tables exist
+    const tablesExist = await pool.query(`
+      SELECT COUNT(*) as count FROM information_schema.tables 
+      WHERE table_name = 'low_stock_alerts' AND table_schema = 'public'
+    `);
+    
+    if (parseInt(tablesExist.rows[0].count) === 0) {
+      console.log('❌ low_stock_alerts table does not exist yet');
+      return res.json({
+        success: true,
+        data: [],
+        message: 'Stock alerts table not ready yet - deployment in progress'
+      });
+    }
+    
     const { acknowledged } = req.query;
     let whereClause = '';
     const params = [];
@@ -301,13 +337,15 @@ router.get('/alerts', async (req, res) => {
       ORDER BY lsa.created_at DESC
     `, params);
 
+    console.log('✅ Stock alerts query successful:', result.rows.length, 'alerts found');
+
     res.json({
       success: true,
       data: result.rows,
       message: 'Stock alerts retrieved successfully'
     });
   } catch (error) {
-    console.error('Error getting stock alerts:', error);
+    console.error('❌ Error getting stock alerts:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve stock alerts',

@@ -588,7 +588,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('newProductDescription').value = '';
         // Reset save button
         if (saveProductBtn) {
-          saveProductBtn.onclick = () => saveProduct();
+          // Remove existing listeners and add new one
+          saveProductBtn.replaceWith(saveProductBtn.cloneNode(true));
+          saveProductBtn = document.getElementById('saveProductBtn');
+          saveProductBtn.addEventListener('click', () => saveProduct());
           saveProductBtn.textContent = 'Save Product';
         }
       });
@@ -837,6 +840,9 @@ function displayOrderSummary(customerData, orderData, items, order) {
       <button id="printOrderBtn" class="btn-secondary">
         🖨️ Print Order
       </button>
+      <button id="thermalPrintBtn" class="btn-secondary">
+        🎟️ Thermal Print (58mm)
+      </button>
     </div>
   `;
   
@@ -862,6 +868,11 @@ function displayOrderSummary(customerData, orderData, items, order) {
   // Add print functionality
   document.getElementById('printOrderBtn').addEventListener('click', () => {
     printOrder();
+  });
+  
+  // Add thermal print functionality
+  document.getElementById('thermalPrintBtn').addEventListener('click', () => {
+    thermalPrintOrder(customerData, orderData, items, order);
   });
   
   // Scroll to summary
@@ -1163,6 +1174,306 @@ function printOrder() {
   }, 500);
 }
 
+// Thermal print functionality for XP-P300 (58mm)
+function thermalPrintOrder(customerData, orderData, items, order) {
+  // Create thermal print content
+  const printWindow = window.open('', '_blank', 'width=300,height=600');
+  
+  const thermalContent = generateThermalPrintContent(customerData, orderData, items, order);
+  
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Order Summary - ASTRO-BSM</title>
+      <link rel="stylesheet" href="thermal-print.css">
+      <style>
+        body { margin: 0; padding: 0; font-family: monospace; }
+        @media print {
+          body { margin: 0; }
+          .no-print { display: none; }
+        }
+      </style>
+    </head>
+    <body>
+      ${thermalContent}
+      <div class="no-print" style="text-align: center; margin: 20px;">
+        <button onclick="window.print()" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Print Receipt</button>
+        <button onclick="window.close()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px;">Close</button>
+      </div>
+    </body>
+    </html>
+  `);
+  
+  printWindow.document.close();
+  
+  // Auto-print after a short delay
+  setTimeout(() => {
+    printWindow.focus();
+    printWindow.print();
+  }, 500);
+}
+
+function generateThermalPrintContent(customerData, orderData, items, order) {
+  const currentDate = new Date().toLocaleDateString();
+  const currentTime = new Date().toLocaleTimeString();
+  
+  // Calculate totals
+  let subtotal = 0;
+  items.forEach(item => {
+    subtotal += item.price * item.quantity;
+  });
+  
+  const tax = subtotal * 0.1; // 10% tax
+  const total = subtotal + tax;
+  
+  return `
+    <div class="thermal-receipt">
+      <!-- Header -->
+      <div class="receipt-header">
+        <div class="company-name">ASTRO-BSM</div>
+        <div class="company-info">Order Management System</div>
+        <div class="separator">================================</div>
+      </div>
+      
+      <!-- Order Info -->
+      <div class="receipt-section">
+        <div class="section-title">ORDER DETAILS</div>
+        <div class="info-line">Order #: ${order.id || 'N/A'}</div>
+        <div class="info-line">Date: ${currentDate}</div>
+        <div class="info-line">Time: ${currentTime}</div>
+        <div class="separator">--------------------------------</div>
+      </div>
+      
+      <!-- Customer Info -->
+      <div class="receipt-section">
+        <div class="section-title">CUSTOMER INFO</div>
+        <div class="info-line">Name: ${customerData.name}</div>
+        <div class="info-line">Phone: ${customerData.phone}</div>
+        <div class="info-line">Email: ${customerData.email}</div>
+        ${customerData.address ? `<div class="info-line">Address: ${customerData.address}</div>` : ''}
+        <div class="separator">--------------------------------</div>
+      </div>
+      
+      <!-- Items -->
+      <div class="receipt-section">
+        <div class="section-title">ORDER ITEMS</div>
+        ${items.map(item => `
+          <div class="item-row">
+            <div class="item-name">${item.name}</div>
+            <div class="item-details">
+              ${item.quantity}x @ $${item.price.toFixed(2)} = $${(item.price * item.quantity).toFixed(2)}
+            </div>
+          </div>
+        `).join('')}
+        <div class="separator">--------------------------------</div>
+      </div>
+      
+      <!-- Totals -->
+      <div class="receipt-section">
+        <div class="total-line">Subtotal: $${subtotal.toFixed(2)}</div>
+        <div class="total-line">Tax (10%): $${tax.toFixed(2)}</div>
+        <div class="total-line total-final">TOTAL: $${total.toFixed(2)}</div>
+        <div class="separator">================================</div>
+      </div>
+      
+      <!-- Footer -->
+      <div class="receipt-footer">
+        <div class="footer-text">Thank you for your business!</div>
+        <div class="footer-text">ASTRO-BSM Order System</div>
+        <div class="footer-text">Powered by Order Management</div>
+      </div>
+      
+      <!-- QR Code Placeholder -->
+      <div class="qr-section">
+        <div class="qr-placeholder">[QR Code: Order ${order.id || 'N/A'}]</div>
+      </div>
+    </div>
+  `;
+}
+
+// Thermal print order by ID
+async function thermalPrintOrderById(orderId) {
+  try {
+    const response = await fetch(`/api/orders/${orderId}`);
+    const orderData = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(orderData.message || 'Failed to fetch order');
+    }
+
+    // Create customer data object
+    const customerData = {
+      name: orderData.customer_name,
+      phone: orderData.phone || 'Not provided',
+      email: orderData.email || 'Not provided',
+      address: orderData.address || ''
+    };
+
+    // Create order data object
+    const order = {
+      id: orderData.id,
+      status: orderData.status,
+      delivery_date: orderData.delivery_date,
+      created_at: orderData.created_at
+    };
+
+    // Use order items directly
+    const items = orderData.items || [];
+
+    thermalPrintOrder(customerData, orderData, items, order);
+  } catch (error) {
+    console.error('Error printing order:', error);
+    alert('Failed to print order. Please try again.');
+  }
+}
+
+// Thermal print invoice by ID
+async function thermalPrintInvoiceById(orderId) {
+  try {
+    const response = await fetch(`/api/orders/${orderId}`);
+    const orderData = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(orderData.message || 'Failed to fetch order');
+    }
+
+    // Create invoice content
+    const printWindow = window.open('', '_blank', 'width=300,height=600');
+    
+    const invoiceContent = generateThermalInvoiceContent(orderData);
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Invoice - ASTRO-BSM</title>
+        <link rel="stylesheet" href="thermal-print.css">
+        <style>
+          body { margin: 0; padding: 0; font-family: monospace; }
+          @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        ${invoiceContent}
+        <div class="no-print" style="text-align: center; margin: 20px;">
+          <button onclick="window.print()" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Print Invoice</button>
+          <button onclick="window.close()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px;">Close</button>
+        </div>
+      </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    
+    // Auto-print after a short delay
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+    }, 500);
+    
+  } catch (error) {
+    console.error('Error printing invoice:', error);
+    alert('Failed to print invoice. Please try again.');
+  }
+}
+
+function generateThermalInvoiceContent(orderData) {
+  const currentDate = new Date().toLocaleDateString();
+  const currentTime = new Date().toLocaleTimeString();
+  const orderDate = new Date(orderData.created_at).toLocaleDateString();
+  
+  // Calculate totals
+  let subtotal = 0;
+  const items = orderData.items || [];
+  items.forEach(item => {
+    subtotal += item.price * item.quantity;
+  });
+  
+  const tax = subtotal * 0.1; // 10% tax
+  const total = subtotal + tax;
+  
+  return `
+    <div class="thermal-receipt">
+      <!-- Header -->
+      <div class="receipt-header">
+        <div class="company-name">ASTRO-BSM</div>
+        <div class="company-info">INVOICE</div>
+        <div class="separator">================================</div>
+      </div>
+      
+      <!-- Invoice Info -->
+      <div class="receipt-section">
+        <div class="section-title">INVOICE DETAILS</div>
+        <div class="info-line">Invoice #: INV-${orderData.id}</div>
+        <div class="info-line">Order #: ${orderData.id}</div>
+        <div class="info-line">Invoice Date: ${currentDate}</div>
+        <div class="info-line">Order Date: ${orderDate}</div>
+        <div class="info-line">Status: ${orderData.status}</div>
+        <div class="separator">--------------------------------</div>
+      </div>
+      
+      <!-- Customer Info -->
+      <div class="receipt-section">
+        <div class="section-title">BILL TO</div>
+        <div class="info-line">Name: ${orderData.customer_name}</div>
+        <div class="info-line">Phone: ${orderData.phone || 'Not provided'}</div>
+        <div class="info-line">Email: ${orderData.email || 'Not provided'}</div>
+        ${orderData.address ? `<div class="info-line">Address: ${orderData.address}</div>` : ''}
+        ${orderData.delivery_date ? `<div class="info-line">Delivery: ${new Date(orderData.delivery_date).toLocaleDateString()}</div>` : ''}
+        <div class="separator">--------------------------------</div>
+      </div>
+      
+      <!-- Items -->
+      <div class="receipt-section">
+        <div class="section-title">ITEMS</div>
+        ${items.map(item => `
+          <div class="item-row">
+            <div class="item-name">${item.name}</div>
+            <div class="item-details">
+              ${item.quantity}x @ $${item.price.toFixed(2)} = $${(item.price * item.quantity).toFixed(2)}
+            </div>
+          </div>
+        `).join('')}
+        <div class="separator">--------------------------------</div>
+      </div>
+      
+      <!-- Totals -->
+      <div class="receipt-section">
+        <div class="total-line">Subtotal: $${subtotal.toFixed(2)}</div>
+        <div class="total-line">Tax (10%): $${tax.toFixed(2)}</div>
+        <div class="total-line total-final">AMOUNT DUE: $${total.toFixed(2)}</div>
+        <div class="separator">================================</div>
+      </div>
+      
+      <!-- Payment Terms -->
+      <div class="receipt-section">
+        <div class="section-title">PAYMENT TERMS</div>
+        <div class="info-line">Payment Due: Net 30 days</div>
+        <div class="info-line">Late Fee: 1.5% per month</div>
+        <div class="separator">--------------------------------</div>
+      </div>
+      
+      <!-- Footer -->
+      <div class="receipt-footer">
+        <div class="footer-text">Thank you for your business!</div>
+        <div class="footer-text">ASTRO-BSM</div>
+        <div class="footer-text">Order Management System</div>
+      </div>
+      
+      <!-- QR Code Placeholder -->
+      <div class="qr-section">
+        <div class="qr-placeholder">[QR: INV-${orderData.id}]</div>
+      </div>
+    </div>
+  `;
+}
+
 // Load product management
 async function loadProductManagement() {
   try {
@@ -1225,8 +1536,11 @@ function editProduct(index) {
     // Update save button to edit mode
     const saveBtn = document.getElementById('saveProductBtn');
     if (saveBtn) {
-      saveBtn.onclick = () => saveProduct(index);
-      saveBtn.textContent = 'Update Product';
+      // Remove existing listeners and add new one
+      saveBtn.replaceWith(saveBtn.cloneNode(true));
+      const newSaveBtn = document.getElementById('saveProductBtn');
+      newSaveBtn.addEventListener('click', () => saveProduct(index));
+      newSaveBtn.textContent = 'Update Product';
     }
   }
 }
@@ -1313,7 +1627,10 @@ async function saveProduct(editIndex = null) {
       // Reset save button
       const saveBtn = document.getElementById('saveProductBtn');
       if (saveBtn) {
-        saveBtn.onclick = () => saveProduct();
+        // Remove existing listeners and add new one
+        saveBtn.replaceWith(saveBtn.cloneNode(true));
+        const newSaveBtn = document.getElementById('saveProductBtn');
+        newSaveBtn.addEventListener('click', () => saveProduct());
         saveBtn.textContent = 'Save Product';
       }
       
@@ -1380,6 +1697,12 @@ async function loadAllOrders() {
               </button>
               <button class="btn-generate-invoice" data-order-id="${order.id}">
                 📄 Generate Invoice
+              </button>
+              <button class="btn-thermal-print-order" data-order-id="${order.id}" title="Print Order Receipt (58mm)">
+                🖨️ Print Order
+              </button>
+              <button class="btn-thermal-print-invoice" data-order-id="${order.id}" title="Print Invoice Receipt (58mm)">
+                🧾 Print Invoice
               </button>
             </div>
           </div>
@@ -2463,6 +2786,16 @@ function setupDynamicEventListeners() {
       generateInvoiceForOrder(parseInt(orderId));
     }
     
+    if (e.target.matches('.btn-thermal-print-order')) {
+      const orderId = e.target.getAttribute('data-order-id');
+      thermalPrintOrderById(parseInt(orderId));
+    }
+    
+    if (e.target.matches('.btn-thermal-print-invoice')) {
+      const orderId = e.target.getAttribute('data-order-id');
+      thermalPrintInvoiceById(parseInt(orderId));
+    }
+    
     // Product management buttons in admin quick products
     if (e.target.matches('.btn-edit-product')) {
       const index = e.target.getAttribute('data-product-index');
@@ -2548,7 +2881,7 @@ function createNotification(orderId, customerName, orderTotal) {
   saveNotifications();
   updateNotificationBadge();
   
-  // Show browser notification using Service Worker if available
+  // Show browser notification using Service Worker only
   if ('serviceWorker' in navigator && 'Notification' in window && Notification.permission === 'granted') {
     navigator.serviceWorker.ready.then(registration => {
       registration.showNotification('New Order Received!', {
@@ -2559,20 +2892,11 @@ function createNotification(orderId, customerName, orderTotal) {
         badge: '/public/company_logo.PNG'
       });
     }).catch(error => {
-      console.log('Service Worker not available, falling back to basic notification');
-      // Fallback for environments without service worker
-      if (Notification.permission === 'granted') {
-        try {
-          new Notification('New Order Received!', {
-            body: `Order from ${customerName} - Total: ₦${orderTotal}`,
-            icon: '/public/company_logo.PNG',
-            tag: `order-${orderId}`
-          });
-        } catch (e) {
-          console.log('Notification API not available:', e);
-        }
-      }
+      console.log('Service Worker notification failed:', error);
+      // Don't fall back to direct Notification constructor - it violates CSP
     });
+  } else {
+    console.log('Service Worker or Notification API not available');
   }
   
   // Show notification button
