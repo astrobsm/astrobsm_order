@@ -1600,18 +1600,18 @@ async function exportOrderAsPDF(orderId, customerName) {
     doc.text('CUSTOMER INFORMATION:', 20, yPos);
     yPos += 10;
     doc.text(`Name: ${orderData.customer_name}`, 25, yPos);
-    yPos += 8;
+    yPos += 6; // Reduced from 8 to 6
     if (orderData.email) {
       doc.text(`Email: ${orderData.email}`, 25, yPos);
-      yPos += 8;
+      yPos += 6; // Reduced from 8 to 6
     }
     doc.text(`Phone: ${orderData.phone}`, 25, yPos);
-    yPos += 8;
+    yPos += 6; // Reduced from 8 to 6
     doc.text(`Address: ${orderData.address || 'Not provided'}`, 25, yPos);
-    yPos += 8;
+    yPos += 6; // Reduced from 8 to 6
     if (orderData.company) {
       doc.text(`Company: ${orderData.company}`, 25, yPos);
-      yPos += 8;
+      yPos += 6; // Reduced from 8 to 6
     }
     
     // Order details
@@ -1619,10 +1619,10 @@ async function exportOrderAsPDF(orderId, customerName) {
     doc.text('ORDER DETAILS:', 20, yPos);
     yPos += 10;
     doc.text(`Order Date: ${new Date(orderData.created_at).toLocaleDateString()}`, 25, yPos);
-    yPos += 8;
+    yPos += 6; // Reduced from 8 to 6
     if (orderData.delivery_date) {
       doc.text(`Delivery Date: ${new Date(orderData.delivery_date).toLocaleDateString()}`, 25, yPos);
-      yPos += 8;
+      yPos += 6; // Reduced from 8 to 6
     }
     if (orderData.preferred_delivery_method) {
       const deliveryMethodNames = {
@@ -1631,11 +1631,11 @@ async function exportOrderAsPDF(orderId, customerName) {
         'shipping': 'Courier Shipping'
       };
       doc.text(`Delivery Method: ${deliveryMethodNames[orderData.preferred_delivery_method] || orderData.preferred_delivery_method}`, 25, yPos);
-      yPos += 8;
+      yPos += 6; // Reduced from 8 to 6
     }
     if (orderData.delivery_route) {
       doc.text(`Delivery Instructions: ${orderData.delivery_route}`, 25, yPos);
-      yPos += 8;
+      yPos += 6; // Reduced from 8 to 6
     }
     if (orderData.request_status) {
       const urgencyNames = {
@@ -1644,7 +1644,7 @@ async function exportOrderAsPDF(orderId, customerName) {
         'very_urgent': 'Very Urgent'
       };
       doc.text(`Urgency: ${urgencyNames[orderData.request_status] || orderData.request_status}`, 25, yPos);
-      yPos += 8;
+      yPos += 6; // Reduced from 8 to 6
     }
     
     // Items table header
@@ -1674,7 +1674,7 @@ async function exportOrderAsPDF(orderId, customerName) {
         doc.text(item.quantity.toString(), 125, yPos);
         doc.text(`₦${price.toFixed(2)}`, 140, yPos);
         doc.text(`₦${itemTotal.toFixed(2)}`, 170, yPos);
-        yPos += 8;
+        yPos += 6; // Reduced from 8 to 6
       });
     }
     
@@ -1688,10 +1688,10 @@ async function exportOrderAsPDF(orderId, customerName) {
     
     doc.text('Subtotal:', 140, yPos);
     doc.text(`₦${subtotal.toFixed(2)}`, 170, yPos);
-    yPos += 8;
+    yPos += 6; // Reduced from 8 to 6
     doc.text('VAT (2.5%):', 140, yPos);
     doc.text(`₦${vat.toFixed(2)}`, 170, yPos);
-    yPos += 8;
+    yPos += 6; // Reduced from 8 to 6
     doc.setFontSize(14);
     doc.text('TOTAL:', 140, yPos);
     doc.text(`₦${total.toFixed(2)}`, 170, yPos);
@@ -1704,20 +1704,20 @@ async function exportOrderAsPDF(orderId, customerName) {
     yPos += 10;
     doc.setFontSize(10);
     doc.text('Please make payment to any of these accounts:', 25, yPos);
-    yPos += 8;
+    yPos += 6; // Reduced from 8 to 6
     doc.text('ACCOUNT NAME: BONNESANTE MEDICALS', 25, yPos);
-    yPos += 6;
+    yPos += 5; // Reduced from 6 to 5
     doc.text('Account 1: 8259518195 - MONIEPOINT MICROFINANCE BANK', 25, yPos);
-    yPos += 6;
+    yPos += 5; // Reduced from 6 to 5
     doc.text('Account 2: 2402979199 - ZENITH BANK', 25, yPos);
-    yPos += 6;
+    yPos += 5; // Reduced from 6 to 5
     doc.text('Account 3: 0110395969 - GTBANK', 25, yPos);
     
     // Footer
-    yPos += 15;
+    yPos += 10; // Reduced from 15 to 10
     doc.setTextColor(100, 100, 100);
     doc.text('Thank you for choosing ASTRO-BSM Professional Medical Supplies!', 20, yPos);
-    yPos += 6;
+    yPos += 5; // Reduced from 6 to 5
     doc.text('For inquiries, contact us at: info@astrobsm.com', 20, yPos);
     
     // Generate filename and save
@@ -1867,6 +1867,22 @@ function generateInvoiceContent(pdf, order) {
     order.items.forEach((item, index) => {
       console.log(`Item ${index}:`, item);
       
+      // Check if we need a new page (leave space for totals and payment info)
+      if (yPos > 240) {
+        pdf.addPage();
+        yPos = 20;
+        
+        // Re-add table header on new page
+        pdf.setFont(undefined, 'bold');
+        pdf.text('Item', 20, yPos);
+        pdf.text('Qty', 100, yPos);
+        pdf.text('Price', 130, yPos);
+        pdf.text('Total', 160, yPos);
+        pdf.line(20, yPos + 5, 190, yPos + 5);
+        yPos += 15;
+        pdf.setFont(undefined, 'normal');
+      }
+      
       // Try different possible property names for item data
       const itemName = item.name || item.product_name || item.item_name || 'Unknown Item';
       const itemPrice = parseFloat(item.price || item.product_price || item.unit_price || 0);
@@ -1879,7 +1895,7 @@ function generateInvoiceContent(pdf, order) {
       pdf.text(`${itemQty}`, 100, yPos);
       pdf.text(`\u20A6${itemPrice.toFixed(2)}`, 130, yPos);
       pdf.text(`\u20A6${lineTotal.toFixed(2)}`, 160, yPos);
-      yPos += 10;
+      yPos += 7; // Reduced from 10 to 7 for tighter spacing
     });
   } else {
     console.log('No items found or items is not an array');
@@ -1887,9 +1903,16 @@ function generateInvoiceContent(pdf, order) {
   }
   
   // Totals Section
-  yPos += 10;
+  yPos += 8; // Reduced from 10 to 8
+  
+  // Check if we need a new page for totals and payment info
+  if (yPos > 230) {
+    pdf.addPage();
+    yPos = 20;
+  }
+  
   pdf.line(130, yPos, 190, yPos); // Line above totals
-  yPos += 10;
+  yPos += 8; // Reduced from 10 to 8
   
   const subtotal = parseFloat(order.subtotal) || itemTotal;
   const vat = parseFloat(order.vat) || (subtotal * 0.075);
@@ -1897,34 +1920,41 @@ function generateInvoiceContent(pdf, order) {
   
   pdf.text('Subtotal:', 130, yPos);
   pdf.text(`\u20A6${subtotal.toFixed(2)}`, 160, yPos);
-  yPos += 10;
+  yPos += 8; // Reduced from 10 to 8
   
   pdf.text('VAT (7.5%):', 130, yPos);
   pdf.text(`\u20A6${vat.toFixed(2)}`, 160, yPos);
-  yPos += 10;
+  yPos += 8; // Reduced from 10 to 8
   
   pdf.setFont('helvetica', 'bold');
   pdf.text('Total:', 130, yPos);
   pdf.text(`\u20A6${total.toFixed(2)}`, 160, yPos);
   
   // Payment Information
-  yPos += 20;
+  yPos += 15; // Reduced from 20 to 15
+  
+  // Check if payment section needs new page
+  if (yPos > 250) {
+    pdf.addPage();
+    yPos = 20;
+  }
+  
   pdf.setFont('helvetica', 'bold');
   pdf.text('Payment Information:', 20, yPos);
   pdf.setFont('helvetica', 'normal');
-  yPos += 10;
+  yPos += 8; // Reduced from 10 to 8
   pdf.text('Account Name: BONNESANTE MEDICALS', 20, yPos);
-  yPos += 10;
+  yPos += 7; // Reduced from 10 to 7
   pdf.text('Account 1: 8259518195 - MONIEPOINT MICROFINANCE BANK', 20, yPos);
-  yPos += 10;
+  yPos += 7; // Reduced from 10 to 7
   pdf.text('Account 2: 1379643548 - ACCESS BANK', 20, yPos);
   
   // Footer
-  yPos += 20;
+  yPos += 12; // Reduced from 20 to 12
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'italic');
   pdf.text('Thank you for your business!', 105, yPos, null, null, 'center');
-  yPos += 10;
+  yPos += 7; // Reduced from 10 to 7
   pdf.text('For inquiries, contact us at info@astro-bsm.com', 105, yPos, null, null, 'center');
   
   // Save PDF with customer name
