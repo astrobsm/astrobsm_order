@@ -2,6 +2,8 @@
 
 A modern, responsive Progressive Web App (PWA) for ASTRO-BSM product ordering with PostgreSQL backend.
 
+**Deployment Status**: Enhanced automatic stock table creation deployed - Sep 14, 2025
+
 ## Features
 
 - **Mobile-First Responsive Design** - Optimized for all screen sizes
