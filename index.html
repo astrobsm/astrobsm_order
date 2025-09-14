@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://cdnjs.cloudflare.com;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://cdnjs.cloudflare.com;">
   <title>ASTRO-BSM Product Order</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css?v=3">
@@ -147,8 +147,8 @@
         <span class="close">&times;</span>
         <h2>Admin Access</h2>
         <div id="passwordSection">
-          <label for="adminPassword">Enter Password:</label>
-          <input type="password" id="adminPassword" placeholder="Password">
+          <label for="adminModalPassword">Enter Password:</label>
+          <input type="password" id="adminModalPassword" placeholder="Password">
           <button id="loginBtn" class="btn-primary">Login</button>
         </div>
         <div id="ordersSection" style="display: none;">
