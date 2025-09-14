@@ -52,3 +52,25 @@ self.addEventListener('fetch', event => {
     })
   );
 });
+
+// Handle notification click events
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  
+  // Open the app when notification is clicked
+  event.waitUntil(
+    clients.matchAll().then(clientList => {
+      // If the app is already open, focus it
+      if (clientList.length > 0) {
+        return clientList[0].focus();
+      }
+      // Otherwise open a new window
+      return clients.openWindow('/');
+    })
+  );
+});
+
+// Handle notification close events
+self.addEventListener('notificationclose', event => {
+  console.log('Notification closed:', event.notification.tag);
+});

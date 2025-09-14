@@ -2061,13 +2061,30 @@ function createNotification(orderId, customerName, orderTotal) {
   saveNotifications();
   updateNotificationBadge();
   
-  // Show browser notification if permission granted
-  if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('New Order Received!', {
-      body: `Order from ${customerName} - Total: ₦${orderTotal}`,
-      icon: '/public/company_logo.PNG',
-      tag: `order-${orderId}`,
-      requireInteraction: true
+  // Show browser notification using Service Worker if available
+  if ('serviceWorker' in navigator && 'Notification' in window && Notification.permission === 'granted') {
+    navigator.serviceWorker.ready.then(registration => {
+      registration.showNotification('New Order Received!', {
+        body: `Order from ${customerName} - Total: ₦${orderTotal}`,
+        icon: '/public/company_logo.PNG',
+        tag: `order-${orderId}`,
+        requireInteraction: true,
+        badge: '/public/company_logo.PNG'
+      });
+    }).catch(error => {
+      console.log('Service Worker not available, falling back to basic notification');
+      // Fallback for environments without service worker
+      if (Notification.permission === 'granted') {
+        try {
+          new Notification('New Order Received!', {
+            body: `Order from ${customerName} - Total: ₦${orderTotal}`,
+            icon: '/public/company_logo.PNG',
+            tag: `order-${orderId}`
+          });
+        } catch (e) {
+          console.log('Notification API not available:', e);
+        }
+      }
     });
   }
   
@@ -2223,13 +2240,18 @@ function startNotificationPolling() {
     const pendingNotifications = notifications.filter(n => !n.invoiceGenerated);
     
     pendingNotifications.forEach(notification => {
-      // Send repeat notification for pending orders
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('Pending Order Reminder', {
-          body: `Order #${notification.orderId} from ${notification.customerName} still needs invoice generation`,
-          icon: '/public/company_logo.PNG',
-          tag: `reminder-${notification.orderId}`,
-          requireInteraction: false
+      // Send repeat notification for pending orders using Service Worker
+      if ('serviceWorker' in navigator && 'Notification' in window && Notification.permission === 'granted') {
+        navigator.serviceWorker.ready.then(registration => {
+          registration.showNotification('Pending Order Reminder', {
+            body: `Order #${notification.orderId} from ${notification.customerName} still needs invoice generation`,
+            icon: '/public/company_logo.PNG',
+            tag: `reminder-${notification.orderId}`,
+            requireInteraction: false,
+            badge: '/public/company_logo.PNG'
+          });
+        }).catch(error => {
+          console.log('Service Worker notification failed for reminder, skipping');
         });
       }
     });
