@@ -689,7 +689,7 @@ function displayOrderSummary(customerData, orderData, items, order) {
           <p><strong>Order Date:</strong> ${new Date().toLocaleDateString()}</p>
           <p><strong>Customer:</strong> ${customerData.name}</p>
           <p><strong>Phone:</strong> ${customerData.phone}</p>
-          ${customerData.email ? `<p><strong>Email:</strong> ${customerData.email}</p>` : '<p></p>'}
+          <p><strong>Email:</strong> ${customerData.email || 'Not provided'}</p>
           <p><strong>Urgency:</strong> <span style="color: ${orderData.request_status === 'very_urgent' ? '#991b1b' : orderData.request_status === 'urgent' ? '#9a3412' : '#065f46'}; font-weight: bold;">${urgencyNames[orderData.request_status] || orderData.request_status}</span></p>
         </div>
         
@@ -1333,13 +1333,15 @@ async function loadAllOrders() {
           </div>
           <div class="order-details">
             <div><strong>Customer:</strong> ${order.customer_name}</div>
-            <div><strong>Email:</strong> Not provided</div>
+            <div><strong>Email:</strong> ${order.email || 'Not provided'}</div>
             <div><strong>Phone:</strong> ${order.phone || 'Not provided'}</div>
             <div><strong>Total:</strong> ₦${calculateOrderTotalFromItems(orderWithItems.items || [])}</div>
             <div><strong>Order Date:</strong> ${new Date(order.created_at).toLocaleDateString()}</div>
-            <div><strong>Delivery Date:</strong> Not specified</div>
-            <div><strong>Delivery Method:</strong> Not specified</div>
+            <div><strong>Delivery Date:</strong> ${order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : 'Not specified'}</div>
+            <div><strong>Delivery Method:</strong> ${deliveryMethodNames[order.preferred_delivery_method] || order.preferred_delivery_method || 'Not specified'}</div>
+            <div><strong>Urgency:</strong> <span style="color: ${order.request_status === 'very_urgent' ? '#991b1b' : order.request_status === 'urgent' ? '#9a3412' : '#065f46'};">${urgencyNames[order.request_status] || order.request_status || 'Not specified'}</span></div>
             <div><strong>Address:</strong> ${order.address || 'Not provided'}</div>
+            ${order.delivery_route ? `<div><strong>Delivery Instructions:</strong> ${order.delivery_route}</div>` : ''}
           </div>
           <div class="order-items">
             <strong>Items:</strong>
