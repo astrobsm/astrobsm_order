@@ -486,7 +486,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (loginBtn) {
       loginBtn.addEventListener('click', async () => {
         const password = adminPassword.value;
-        if (password === 'bluevelvet') {
+        if (password === 'pinkpetals') {
           passwordSection.style.display = 'none';
           ordersSection.style.display = 'block';
           await loadAllOrders();
@@ -510,7 +510,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (manageProductsBtn) {
       manageProductsBtn.addEventListener('click', () => {
         const password = prompt('Enter password for product management:');
-        if (password === 'bluevelvet') {
+        if (password === 'pinkpetals') {
           if (productModal) {
             productModal.style.display = 'block';
             loadProductManagement();
@@ -1437,7 +1437,7 @@ async function saveNewProduct() {
         name,
         price,
         description,
-        adminPassword: 'roseball'
+        adminPassword: 'pinkpetals'
       })
     });
     
@@ -1493,7 +1493,7 @@ async function updateProduct(id, name, price, description, pricePassword) {
       name,
       price,
       description,
-      adminPassword: 'roseball'
+      adminPassword: 'pinkpetals'
     };
     
     if (pricePassword) {
@@ -1536,7 +1536,7 @@ async function deleteProduct(id, name) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        adminPassword: 'roseball'
+        adminPassword: 'pinkpetals'
       })
     });
     

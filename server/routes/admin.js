@@ -19,7 +19,7 @@ router.post('/products', async (req, res) => {
     const { name, description, price, stock_quantity, adminPassword } = req.body;
     
     // Verify admin password
-    if (adminPassword !== 'roseball') {
+    if (adminPassword !== 'pinkpetals') {
       return res.status(401).json({ error: 'Unauthorized access' });
     }
 
@@ -48,7 +48,7 @@ router.put('/products/:id', async (req, res) => {
     const { name, description, price, stock_quantity, adminPassword, pricePassword } = req.body;
     
     // Verify admin password
-    if (adminPassword !== 'roseball') {
+    if (adminPassword !== 'pinkpetals') {
       return res.status(401).json({ error: 'Unauthorized access' });
     }
 
@@ -85,7 +85,7 @@ router.delete('/products/:id', async (req, res) => {
     const { adminPassword } = req.body;
     
     // Verify admin password
-    if (adminPassword !== 'roseball') {
+    if (adminPassword !== 'pinkpetals') {
       return res.status(401).json({ error: 'Unauthorized access' });
     }
 
