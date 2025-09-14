@@ -8,6 +8,7 @@ require('dotenv').config();
 const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
 const adminRoutes = require('./routes/admin');
+const stockRoutes = require('./routes/stock');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -30,7 +31,16 @@ app.use(helmet({
   },
 }));
 app.use(morgan('combined'));
-app.use(cors());
+
+// Enhanced CORS configuration for stock management
+app.use(cors({
+  origin: true, // Allow all origins for development
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true,
+  optionsSuccessStatus: 200
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -42,6 +52,7 @@ app.use(express.static(path.join(__dirname, '../')));
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/stock', stockRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

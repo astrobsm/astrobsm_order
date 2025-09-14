@@ -521,6 +521,58 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
 
+    // Set up Stock Management button
+    const manageStockBtn = document.getElementById('manageStockBtn');
+    if (manageStockBtn) {
+      manageStockBtn.addEventListener('click', () => {
+        showStockManagement();
+      });
+    }
+
+    // Set up Stock Management navigation buttons
+    const backToOrders = document.getElementById('backToOrders');
+    if (backToOrders) {
+      backToOrders.addEventListener('click', () => {
+        hideStockManagement();
+      });
+    }
+
+    const viewStockLevels = document.getElementById('viewStockLevels');
+    if (viewStockLevels) {
+      viewStockLevels.addEventListener('click', () => {
+        loadStockLevels();
+      });
+    }
+
+    const addStockIntake = document.getElementById('addStockIntake');
+    if (addStockIntake) {
+      addStockIntake.addEventListener('click', () => {
+        showStockIntakeForm();
+      });
+    }
+
+    const viewStockAlerts = document.getElementById('viewStockAlerts');
+    if (viewStockAlerts) {
+      viewStockAlerts.addEventListener('click', () => {
+        loadStockAlerts();
+      });
+    }
+
+    const submitStockIntake = document.getElementById('submitStockIntake');
+    if (submitStockIntake) {
+      submitStockIntake.addEventListener('click', () => {
+        submitStockIntake();
+      });
+    }
+
+    const cancelStockIntake = document.getElementById('cancelStockIntake');
+    if (cancelStockIntake) {
+      cancelStockIntake.addEventListener('click', () => {
+        document.getElementById('stockIntakeForm').style.display = 'none';
+        loadStockLevels();
+      });
+    }
+
     // Set up Product Management form buttons
     const addProductBtn = document.getElementById('addProductBtn');
     const saveProductBtn = document.getElementById('saveProductBtn');
@@ -1562,6 +1614,449 @@ function clearProductForm() {
   document.getElementById('newProductDescription').value = '';
 }
 
+// ================================
+// STOCK MANAGEMENT FUNCTIONS
+// ================================
+
+// Show stock management section
+function showStockManagement() {
+  document.getElementById('ordersSection').style.display = 'none';
+  document.getElementById('stockSection').style.display = 'block';
+  loadStockLevels();
+}
+
+// Hide stock management and return to orders
+function hideStockManagement() {
+  document.getElementById('stockSection').style.display = 'none';
+  document.getElementById('ordersSection').style.display = 'block';
+  hideAllStockDisplays();
+}
+
+// Hide all stock displays
+function hideAllStockDisplays() {
+  document.getElementById('stockLevelsDisplay').style.display = 'none';
+  document.getElementById('stockIntakeForm').style.display = 'none';
+  document.getElementById('stockAlertsDisplay').style.display = 'none';
+}
+
+// Load and display stock levels
+async function loadStockLevels() {
+  try {
+    hideAllStockDisplays();
+    
+    const response = await fetch(`${API_BASE_URL}/stock/levels`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch stock levels');
+    }
+    
+    const result = await response.json();
+    displayStockLevels(result.data);
+    
+    document.getElementById('stockLevelsDisplay').style.display = 'block';
+    
+  } catch (error) {
+    console.error('Error loading stock levels:', error);
+    alert('Failed to load stock levels: ' + error.message);
+  }
+}
+
+// Display stock levels in a table
+function displayStockLevels(stockData) {
+  const container = document.getElementById('stockLevelsDisplay');
+  
+  let html = `
+    <h4>Current Stock Levels</h4>
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+        <thead>
+          <tr style="background-color: #f5f5f5;">
+            <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Product Name</th>
+            <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Current Stock</th>
+            <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Reorder Level</th>
+            <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Status</th>
+            <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+  
+  stockData.forEach(item => {
+    const statusColor = getStockStatusColor(item.stock_status);
+    const statusText = getStockStatusText(item.stock_status);
+    
+    html += `
+      <tr>
+        <td style="padding: 10px; border: 1px solid #ddd;">${item.name}</td>
+        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${item.current_stock || 0}</td>
+        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${item.reorder_level || 10}</td>
+        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
+          <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span>
+        </td>
+        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
+          <button onclick="adjustStock(${item.id}, '${item.name}', ${item.current_stock || 0})" 
+                  style="padding: 4px 8px; margin: 2px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer;">
+            Adjust
+          </button>
+          <button onclick="setReorderLevel(${item.id}, '${item.name}', ${item.reorder_level || 10})" 
+                  style="padding: 4px 8px; margin: 2px; background: #6c757d; color: white; border: none; border-radius: 3px; cursor: pointer;">
+            Reorder Level
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+  
+  html += `
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top: 15px;">
+      <button onclick="loadStockLevels()" class="btn-secondary">🔄 Refresh</button>
+    </div>
+  `;
+  
+  container.innerHTML = html;
+}
+
+// Get stock status color
+function getStockStatusColor(status) {
+  switch(status) {
+    case 'OUT_OF_STOCK': return '#dc3545';
+    case 'CRITICAL': return '#fd7e14';
+    case 'LOW': return '#ffc107';
+    case 'GOOD': return '#28a745';
+    default: return '#6c757d';
+  }
+}
+
+// Get stock status text
+function getStockStatusText(status) {
+  switch(status) {
+    case 'OUT_OF_STOCK': return '❌ Out of Stock';
+    case 'CRITICAL': return '🔴 Critical';
+    case 'LOW': return '🟡 Low';
+    case 'GOOD': return '✅ Good';
+    default: return '❓ Unknown';
+  }
+}
+
+// Adjust stock level
+function adjustStock(productId, productName, currentStock) {
+  const newStock = prompt(`Adjust stock for "${productName}"\nCurrent Stock: ${currentStock}\nEnter new stock level:`, currentStock);
+  
+  if (newStock === null) return; // User cancelled
+  
+  const stockNumber = parseInt(newStock);
+  if (isNaN(stockNumber) || stockNumber < 0) {
+    alert('Please enter a valid stock number (0 or greater)');
+    return;
+  }
+  
+  const reason = prompt('Enter reason for adjustment:', 'Manual stock adjustment');
+  if (reason === null) return;
+  
+  updateStockLevel(productId, stockNumber, reason);
+}
+
+// Set reorder level
+function setReorderLevel(productId, productName, currentReorderLevel) {
+  const newReorderLevel = prompt(`Set reorder level for "${productName}"\nCurrent Reorder Level: ${currentReorderLevel}\nEnter new reorder level:`, currentReorderLevel);
+  
+  if (newReorderLevel === null) return;
+  
+  const reorderNumber = parseInt(newReorderLevel);
+  if (isNaN(reorderNumber) || reorderNumber < 0) {
+    alert('Please enter a valid reorder level (0 or greater)');
+    return;
+  }
+  
+  updateReorderLevel(productId, reorderNumber);
+}
+
+// Update stock level via API
+async function updateStockLevel(productId, newStock, reason) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/stock/adjust/${productId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        new_stock: newStock,
+        reason: reason
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to update stock level');
+    }
+    
+    const result = await response.json();
+    alert(`Stock updated successfully!\nPrevious: ${result.data.previousStock} → New: ${result.data.newStock}`);
+    
+    // Refresh stock levels
+    loadStockLevels();
+    
+  } catch (error) {
+    console.error('Error updating stock level:', error);
+    alert('Failed to update stock level: ' + error.message);
+  }
+}
+
+// Update reorder level via API
+async function updateReorderLevel(productId, newReorderLevel) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/stock/reorder-level/${productId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        reorder_level: newReorderLevel
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to update reorder level');
+    }
+    
+    alert('Reorder level updated successfully!');
+    
+    // Refresh stock levels
+    loadStockLevels();
+    
+  } catch (error) {
+    console.error('Error updating reorder level:', error);
+    alert('Failed to update reorder level: ' + error.message);
+  }
+}
+
+// Show stock intake form
+async function showStockIntakeForm() {
+  try {
+    hideAllStockDisplays();
+    
+    // Load products for selection
+    await loadProducts();
+    const stockProductSelect = document.getElementById('stockProductSelect');
+    stockProductSelect.innerHTML = '<option value="">Select Product</option>';
+    
+    productList.forEach(product => {
+      const option = document.createElement('option');
+      option.value = product.id;
+      option.textContent = product.name;
+      stockProductSelect.appendChild(option);
+    });
+    
+    // Clear form
+    clearStockIntakeForm();
+    
+    document.getElementById('stockIntakeForm').style.display = 'block';
+    
+  } catch (error) {
+    console.error('Error showing stock intake form:', error);
+    alert('Failed to load stock intake form: ' + error.message);
+  }
+}
+
+// Clear stock intake form
+function clearStockIntakeForm() {
+  document.getElementById('stockProductSelect').value = '';
+  document.getElementById('stockQuantity').value = '';
+  document.getElementById('stockCostPerUnit').value = '';
+  document.getElementById('stockSupplier').value = '';
+  document.getElementById('stockBatchNumber').value = '';
+  document.getElementById('stockExpiryDate').value = '';
+  document.getElementById('stockNotes').value = '';
+}
+
+// Submit stock intake
+async function submitStockIntake() {
+  try {
+    const productId = document.getElementById('stockProductSelect').value;
+    const quantity = document.getElementById('stockQuantity').value;
+    const costPerUnit = document.getElementById('stockCostPerUnit').value;
+    const supplier = document.getElementById('stockSupplier').value;
+    const batchNumber = document.getElementById('stockBatchNumber').value;
+    const expiryDate = document.getElementById('stockExpiryDate').value;
+    const notes = document.getElementById('stockNotes').value;
+    
+    if (!productId || !quantity || quantity <= 0) {
+      alert('Please select a product and enter a valid quantity');
+      return;
+    }
+    
+    const intakeData = {
+      product_id: parseInt(productId),
+      quantity_added: parseInt(quantity),
+      cost_per_unit: costPerUnit ? parseFloat(costPerUnit) : null,
+      supplier: supplier || null,
+      batch_number: batchNumber || null,
+      expiry_date: expiryDate || null,
+      notes: notes || null
+    };
+    
+    const response = await fetch(`${API_BASE_URL}/stock/intake`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(intakeData)
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to record stock intake');
+    }
+    
+    const result = await response.json();
+    alert(`Stock intake recorded successfully!\nProduct: ${result.data.product_name}\nQuantity Added: ${result.data.quantity_added}\nNew Stock Level: ${result.data.new_stock}`);
+    
+    // Clear form and hide it
+    clearStockIntakeForm();
+    document.getElementById('stockIntakeForm').style.display = 'none';
+    
+    // Refresh stock levels
+    loadStockLevels();
+    
+  } catch (error) {
+    console.error('Error submitting stock intake:', error);
+    alert('Failed to record stock intake: ' + error.message);
+  }
+}
+
+// Load and display stock alerts
+async function loadStockAlerts() {
+  try {
+    hideAllStockDisplays();
+    
+    const response = await fetch(`${API_BASE_URL}/stock/alerts?acknowledged=false`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch stock alerts');
+    }
+    
+    const result = await response.json();
+    displayStockAlerts(result.data);
+    
+    document.getElementById('stockAlertsDisplay').style.display = 'block';
+    
+  } catch (error) {
+    console.error('Error loading stock alerts:', error);
+    alert('Failed to load stock alerts: ' + error.message);
+  }
+}
+
+// Display stock alerts
+function displayStockAlerts(alertsData) {
+  const container = document.getElementById('stockAlertsDisplay');
+  
+  if (alertsData.length === 0) {
+    container.innerHTML = `
+      <h4>Stock Alerts</h4>
+      <div style="padding: 20px; text-align: center; color: #28a745;">
+        ✅ No active stock alerts! All stock levels are adequate.
+      </div>
+    `;
+    return;
+  }
+  
+  let html = `
+    <h4>Stock Alerts (${alertsData.length})</h4>
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+        <thead>
+          <tr style="background-color: #f5f5f5;">
+            <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Product</th>
+            <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Alert Level</th>
+            <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Current Stock</th>
+            <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Reorder Level</th>
+            <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+  
+  alertsData.forEach(alert => {
+    const alertColor = getAlertLevelColor(alert.alert_level);
+    const alertText = getAlertLevelText(alert.alert_level);
+    
+    html += `
+      <tr>
+        <td style="padding: 10px; border: 1px solid #ddd;">${alert.product_name}</td>
+        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
+          <span style="color: ${alertColor}; font-weight: bold;">${alertText}</span>
+        </td>
+        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${alert.current_stock}</td>
+        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${alert.reorder_level}</td>
+        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
+          <button onclick="acknowledgeAlert(${alert.id})" 
+                  style="padding: 4px 8px; margin: 2px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer;">
+            Acknowledge
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+  
+  html += `
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top: 15px;">
+      <button onclick="loadStockAlerts()" class="btn-secondary">🔄 Refresh</button>
+    </div>
+  `;
+  
+  container.innerHTML = html;
+}
+
+// Get alert level color
+function getAlertLevelColor(alertLevel) {
+  switch(alertLevel) {
+    case 'OUT_OF_STOCK': return '#dc3545';
+    case 'CRITICAL': return '#fd7e14';
+    case 'LOW': return '#ffc107';
+    default: return '#6c757d';
+  }
+}
+
+// Get alert level text
+function getAlertLevelText(alertLevel) {
+  switch(alertLevel) {
+    case 'OUT_OF_STOCK': return '🔴 Out of Stock';
+    case 'CRITICAL': return '🟠 Critical';
+    case 'LOW': return '🟡 Low Stock';
+    default: return '❓ Unknown';
+  }
+}
+
+// Acknowledge stock alert
+async function acknowledgeAlert(alertId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/stock/alerts/${alertId}/acknowledge`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        acknowledged_by: 'admin'
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to acknowledge alert');
+    }
+    
+    alert('Alert acknowledged successfully!');
+    
+    // Refresh alerts
+    loadStockAlerts();
+    
+  } catch (error) {
+    console.error('Error acknowledging alert:', error);
+    alert('Failed to acknowledge alert: ' + error.message);
+  }
+}
+
 // Export order as PDF
 async function exportOrderAsPDF(orderId, customerName) {
   try {
@@ -2169,28 +2664,69 @@ function renderNotifications() {
   }
   
   const html = notifications.map(notification => {
-    const isUnread = !notification.read && !notification.invoiceGenerated;
-    const statusText = notification.invoiceGenerated ? '✅ Invoice Generated' : '⏳ Pending Invoice';
-    const statusColor = notification.invoiceGenerated ? '#10b981' : '#f59e0b';
-    
-    return `
-      <div class="notification-item ${isUnread ? 'unread' : ''}" data-id="${notification.id}">
-        <div class="notification-time">${new Date(notification.timestamp).toLocaleString()}</div>
-        <div class="notification-title">New Order #${notification.orderId}</div>
-        <div class="notification-content">
-          <strong>Customer:</strong> ${notification.customerName}<br>
-          <strong>Total:</strong> ₦${notification.orderTotal}<br>
-          <strong>Status:</strong> <span style="color: ${statusColor}">${statusText}</span>
-        </div>
-        <div class="notification-actions">
-          ${!notification.invoiceGenerated ? `<button class="btn-notification-action btn-generate-invoice" data-order-id="${notification.orderId}">Generate Invoice</button>` : ''}
-          <button class="btn-notification-action btn-mark-read" data-notification-id="${notification.id}">Mark Read</button>
-        </div>
-      </div>
-    `;
+    if (notification.type === 'stock_alert') {
+      return renderStockAlertNotification(notification);
+    } else {
+      return renderOrderNotification(notification);
+    }
   }).join('');
   
   notificationsContent.innerHTML = html;
+}
+
+function renderOrderNotification(notification) {
+  const isUnread = !notification.read && !notification.invoiceGenerated;
+  const statusText = notification.invoiceGenerated ? '✅ Invoice Generated' : '⏳ Pending Invoice';
+  const statusColor = notification.invoiceGenerated ? '#10b981' : '#f59e0b';
+  
+  return `
+    <div class="notification-item ${isUnread ? 'unread' : ''}" data-id="${notification.id}">
+      <div class="notification-time">${new Date(notification.timestamp).toLocaleString()}</div>
+      <div class="notification-title">📦 New Order #${notification.orderId}</div>
+      <div class="notification-content">
+        <strong>Customer:</strong> ${notification.customerName}<br>
+        <strong>Total:</strong> ₦${notification.orderTotal}<br>
+        <strong>Status:</strong> <span style="color: ${statusColor}">${statusText}</span>
+      </div>
+      <div class="notification-actions">
+        ${!notification.invoiceGenerated ? `<button class="btn-notification-action btn-generate-invoice" data-order-id="${notification.orderId}">Generate Invoice</button>` : ''}
+        <button class="btn-notification-action btn-mark-read" data-notification-id="${notification.id}">Mark Read</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderStockAlertNotification(notification) {
+  const isUnread = !notification.read && !notification.acknowledged;
+  const alertIcon = getStockAlertIcon(notification.alertLevel);
+  const alertColor = getAlertLevelColor(notification.alertLevel);
+  const alertText = getAlertLevelText(notification.alertLevel);
+  
+  return `
+    <div class="notification-item ${isUnread ? 'unread' : ''}" data-id="${notification.id}" style="border-left: 4px solid ${alertColor};">
+      <div class="notification-time">${new Date(notification.timestamp).toLocaleString()}</div>
+      <div class="notification-title">${alertIcon} Stock Alert: ${notification.productName}</div>
+      <div class="notification-content">
+        <strong>Alert Level:</strong> <span style="color: ${alertColor}; font-weight: bold;">${alertText}</span><br>
+        <strong>Current Stock:</strong> ${notification.currentStock} units<br>
+        <strong>Reorder Level:</strong> ${notification.reorderLevel} units
+      </div>
+      <div class="notification-actions">
+        ${!notification.acknowledged ? `<button class="btn-notification-action btn-acknowledge-alert" data-product-id="${notification.productId}" data-notification-id="${notification.id}" style="background-color: #28a745;">Acknowledge</button>` : ''}
+        <button class="btn-notification-action btn-view-stock" data-product-id="${notification.productId}">View Stock</button>
+        <button class="btn-notification-action btn-mark-read" data-notification-id="${notification.id}">Mark Read</button>
+      </div>
+    </div>
+  `;
+}
+
+function getStockAlertIcon(alertLevel) {
+  switch(alertLevel) {
+    case 'OUT_OF_STOCK': return '🔴';
+    case 'CRITICAL': return '🟠';
+    case 'LOW': return '🟡';
+    default: return '⚠️';
+  }
 }
 
 function generateInvoiceFromNotification(orderId) {
@@ -2241,8 +2777,8 @@ function handleNotificationAction(event) {
 }
 
 function startNotificationPolling() {
-  // Check for pending notifications every 30 seconds
-  notificationInterval = setInterval(() => {
+  // Check for pending notifications and stock alerts every 30 seconds
+  notificationInterval = setInterval(async () => {
     const pendingNotifications = notifications.filter(n => !n.invoiceGenerated);
     
     pendingNotifications.forEach(notification => {
@@ -2261,7 +2797,82 @@ function startNotificationPolling() {
         });
       }
     });
+    
+    // Check for stock alerts
+    await checkAndNotifyStockAlerts();
   }, 30000); // 30 seconds
+}
+
+// Function to check for stock alerts and create notifications
+async function checkAndNotifyStockAlerts() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/stock/alerts?acknowledged=false`);
+    if (!response.ok) return;
+    
+    const result = await response.json();
+    const stockAlerts = result.data || [];
+    
+    stockAlerts.forEach(alert => {
+      // Check if we already have a notification for this alert
+      const existingNotification = notifications.find(n => n.type === 'stock_alert' && n.productId === alert.product_id);
+      
+      if (!existingNotification) {
+        createStockAlertNotification(alert);
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error checking stock alerts:', error);
+  }
+}
+
+// Function to create stock alert notifications
+function createStockAlertNotification(alert) {
+  const notification = {
+    id: Date.now(),
+    type: 'stock_alert',
+    productId: alert.product_id,
+    productName: alert.product_name,
+    alertLevel: alert.alert_level,
+    currentStock: alert.current_stock,
+    reorderLevel: alert.reorder_level,
+    timestamp: new Date().toISOString(),
+    read: false,
+    acknowledged: false
+  };
+  
+  notifications.unshift(notification);
+  saveNotifications();
+  updateNotificationBadge();
+  
+  // Show browser notification
+  if ('serviceWorker' in navigator && 'Notification' in window && Notification.permission === 'granted') {
+    const alertText = getStockAlertNotificationText(alert.alert_level);
+    const urgencyLevel = alert.alert_level === 'OUT_OF_STOCK' ? true : false;
+    
+    navigator.serviceWorker.ready.then(registration => {
+      registration.showNotification(`${alertText} Stock Alert!`, {
+        body: `${alert.product_name}: ${alert.current_stock} units remaining (Reorder at: ${alert.reorder_level})`,
+        icon: '/public/company_logo.PNG',
+        tag: `stock-alert-${alert.product_id}`,
+        requireInteraction: urgencyLevel,
+        badge: '/public/company_logo.PNG',
+        urgency: urgencyLevel ? 'high' : 'normal'
+      });
+    }).catch(error => {
+      console.log('Service Worker not available for stock alert notification');
+    });
+  }
+}
+
+// Get stock alert notification text based on level
+function getStockAlertNotificationText(alertLevel) {
+  switch(alertLevel) {
+    case 'OUT_OF_STOCK': return '🔴 URGENT';
+    case 'CRITICAL': return '🟠 CRITICAL';
+    case 'LOW': return '🟡 LOW';
+    default: return '⚠️';
+  }
 }
 
 // PWA: Register service worker

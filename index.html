@@ -6,7 +6,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com; img-src 'self' data:; connect-src 'self' https://cdnjs.cloudflare.com;">
   <title>ASTRO-BSM Product Order</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=7">
   
   <!-- PWA Icons and Meta Tags -->
   <link rel="icon" type="image/png" href="public/company_logo.PNG">
@@ -173,8 +173,48 @@
           <h3>All Orders</h3>
           <div style="margin-bottom: 20px;">
             <button id="manageProductsBtn" class="btn-secondary">🛠️ Manage Products</button>
+            <button id="manageStockBtn" class="btn-secondary">📦 Stock Management</button>
           </div>
           <div id="ordersList"></div>
+        </div>
+        
+        <!-- Stock Management Section -->
+        <div id="stockSection" style="display: none;">
+          <h3>Stock Management</h3>
+          <div style="margin-bottom: 20px;">
+            <button id="viewStockLevels" class="btn-primary">📊 View Stock Levels</button>
+            <button id="addStockIntake" class="btn-primary">➕ Add Stock</button>
+            <button id="viewStockAlerts" class="btn-warning">⚠️ Low Stock Alerts</button>
+            <button id="backToOrders" class="btn-secondary">← Back to Orders</button>
+          </div>
+          
+          <!-- Stock Levels Display -->
+          <div id="stockLevelsDisplay" style="display: none;"></div>
+          
+          <!-- Stock Intake Form -->
+          <div id="stockIntakeForm" style="display: none; margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px;">
+            <h4>Add Stock Intake</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+              <select id="stockProductSelect" required>
+                <option value="">Select Product</option>
+              </select>
+              <input type="number" id="stockQuantity" placeholder="Quantity to Add" min="1" required>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+              <input type="number" id="stockCostPerUnit" placeholder="Cost per Unit (₦)" step="0.01">
+              <input type="text" id="stockSupplier" placeholder="Supplier Name">
+            </div>
+            <input type="text" id="stockBatchNumber" placeholder="Batch Number (optional)" style="margin-bottom: 10px;">
+            <input type="date" id="stockExpiryDate" style="margin-bottom: 10px;">
+            <textarea id="stockNotes" placeholder="Notes (optional)" rows="3" style="margin-bottom: 10px;"></textarea>
+            <div>
+              <button id="submitStockIntake" class="btn-primary">Add Stock</button>
+              <button id="cancelStockIntake" class="btn-secondary">Cancel</button>
+            </div>
+          </div>
+          
+          <!-- Stock Alerts Display -->
+          <div id="stockAlertsDisplay" style="display: none;"></div>
         </div>
       </div>
     </div>
@@ -213,7 +253,7 @@
     <p>&copy; 2025 ASTRO-BSM. All rights reserved.</p>
   </footer>
 
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=7"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </body>
