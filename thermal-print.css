@@ -1,0 +1,303 @@
+/* Thermal Printer Styles for 58mm XP-P300 */
+@media print {
+  /* Reset all margins and paddings for thermal printing */
+  * {
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: white !important;
+    color: black !important;
+  }
+  
+  /* Hide all non-thermal elements during printing */
+  body > *:not(.thermal-print-content) {
+    display: none !important;
+  }
+  
+  /* Main thermal container */
+  .thermal-print-content {
+    display: block !important;
+    width: 58mm !important;
+    max-width: 58mm !important;
+    font-family: 'Courier New', monospace !important;
+    font-size: 8px !important;
+    line-height: 1.2 !important;
+    color: black !important;
+    background: white !important;
+    margin: 0 !important;
+    padding: 2mm !important;
+  }
+  
+  /* Header styles */
+  .thermal-header {
+    text-align: center !important;
+    margin-bottom: 2mm !important;
+  }
+  
+  .thermal-company-name {
+    font-size: 10px !important;
+    font-weight: bold !important;
+    text-transform: uppercase !important;
+    margin-bottom: 1mm !important;
+  }
+  
+  .thermal-company-tagline {
+    font-size: 7px !important;
+    margin-bottom: 1mm !important;
+  }
+  
+  .thermal-divider {
+    border-bottom: 1px dashed black !important;
+    margin: 2mm 0 !important;
+    width: 100% !important;
+  }
+  
+  /* Order/Invoice info */
+  .thermal-order-info {
+    font-size: 8px !important;
+    margin-bottom: 2mm !important;
+  }
+  
+  .thermal-order-info .info-line {
+    display: flex !important;
+    justify-content: space-between !important;
+    margin-bottom: 0.5mm !important;
+  }
+  
+  /* Customer info */
+  .thermal-customer {
+    font-size: 8px !important;
+    margin-bottom: 2mm !important;
+  }
+  
+  .thermal-customer-label {
+    font-weight: bold !important;
+    text-decoration: underline !important;
+    margin-bottom: 1mm !important;
+  }
+  
+  /* Items table */
+  .thermal-items {
+    margin-bottom: 2mm !important;
+  }
+  
+  .thermal-item {
+    font-size: 7px !important;
+    margin-bottom: 1mm !important;
+    border-bottom: 1px dotted #ccc !important;
+    padding-bottom: 1mm !important;
+  }
+  
+  .thermal-item-name {
+    font-weight: bold !important;
+    margin-bottom: 0.5mm !important;
+  }
+  
+  .thermal-item-details {
+    display: flex !important;
+    justify-content: space-between !important;
+    font-size: 6px !important;
+  }
+  
+  .thermal-item-qty-price {
+    text-align: right !important;
+  }
+  
+  /* Totals section */
+  .thermal-totals {
+    margin-top: 2mm !important;
+    border-top: 1px solid black !important;
+    padding-top: 1mm !important;
+  }
+  
+  .thermal-total-line {
+    display: flex !important;
+    justify-content: space-between !important;
+    font-size: 8px !important;
+    margin-bottom: 0.5mm !important;
+  }
+  
+  .thermal-total-line.final-total {
+    font-weight: bold !important;
+    font-size: 9px !important;
+    border-top: 1px solid black !important;
+    padding-top: 1mm !important;
+    margin-top: 1mm !important;
+  }
+  
+  /* Footer */
+  .thermal-footer {
+    margin-top: 3mm !important;
+    text-align: center !important;
+    font-size: 6px !important;
+  }
+  
+  .thermal-thank-you {
+    font-weight: bold !important;
+    margin-bottom: 1mm !important;
+  }
+  
+  .thermal-contact {
+    font-size: 5px !important;
+    margin-bottom: 0.5mm !important;
+  }
+  
+  /* QR Code placeholder */
+  .thermal-qr {
+    text-align: center !important;
+    margin: 2mm 0 !important;
+    font-size: 6px !important;
+  }
+  
+  /* Status and delivery info */
+  .thermal-delivery {
+    margin: 2mm 0 !important;
+    font-size: 7px !important;
+  }
+  
+  .thermal-delivery-label {
+    font-weight: bold !important;
+    margin-bottom: 0.5mm !important;
+  }
+  
+  /* Print-specific utilities */
+  .thermal-break {
+    page-break-after: always !important;
+  }
+  
+  .thermal-no-break {
+    page-break-inside: avoid !important;
+  }
+  
+  /* Currency formatting */
+  .thermal-currency {
+    font-family: monospace !important;
+  }
+  
+  /* Barcode area */
+  .thermal-barcode {
+    text-align: center !important;
+    margin: 2mm 0 !important;
+    font-family: 'Libre Barcode 128', monospace !important;
+    font-size: 12px !important;
+  }
+}
+
+/* Screen preview styles for thermal layout */
+.thermal-preview {
+  width: 58mm;
+  max-width: 58mm;
+  font-family: 'Courier New', monospace;
+  font-size: 8px;
+  line-height: 1.2;
+  color: black;
+  background: white;
+  border: 1px solid #ddd;
+  margin: 10px auto;
+  padding: 2mm;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.thermal-preview .thermal-header {
+  text-align: center;
+  margin-bottom: 2mm;
+}
+
+.thermal-preview .thermal-company-name {
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-bottom: 1mm;
+}
+
+.thermal-preview .thermal-company-tagline {
+  font-size: 7px;
+  margin-bottom: 1mm;
+}
+
+.thermal-preview .thermal-divider {
+  border-bottom: 1px dashed black;
+  margin: 2mm 0;
+  width: 100%;
+}
+
+.thermal-preview .thermal-order-info {
+  font-size: 8px;
+  margin-bottom: 2mm;
+}
+
+.thermal-preview .thermal-order-info .info-line {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5mm;
+}
+
+.thermal-preview .thermal-customer {
+  font-size: 8px;
+  margin-bottom: 2mm;
+}
+
+.thermal-preview .thermal-customer-label {
+  font-weight: bold;
+  text-decoration: underline;
+  margin-bottom: 1mm;
+}
+
+.thermal-preview .thermal-items {
+  margin-bottom: 2mm;
+}
+
+.thermal-preview .thermal-item {
+  font-size: 7px;
+  margin-bottom: 1mm;
+  border-bottom: 1px dotted #ccc;
+  padding-bottom: 1mm;
+}
+
+.thermal-preview .thermal-item-name {
+  font-weight: bold;
+  margin-bottom: 0.5mm;
+}
+
+.thermal-preview .thermal-item-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 6px;
+}
+
+.thermal-preview .thermal-totals {
+  margin-top: 2mm;
+  border-top: 1px solid black;
+  padding-top: 1mm;
+}
+
+.thermal-preview .thermal-total-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  margin-bottom: 0.5mm;
+}
+
+.thermal-preview .thermal-total-line.final-total {
+  font-weight: bold;
+  font-size: 9px;
+  border-top: 1px solid black;
+  padding-top: 1mm;
+  margin-top: 1mm;
+}
+
+.thermal-preview .thermal-footer {
+  margin-top: 3mm;
+  text-align: center;
+  font-size: 6px;
+}
+
+.thermal-preview .thermal-thank-you {
+  font-weight: bold;
+  margin-bottom: 1mm;
+}
+
+.thermal-preview .thermal-contact {
+  font-size: 5px;
+  margin-bottom: 0.5mm;
+}
