@@ -6,6 +6,7 @@ self.addEventListener('install', event => {
         './index.html',
         './style.css',
         './app.js',
+        './sw.js',
         './manifest.json'
       ]).catch(error => {
         console.log('Cache addAll failed:', error);
