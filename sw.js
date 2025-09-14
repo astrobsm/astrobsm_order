@@ -1,13 +1,16 @@
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open('order-pwa-v2').then(cache => {
+    caches.open('order-pwa-v3').then(cache => {
       return cache.addAll([
         './',
         './index.html',
         './style.css',
         './app.js',
         './sw.js',
-        './manifest.json'
+        './manifest.json',
+        './icon-192.png',
+        './icon-512.png',
+        './public/company_logo.PNG'
       ]).catch(error => {
         console.log('Cache addAll failed:', error);
         // Continue with installation even if some resources fail to cache

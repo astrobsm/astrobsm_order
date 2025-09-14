@@ -2276,3 +2276,122 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
+
+// PWA Install Functionality
+let deferredPrompt;
+let installButton;
+
+// Listen for beforeinstallprompt event
+window.addEventListener('beforeinstallprompt', (e) => {
+  console.log('PWA: beforeinstallprompt event fired');
+  e.preventDefault();
+  deferredPrompt = e;
+  
+  // Show install button if it exists
+  showInstallButton();
+});
+
+// Show install button
+function showInstallButton() {
+  installButton = document.getElementById('install-btn');
+  if (installButton) {
+    installButton.style.display = 'block';
+    installButton.addEventListener('click', installPWA);
+  } else {
+    // Create install button dynamically if not found
+    createInstallButton();
+  }
+}
+
+// Create install button
+function createInstallButton() {
+  const headerActions = document.querySelector('.header-actions');
+  if (headerActions && deferredPrompt) {
+    installButton = document.createElement('button');
+    installButton.id = 'install-btn';
+    installButton.innerHTML = '📱 Install App';
+    installButton.className = 'install-button';
+    installButton.style.cssText = `
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-left: 10px;
+    `;
+    installButton.addEventListener('click', installPWA);
+    headerActions.appendChild(installButton);
+  }
+}
+
+// Install PWA
+async function installPWA() {
+  if (!deferredPrompt) return;
+  
+  try {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`PWA install outcome: ${outcome}`);
+    
+    if (outcome === 'accepted') {
+      console.log('User accepted the install prompt');
+    } else {
+      console.log('User dismissed the install prompt');
+    }
+    
+    deferredPrompt = null;
+    if (installButton) {
+      installButton.style.display = 'none';
+    }
+  } catch (error) {
+    console.error('PWA install error:', error);
+  }
+}
+
+// Check if app is already installed
+window.addEventListener('appinstalled', (evt) => {
+  console.log('PWA was installed');
+  if (installButton) {
+    installButton.style.display = 'none';
+  }
+});
+
+// iOS Safari specific install instructions
+function showIOSInstallInstructions() {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator.standalone);
+  
+  if (isIOS && !isInStandaloneMode && !localStorage.getItem('iosInstallDismissed')) {
+    const iosInstallBanner = document.createElement('div');
+    iosInstallBanner.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #007bff;
+      color: white;
+      padding: 10px;
+      text-align: center;
+      z-index: 1000;
+      font-size: 14px;
+    `;
+    iosInstallBanner.innerHTML = `
+      📱 To install this app on iOS: Tap <strong>Share</strong> then <strong>Add to Home Screen</strong>
+      <button onclick="this.parentElement.remove(); localStorage.setItem('iosInstallDismissed', 'true')" 
+              style="float: right; background: none; border: none; color: white; font-size: 18px;">✕</button>
+    `;
+    document.body.prepend(iosInstallBanner);
+    
+    setTimeout(() => {
+      if (iosInstallBanner.parentElement) {
+        iosInstallBanner.remove();
+        localStorage.setItem('iosInstallDismissed', 'true');
+      }
+    }, 10000);
+  }
+}
+
+// Initialize iOS install instructions
+document.addEventListener('DOMContentLoaded', showIOSInstallInstructions);
