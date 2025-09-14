@@ -1321,7 +1321,7 @@ async function loadAllOrders() {
           <div class="order-header">
             <span class="order-id">Order #${order.id}</span>
             <span class="order-status status-${order.status}">${order.status}</span>
-            <span class="urgency-badge urgency-${order.request_status}">${urgencyNames[order.request_status] || order.request_status}</span>
+            <span class="urgency-badge urgency-${order.request_status || 'can_wait_24hrs'}">${urgencyNames[order.request_status] || order.request_status || 'Can wait 24hrs'}</span>
             <div class="export-buttons">
               <button class="btn-export-pdf" data-order-id="${order.id}" data-customer-name="${order.customer_name}">
                 📄 Export PDF
@@ -1339,7 +1339,7 @@ async function loadAllOrders() {
             <div><strong>Order Date:</strong> ${new Date(order.created_at).toLocaleDateString()}</div>
             <div><strong>Delivery Date:</strong> ${order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : 'Not specified'}</div>
             <div><strong>Delivery Method:</strong> ${deliveryMethodNames[order.preferred_delivery_method] || order.preferred_delivery_method || 'Not specified'}</div>
-            <div><strong>Urgency:</strong> <span style="color: ${order.request_status === 'very_urgent' ? '#991b1b' : order.request_status === 'urgent' ? '#9a3412' : '#065f46'};">${urgencyNames[order.request_status] || order.request_status || 'Not specified'}</span></div>
+            <div><strong>Urgency:</strong> <span style="color: ${(order.request_status === 'very_urgent') ? '#991b1b' : (order.request_status === 'urgent') ? '#9a3412' : '#065f46'};">${urgencyNames[order.request_status] || order.request_status || 'Can wait 24hrs'}</span></div>
             <div><strong>Address:</strong> ${order.address || 'Not provided'}</div>
             ${order.delivery_route ? `<div><strong>Delivery Instructions:</strong> ${order.delivery_route}</div>` : ''}
           </div>
