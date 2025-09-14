@@ -1,6 +1,6 @@
 {
   "name": "astro-bsm-order-app",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "ASTRO-BSM Product Order PWA with PostgreSQL backend",
   "main": "server/server.js",
   "scripts": {
