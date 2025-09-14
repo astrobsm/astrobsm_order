@@ -101,12 +101,117 @@ async function startServer() {
     // Initialize stock management tables on startup
     console.log('🔄 Checking stock management tables...');
     try {
+      // Try to load the external function first
       const { createStockTables } = require('./database/production-stock-setup');
       await createStockTables();
-      console.log('✅ Stock management tables ready');
-    } catch (error) {
-      console.log('⚠️ Stock table setup issue (may already exist):', error.message);
-      // Don't fail startup if tables already exist
+      console.log('✅ Stock management tables ready (external setup)');
+    } catch (externalError) {
+      console.log('⚠️ External setup failed, creating tables inline...', externalError.message);
+      
+      // Fallback: create tables inline
+      const client = await pool.connect();
+      try {
+        console.log('🔄 Creating stock tables inline...');
+        await client.query('BEGIN');
+        
+        // Create stock_inventory table
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS stock_inventory (
+            id SERIAL PRIMARY KEY,
+            product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+            current_stock INTEGER NOT NULL DEFAULT 0,
+            reorder_level INTEGER NOT NULL DEFAULT 10,
+            max_stock_level INTEGER NOT NULL DEFAULT 100,
+            last_restocked TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(product_id)
+          );
+        `);
+        
+        // Create stock_movements table
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS stock_movements (
+            id SERIAL PRIMARY KEY,
+            product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+            movement_type VARCHAR(20) NOT NULL CHECK (movement_type IN ('IN', 'OUT', 'ADJUSTMENT')),
+            quantity INTEGER NOT NULL,
+            reference_type VARCHAR(50),
+            reference_id INTEGER,
+            notes TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_by VARCHAR(100)
+          );
+        `);
+        
+        // Create stock_intake table
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS stock_intake (
+            id SERIAL PRIMARY KEY,
+            product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+            quantity INTEGER NOT NULL,
+            unit_cost DECIMAL(10,2),
+            supplier VARCHAR(255),
+            batch_number VARCHAR(100),
+            expiry_date DATE,
+            intake_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            notes TEXT,
+            created_by VARCHAR(100)
+          );
+        `);
+        
+        // Create low_stock_alerts table
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS low_stock_alerts (
+            id SERIAL PRIMARY KEY,
+            product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+            alert_type VARCHAR(20) NOT NULL CHECK (alert_type IN ('LOW', 'CRITICAL', 'OUT_OF_STOCK')),
+            current_stock INTEGER NOT NULL,
+            reorder_level INTEGER NOT NULL,
+            alert_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            acknowledged BOOLEAN DEFAULT FALSE,
+            acknowledged_at TIMESTAMP,
+            acknowledged_by VARCHAR(100)
+          );
+        `);
+        
+        // Create indexes
+        await client.query('CREATE INDEX IF NOT EXISTS idx_stock_inventory_product_id ON stock_inventory(product_id);');
+        await client.query('CREATE INDEX IF NOT EXISTS idx_stock_movements_product_id ON stock_movements(product_id);');
+        await client.query('CREATE INDEX IF NOT EXISTS idx_low_stock_alerts_product_id ON low_stock_alerts(product_id);');
+        
+        // Initialize stock for existing products
+        const productsResult = await client.query('SELECT id FROM products');
+        console.log(`🔄 Found ${productsResult.rows.length} products, initializing stock...`);
+        
+        for (const product of productsResult.rows) {
+          const existingStock = await client.query(
+            'SELECT id FROM stock_inventory WHERE product_id = $1',
+            [product.id]
+          );
+          
+          if (existingStock.rows.length === 0) {
+            await client.query(`
+              INSERT INTO stock_inventory (product_id, current_stock, reorder_level, max_stock_level, last_restocked)
+              VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+            `, [product.id, 50, 10, 100]);
+            
+            await client.query(`
+              INSERT INTO stock_movements (product_id, movement_type, quantity, reference_type, notes)
+              VALUES ($1, 'IN', $2, 'initialization', 'Initial stock setup')
+            `, [product.id, 50]);
+          }
+        }
+        
+        await client.query('COMMIT');
+        console.log('✅ Stock management tables ready (inline creation)');
+        
+      } catch (inlineError) {
+        await client.query('ROLLBACK');
+        console.log('⚠️ Inline stock setup failed (tables may already exist):', inlineError.message);
+      } finally {
+        client.release();
+      }
     }
     
     // Start server
