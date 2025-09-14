@@ -84,6 +84,198 @@ header h1 {
   background: #d97706;
 }
 
+/* Header Actions */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Notification Button */
+.btn-notification {
+  background: var(--primary-color);
+  color: var(--white);
+  border: none;
+  padding: 8px 12px;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.btn-notification:hover {
+  background: var(--primary-dark);
+}
+
+.notification-badge {
+  background: var(--danger-color);
+  color: var(--white);
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* Notification Center */
+.notification-center {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 400px;
+  height: 100vh;
+  background: var(--white);
+  box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+.notification-header {
+  background: var(--primary-color);
+  color: var(--white);
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notification-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  color: var(--white);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 50%;
+}
+
+.btn-close:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+.notification-auth {
+  padding: 20px;
+  border-bottom: 1px solid var(--gray-light);
+}
+
+.notification-auth input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--gray-light);
+  border-radius: var(--border-radius);
+  margin-bottom: 10px;
+}
+
+.btn-unlock {
+  background: var(--success-color);
+  color: var(--white);
+  border: none;
+  padding: 10px 15px;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  width: 100%;
+}
+
+.btn-unlock:hover {
+  background: #059669;
+}
+
+.notification-controls {
+  padding: 15px;
+  border-bottom: 1px solid var(--gray-light);
+  display: flex;
+  gap: 10px;
+}
+
+.btn-clear, .btn-mark-read {
+  background: var(--gray-light);
+  border: none;
+  padding: 8px 12px;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.btn-clear:hover {
+  background: var(--danger-color);
+  color: var(--white);
+}
+
+.btn-mark-read:hover {
+  background: var(--success-color);
+  color: var(--white);
+}
+
+.notifications-list {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+.notification-item {
+  padding: 15px;
+  border-bottom: 1px solid var(--gray-light);
+  position: relative;
+  background: var(--white);
+  transition: all 0.3s ease;
+}
+
+.notification-item.unread {
+  background: #eff6ff;
+  border-left: 4px solid var(--primary-color);
+}
+
+.notification-item:hover {
+  background: var(--gray-light);
+}
+
+.notification-time {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+}
+
+.notification-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 5px;
+}
+
+.notification-content {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.notification-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.btn-notification-action {
+  background: var(--primary-color);
+  color: var(--white);
+  border: none;
+  padding: 5px 10px;
+  border-radius: var(--border-radius);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.btn-notification-action:hover {
+  background: var(--primary-dark);
+}
+
 /* Main Container */
 .container {
   max-width: 800px;
@@ -340,6 +532,27 @@ footer {
   .form-actions .btn-primary {
     width: 100%;
     min-width: auto;
+  }
+  
+  /* Notification mobile adjustments */
+  .header-actions {
+    flex-direction: row;
+    gap: 8px;
+  }
+  
+  .notification-center {
+    width: 100%;
+    left: 0;
+    right: 0;
+  }
+  
+  .notification-header h3 {
+    font-size: 1rem;
+  }
+  
+  .notification-controls {
+    flex-direction: column;
+    gap: 8px;
   }
 }
 

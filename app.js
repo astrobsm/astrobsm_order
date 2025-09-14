@@ -18,6 +18,25 @@ const adminPassword = document.getElementById('adminPassword');
 const passwordSection = document.getElementById('passwordSection');
 const ordersSection = document.getElementById('ordersSection');
 const ordersList = document.getElementById('ordersList');
+
+// Notification System Variables
+const notificationBtn = document.getElementById('notificationBtn');
+const notificationBadge = document.getElementById('notificationBadge');
+const notificationCenter = document.getElementById('notificationCenter');
+const closeNotifications = document.getElementById('closeNotifications');
+const adminPasswordInput = document.getElementById('adminPassword');
+const unlockNotifications = document.getElementById('unlockNotifications');
+const notificationsList = document.getElementById('notificationsList');
+const notificationsContent = document.getElementById('notificationsContent');
+const clearAllNotifications = document.getElementById('clearAllNotifications');
+const markAllRead = document.getElementById('markAllRead');
+
+// Notification State
+let notifications = [];
+let notificationInterval = null;
+let isNotificationUnlocked = false;
+const ADMIN_PASSWORD = 'roseball';
+
 let itemCount = 0;
 let orderTotal = { subtotal: 0, vat: 0, total: 0 };
 
@@ -538,6 +557,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Add event listeners for dynamically created buttons
     setupDynamicEventListeners();
     
+    // Initialize notification system
+    initializeNotificationSystem();
+    
   } catch (error) {
     console.error('Error initializing application:', error);
   }
@@ -610,6 +632,10 @@ orderForm.addEventListener('submit', async function(e) {
     }
     
     const result = await response.json();
+    
+    // Create notification for new order
+    const orderTotal = calculateOrderTotal().total;
+    createNotification(result.order.id, customerData.name, orderTotal.toFixed(2));
     
     // Show success summary
     displayOrderSummary(customerData, orderData, items, result.order);
@@ -1903,6 +1929,9 @@ function generateInvoiceContent(pdf, order) {
   const customerName = (order.customer_name || 'Customer').replace(/[^a-zA-Z0-9]/g, '_');
   const fileName = `Invoice_${customerName}_${order.id || 'N/A'}.pdf`;
   pdf.save(fileName);
+  
+  // Mark notification as invoice generated
+  markInvoiceGenerated(order.id);
 }
 
 // Setup event listeners for dynamically created buttons
@@ -1946,6 +1975,233 @@ function setupDynamicEventListeners() {
       deleteProduct(parseInt(id), name);
     }
   });
+}
+
+// Notification System Functions
+function initializeNotificationSystem() {
+  // Request notification permission
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission().then(permission => {
+      console.log('Notification permission:', permission);
+    });
+  }
+
+  // Load notifications from localStorage
+  loadNotifications();
+  
+  // Setup event listeners
+  if (notificationBtn) {
+    notificationBtn.addEventListener('click', toggleNotificationCenter);
+  }
+  
+  if (closeNotifications) {
+    closeNotifications.addEventListener('click', closeNotificationCenter);
+  }
+  
+  if (unlockNotifications) {
+    unlockNotifications.addEventListener('click', unlockNotificationCenter);
+  }
+  
+  if (clearAllNotifications) {
+    clearAllNotifications.addEventListener('click', clearAllNotificationHistory);
+  }
+  
+  if (markAllRead) {
+    markAllRead.addEventListener('click', markAllNotificationsRead);
+  }
+
+  // Start checking for pending orders
+  startNotificationPolling();
+}
+
+function createNotification(orderId, customerName, orderTotal) {
+  const notification = {
+    id: Date.now(),
+    orderId: orderId,
+    customerName: customerName,
+    orderTotal: orderTotal,
+    timestamp: new Date().toISOString(),
+    read: false,
+    invoiceGenerated: false
+  };
+  
+  notifications.unshift(notification);
+  saveNotifications();
+  updateNotificationBadge();
+  
+  // Show browser notification if permission granted
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('New Order Received!', {
+      body: `Order from ${customerName} - Total: ₦${orderTotal}`,
+      icon: '/public/company_logo.PNG',
+      tag: `order-${orderId}`,
+      requireInteraction: true
+    });
+  }
+  
+  // Show notification button
+  if (notificationBtn) {
+    notificationBtn.style.display = 'block';
+  }
+}
+
+function markInvoiceGenerated(orderId) {
+  const notification = notifications.find(n => n.orderId === orderId);
+  if (notification) {
+    notification.invoiceGenerated = true;
+    saveNotifications();
+    updateNotificationBadge();
+  }
+}
+
+function loadNotifications() {
+  const saved = localStorage.getItem('astrobsm_notifications');
+  if (saved) {
+    notifications = JSON.parse(saved);
+    updateNotificationBadge();
+    
+    // Show notification button if there are notifications
+    if (notifications.length > 0 && notificationBtn) {
+      notificationBtn.style.display = 'block';
+    }
+  }
+}
+
+function saveNotifications() {
+  localStorage.setItem('astrobsm_notifications', JSON.stringify(notifications));
+}
+
+function updateNotificationBadge() {
+  const unreadCount = notifications.filter(n => !n.read && !n.invoiceGenerated).length;
+  if (notificationBadge) {
+    notificationBadge.textContent = unreadCount;
+    notificationBadge.style.display = unreadCount > 0 ? 'block' : 'none';
+  }
+}
+
+function toggleNotificationCenter() {
+  if (notificationCenter) {
+    const isVisible = notificationCenter.style.display !== 'none';
+    notificationCenter.style.display = isVisible ? 'none' : 'block';
+    
+    if (!isVisible) {
+      // Reset auth state when opening
+      isNotificationUnlocked = false;
+      notificationsList.style.display = 'none';
+      document.querySelector('.notification-auth').style.display = 'block';
+      if (adminPasswordInput) {
+        adminPasswordInput.value = '';
+        adminPasswordInput.focus();
+      }
+    }
+  }
+}
+
+function closeNotificationCenter() {
+  if (notificationCenter) {
+    notificationCenter.style.display = 'none';
+  }
+}
+
+function unlockNotificationCenter() {
+  const password = adminPasswordInput?.value;
+  if (password === ADMIN_PASSWORD) {
+    isNotificationUnlocked = true;
+    document.querySelector('.notification-auth').style.display = 'none';
+    notificationsList.style.display = 'block';
+    renderNotifications();
+  } else {
+    alert('Invalid password!');
+    if (adminPasswordInput) {
+      adminPasswordInput.value = '';
+      adminPasswordInput.focus();
+    }
+  }
+}
+
+function renderNotifications() {
+  if (!notificationsContent) return;
+  
+  if (notifications.length === 0) {
+    notificationsContent.innerHTML = '<div class="notification-item">No notifications</div>';
+    return;
+  }
+  
+  const html = notifications.map(notification => {
+    const isUnread = !notification.read && !notification.invoiceGenerated;
+    const statusText = notification.invoiceGenerated ? '✅ Invoice Generated' : '⏳ Pending Invoice';
+    const statusColor = notification.invoiceGenerated ? '#10b981' : '#f59e0b';
+    
+    return `
+      <div class="notification-item ${isUnread ? 'unread' : ''}" data-id="${notification.id}">
+        <div class="notification-time">${new Date(notification.timestamp).toLocaleString()}</div>
+        <div class="notification-title">New Order #${notification.orderId}</div>
+        <div class="notification-content">
+          <strong>Customer:</strong> ${notification.customerName}<br>
+          <strong>Total:</strong> ₦${notification.orderTotal}<br>
+          <strong>Status:</strong> <span style="color: ${statusColor}">${statusText}</span>
+        </div>
+        <div class="notification-actions">
+          ${!notification.invoiceGenerated ? `<button class="btn-notification-action" onclick="generateInvoiceFromNotification(${notification.orderId})">Generate Invoice</button>` : ''}
+          <button class="btn-notification-action" onclick="markNotificationRead(${notification.id})">Mark Read</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  notificationsContent.innerHTML = html;
+}
+
+function generateInvoiceFromNotification(orderId) {
+  generateInvoiceForOrder(orderId);
+  markInvoiceGenerated(orderId);
+  renderNotifications();
+}
+
+function markNotificationRead(notificationId) {
+  const notification = notifications.find(n => n.id === notificationId);
+  if (notification) {
+    notification.read = true;
+    saveNotifications();
+    updateNotificationBadge();
+    renderNotifications();
+  }
+}
+
+function markAllNotificationsRead() {
+  notifications.forEach(n => n.read = true);
+  saveNotifications();
+  updateNotificationBadge();
+  renderNotifications();
+}
+
+function clearAllNotificationHistory() {
+  if (confirm('Are you sure you want to clear all notifications?')) {
+    notifications = [];
+    saveNotifications();
+    updateNotificationBadge();
+    renderNotifications();
+    notificationBtn.style.display = 'none';
+  }
+}
+
+function startNotificationPolling() {
+  // Check for pending notifications every 30 seconds
+  notificationInterval = setInterval(() => {
+    const pendingNotifications = notifications.filter(n => !n.invoiceGenerated);
+    
+    pendingNotifications.forEach(notification => {
+      // Send repeat notification for pending orders
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Pending Order Reminder', {
+          body: `Order #${notification.orderId} from ${notification.customerName} still needs invoice generation`,
+          icon: '/public/company_logo.PNG',
+          tag: `reminder-${notification.orderId}`,
+          requireInteraction: false
+        });
+      }
+    });
+  }, 30000); // 30 seconds
 }
 
 // PWA: Register service worker

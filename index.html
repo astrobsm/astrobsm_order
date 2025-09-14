@@ -17,9 +17,33 @@
     <div class="header-container">
       <img src="public/company_logo.PNG" alt="ASTRO-BSM Logo" class="logo">
       <h1>ASTRO-BSM Product Order</h1>
-      <button id="adminBtn" class="btn-admin">Admin</button>
+      <div class="header-actions">
+        <button id="notificationBtn" class="btn-notification" style="display: none;">
+          🔔 <span id="notificationBadge" class="notification-badge">0</span>
+        </button>
+        <button id="adminBtn" class="btn-admin">Admin</button>
+      </div>
     </div>
   </header>
+
+  <!-- Notification Center -->
+  <div id="notificationCenter" class="notification-center" style="display: none;">
+    <div class="notification-header">
+      <h3>🔔 Order Notifications</h3>
+      <button id="closeNotifications" class="btn-close">&times;</button>
+    </div>
+    <div class="notification-auth">
+      <input type="password" id="adminPassword" placeholder="Enter admin password" />
+      <button id="unlockNotifications" class="btn-unlock">Unlock</button>
+    </div>
+    <div id="notificationsList" class="notifications-list" style="display: none;">
+      <div class="notification-controls">
+        <button id="clearAllNotifications" class="btn-clear">Clear All</button>
+        <button id="markAllRead" class="btn-mark-read">Mark All Read</button>
+      </div>
+      <div id="notificationsContent"></div>
+    </div>
+  </div>
 
   <main class="container">
     <div class="card">
