@@ -1749,29 +1749,16 @@ async function exportOrderAsPDF(orderId, customerName) {
 async function generateInvoiceForOrder(orderId) {
   try {
     console.log('Generating invoice for order ID:', orderId);
-    console.log('Available orders:', window.currentOrders);
     
-    // Find the order from the current orders list
-    const order = window.currentOrders?.find(o => {
-      console.log('Comparing:', o.id, 'with', orderId, 'Types:', typeof o.id, typeof orderId);
-      return o.id == orderId; // Use == instead of === for type coercion
-    });
-    
-    if (!order) {
-      console.error('Order not found. Order ID:', orderId, 'Available orders:', window.currentOrders?.map(o => o.id));
-      alert(`Order not found. Order ID: ${orderId}`);
-      return;
-    }
-    
-    console.log('Found order:', order);
-    
-    // Fetch complete order details with items
+    // Fetch complete order details with items directly from API
     const response = await fetch(`/api/orders/${orderId}`);
     if (!response.ok) {
       throw new Error('Failed to fetch order details');
     }
     
     const orderWithItems = await response.json();
+    console.log('Fetched order for invoice:', orderWithItems);
+    
     generateInvoice(orderWithItems);
     
   } catch (error) {
