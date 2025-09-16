@@ -91,10 +91,7 @@ class AuthManager {
                 'view_order_status',
                 'view_all_orders',
                 'generate_invoices',
-                'generate_receipts',
-                'view_notifications',
-                'export_orders',
-                'notifications'
+                'generate_receipts'
             ],
             superadmin: [
                 'place_orders',
@@ -200,8 +197,9 @@ class AuthManager {
         // Hide/show elements based on role permissions
         await this.toggleElementsByPermission('place_orders', '.order-form, #orderForm, .customer-section');
         await this.toggleElementsByPermission('view_all_orders', '.admin-panel, #adminPanel, .btn-admin, #adminBtn');
-        await this.toggleElementsByPermission('manage_products', '.product-management, #productManagement');
-        await this.toggleElementsByPermission('manage_stock', '.stock-management, #stockManagement');
+        await this.toggleElementsByPermission('manage_products', '.product-management, #productManagement, #manageProductsBtn');
+        await this.toggleElementsByPermission('manage_stock', '.stock-management, #stockManagement, #manageStockBtn');
+        await this.toggleElementsByPermission('manage_users', '#manageUsersBtn, #userManagementSection');
         await this.toggleElementsByPermission('view_notifications', '.notification-section, #notificationSection, .btn-notification, #notificationBtn');
         
         // Apply strict customer restrictions
@@ -228,9 +226,9 @@ class AuthManager {
             '#adminBtn', '.btn-admin',
             '#notificationBtn', '.btn-notification',
             '.admin-panel', '#adminPanel',
-            '.user-management', '#userManagement',
-            '.stock-management', '#stockManagement', 
-            '.product-management', '#productManagement',
+            '.user-management', '#userManagement', '#manageUsersBtn', '#userManagementSection',
+            '.stock-management', '#stockManagement', '#manageStockBtn',
+            '.product-management', '#productManagement', '#manageProductsBtn',
             '.price-management', '#priceManagement',
             '.notification-center', '#notificationCenter',
             '.admin-controls', '.management-controls'
