@@ -575,7 +575,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Set up Product Management form buttons
     const addProductBtn = document.getElementById('addProductBtn');
-    const saveProductBtn = document.getElementById('saveProductBtn');
+    let saveProductBtn = document.getElementById('saveProductBtn');
     const cancelProductBtn = document.getElementById('cancelProductBtn');
     const addProductForm = document.getElementById('addProductForm');
 

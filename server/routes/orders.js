@@ -257,6 +257,7 @@ router.put('/:id/status', async (req, res) => {
 
 // Update order payment status and information
 router.put('/:orderId/payment', async (req, res) => {
+  let client;
   try {
     const { orderId } = req.params;
     const { 
@@ -269,8 +270,29 @@ router.put('/:orderId/payment', async (req, res) => {
     
     console.log('Updating payment status for order:', orderId, req.body);
     
+    // Get database client
+    client = await pool.connect();
+    
+    // First check if the payment columns exist
+    const columnsCheck = await client.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'orders' AND table_schema = 'public' 
+      AND column_name IN ('payment_status', 'payment_method', 'payment_reference', 'payment_date', 'payment_notes')
+    `);
+    
+    const existingColumns = columnsCheck.rows.map(row => row.column_name);
+    console.log('Available payment columns:', existingColumns);
+    
+    if (existingColumns.length === 0) {
+      // Payment columns don't exist yet, try to run migration
+      console.log('⚠️ Payment columns not found, attempting migration...');
+      const { runPaymentMigration } = require('../database/payment-migration');
+      await runPaymentMigration();
+      console.log('✅ Payment migration completed, retrying update...');
+    }
+    
     // Update order with payment information
-    await pool.query(`
+    await client.query(`
       UPDATE orders 
       SET 
         payment_status = $1,
@@ -316,6 +338,14 @@ router.put('/:orderId/payment', async (req, res) => {
       error: 'Failed to update payment information', 
       details: error.message 
     });
+  } finally {
+    if (client) {
+      try {
+        client.release();
+      } catch (releaseError) {
+        console.error('Error releasing client:', releaseError);
+      }
+    }
   }
 });
 
