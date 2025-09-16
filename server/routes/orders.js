@@ -255,4 +255,120 @@ router.put('/:id/status', async (req, res) => {
   }
 });
 
+// Update order payment status and information
+router.put('/:orderId/payment', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { 
+      payment_status, 
+      payment_method, 
+      payment_reference, 
+      payment_date, 
+      payment_notes 
+    } = req.body;
+    
+    console.log('Updating payment status for order:', orderId, req.body);
+    
+    // Update order with payment information
+    await pool.query(`
+      UPDATE orders 
+      SET 
+        payment_status = $1,
+        payment_method = $2,
+        payment_reference = $3,
+        payment_date = $4,
+        payment_notes = $5,
+        status = CASE 
+          WHEN $1 = 'paid' THEN 'confirmed' 
+          ELSE status 
+        END
+      WHERE id = $6
+    `, [payment_status, payment_method, payment_reference, payment_date, payment_notes, orderId]);
+    
+    // If payment is confirmed, create receipt record
+    if (payment_status === 'paid') {
+      const receiptNumber = `RCP-${orderId}-${Date.now().toString().slice(-6)}`;
+      
+      // Get order total for receipt
+      const orderResult = await pool.query('SELECT total_amount FROM orders WHERE id = $1', [orderId]);
+      const totalAmount = orderResult.rows[0]?.total_amount || 0;
+      
+      await pool.query(`
+        INSERT INTO payment_receipts 
+        (order_id, receipt_number, payment_method, payment_reference, amount_paid, payment_date, notes)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        ON CONFLICT (receipt_number) DO NOTHING
+      `, [orderId, receiptNumber, payment_method, payment_reference, totalAmount, payment_date, payment_notes]);
+      
+      console.log('Payment receipt record created:', receiptNumber);
+    }
+    
+    res.json({
+      success: true,
+      message: 'Payment information updated successfully',
+      payment_status
+    });
+    
+  } catch (error) {
+    console.error('Error updating payment information:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to update payment information', 
+      details: error.message 
+    });
+  }
+});
+
+// Get payment receipts for an order
+router.get('/:orderId/receipts', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    const result = await pool.query(`
+      SELECT * FROM payment_receipts 
+      WHERE order_id = $1 
+      ORDER BY created_at DESC
+    `, [orderId]);
+    
+    res.json({
+      success: true,
+      receipts: result.rows
+    });
+    
+  } catch (error) {
+    console.error('Error fetching payment receipts:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch payment receipts', 
+      details: error.message 
+    });
+  }
+});
+
+// Mark receipt as generated
+router.put('/:orderId/receipt-generated', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    await pool.query(`
+      UPDATE orders 
+      SET receipt_generated = true, receipt_generated_at = CURRENT_TIMESTAMP 
+      WHERE id = $1
+    `, [orderId]);
+    
+    res.json({
+      success: true,
+      message: 'Receipt generation status updated'
+    });
+    
+  } catch (error) {
+    console.error('Error updating receipt status:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to update receipt status', 
+      details: error.message 
+    });
+  }
+});
+
 module.exports = router;

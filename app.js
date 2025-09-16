@@ -1704,6 +1704,9 @@ async function loadAllOrders() {
               <button class="btn-thermal-print-invoice" data-order-id="${order.id}" title="Print Invoice Receipt (58mm)">
                 🧾 Print Invoice
               </button>
+              <button class="btn-payment-receipt" data-order-id="${order.id}" title="Generate Payment Receipt">
+                💳 Payment Receipt
+              </button>
             </div>
           </div>
           <div class="order-details">
@@ -2514,22 +2517,28 @@ async function exportOrderAsPDF(orderId, customerName) {
     doc.text('TOTAL:', 140, yPos);
     doc.text(`₦${total.toFixed(2)}`, 170, yPos);
     
+    // Amount in words
+    yPos += 10;
+    doc.setFontSize(10);
+    doc.setTextColor(60, 60, 60);
+    const amountInWords = nairaConverter.convertAmountToWords(total);
+    doc.text(`Amount in Words: ${amountInWords}`, 20, yPos);
+    
     // Payment instructions
-    yPos += 20;
+    yPos += 15;
     doc.setFontSize(12);
     doc.setTextColor(40, 40, 40);
-    doc.text('PAYMENT INSTRUCTIONS:', 20, yPos);
+    doc.text('PAYMENT INFORMATION:', 20, yPos);
     yPos += 10;
     doc.setFontSize(10);
     doc.text('Please make payment to any of these accounts:', 25, yPos);
-    yPos += 6; // Reduced from 8 to 6
-    doc.text('ACCOUNT NAME: BONNESANTE MEDICALS', 25, yPos);
-    yPos += 5; // Reduced from 6 to 5
+    yPos += 6;
+    doc.setFontSize(11);
+    doc.text('Account Name: BONNESANTE MEDICALS', 25, yPos);
+    yPos += 5;
     doc.text('Account 1: 8259518195 - MONIEPOINT MICROFINANCE BANK', 25, yPos);
-    yPos += 5; // Reduced from 6 to 5
-    doc.text('Account 2: 2402979199 - ZENITH BANK', 25, yPos);
-    yPos += 5; // Reduced from 6 to 5
-    doc.text('Account 3: 0110395969 - GTBANK', 25, yPos);
+    yPos += 5;
+    doc.text('Account 2: 1379643548 - ACCESS BANK', 25, yPos);
     
     // Footer
     yPos += 10; // Reduced from 15 to 10
@@ -2735,8 +2744,15 @@ function generateInvoiceContent(pdf, order) {
   pdf.text('Total:', 130, yPos);
   pdf.text(`\u20A6${total.toFixed(2)}`, 160, yPos);
   
+  // Amount in words
+  yPos += 10;
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(9);
+  const amountInWords = nairaConverter.convertAmountToWords(total);
+  pdf.text(`Amount in Words: ${amountInWords}`, 20, yPos);
+  
   // Payment Information
-  yPos += 15; // Reduced from 20 to 15
+  yPos += 15;
   
   // Check if payment section needs new page
   if (yPos > 250) {
@@ -2745,13 +2761,15 @@ function generateInvoiceContent(pdf, order) {
   }
   
   pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(12);
   pdf.text('Payment Information:', 20, yPos);
   pdf.setFont('helvetica', 'normal');
-  yPos += 8; // Reduced from 10 to 8
+  pdf.setFontSize(10);
+  yPos += 8;
   pdf.text('Account Name: BONNESANTE MEDICALS', 20, yPos);
-  yPos += 7; // Reduced from 10 to 7
+  yPos += 7;
   pdf.text('Account 1: 8259518195 - MONIEPOINT MICROFINANCE BANK', 20, yPos);
-  yPos += 7; // Reduced from 10 to 7
+  yPos += 7;
   pdf.text('Account 2: 1379643548 - ACCESS BANK', 20, yPos);
   
   // Footer
@@ -2794,6 +2812,11 @@ function setupDynamicEventListeners() {
     if (e.target.matches('.btn-thermal-print-invoice')) {
       const orderId = e.target.getAttribute('data-order-id');
       thermalPrintInvoiceById(parseInt(orderId));
+    }
+    
+    if (e.target.matches('.btn-payment-receipt')) {
+      const orderId = e.target.getAttribute('data-order-id');
+      showPaymentReceiptModal(parseInt(orderId));
     }
     
     // Product management buttons in admin quick products
@@ -3014,6 +3037,7 @@ function renderOrderNotification(notification) {
       </div>
       <div class="notification-actions">
         ${!notification.invoiceGenerated ? `<button class="btn-notification-action btn-generate-invoice" data-order-id="${notification.orderId}">Generate Invoice</button>` : ''}
+        <button class="btn-notification-action btn-payment-receipt" data-order-id="${notification.orderId}">Payment Receipt</button>
         <button class="btn-notification-action btn-mark-read" data-notification-id="${notification.id}">Mark Read</button>
       </div>
     </div>

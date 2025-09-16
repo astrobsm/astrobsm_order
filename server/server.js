@@ -214,6 +214,16 @@ async function startServer() {
       }
     }
     
+    // Initialize payment system
+    console.log('🔄 Setting up payment system...');
+    try {
+      const { runPaymentMigration } = require('./database/payment-migration');
+      await runPaymentMigration();
+      console.log('✅ Payment system ready');
+    } catch (paymentError) {
+      console.log('⚠️ Payment system setup failed (may already exist):', paymentError.message);
+    }
+    
     // Start server
     const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 ASTRO-BSM Server running on port ${PORT}`);
