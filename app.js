@@ -1199,8 +1199,12 @@ function thermalPrintOrder(customerData, orderData, items, order) {
     <body>
       ${thermalContent}
       <div class="no-print" style="text-align: center; margin: 20px;">
-        <button onclick="window.print()" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Print Receipt</button>
-        <button onclick="window.close()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px;">Close</button>
+        <button id="printBtn" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Print Receipt</button>
+        <button id="closeBtn" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px;">Close</button>
+        <script>
+          document.getElementById('printBtn').addEventListener('click', () => window.print());
+          document.getElementById('closeBtn').addEventListener('click', () => window.close());
+        </script>
       </div>
     </body>
     </html>
@@ -1362,8 +1366,12 @@ async function thermalPrintInvoiceById(orderId) {
       <body>
         ${invoiceContent}
         <div class="no-print" style="text-align: center; margin: 20px;">
-          <button onclick="window.print()" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Print Invoice</button>
-          <button onclick="window.close()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px;">Close</button>
+          <button id="printInvoiceBtn" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Print Invoice</button>
+          <button id="closeInvoiceBtn" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px;">Close</button>
+          <script>
+            document.getElementById('printInvoiceBtn').addEventListener('click', () => window.print());
+            document.getElementById('closeInvoiceBtn').addEventListener('click', () => window.close());
+          </script>
         </div>
       </body>
       </html>
@@ -2019,11 +2027,11 @@ function displayStockLevels(stockData) {
           <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span>
         </td>
         <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
-          <button onclick="adjustStock(${item.id}, '${item.name}', ${item.current_stock || 0})" 
+          <button data-action="adjust-stock" data-product-id="${item.id}" data-product-name="${item.name}" data-current-stock="${item.current_stock || 0}"
                   style="padding: 4px 8px; margin: 2px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer;">
             Adjust
           </button>
-          <button onclick="setReorderLevel(${item.id}, '${item.name}', ${item.reorder_level || 10})" 
+          <button data-action="set-reorder" data-product-id="${item.id}" data-product-name="${item.name}" data-reorder-level="${item.reorder_level || 10}"
                   style="padding: 4px 8px; margin: 2px; background: #6c757d; color: white; border: none; border-radius: 3px; cursor: pointer;">
             Reorder Level
           </button>
@@ -2037,11 +2045,29 @@ function displayStockLevels(stockData) {
       </table>
     </div>
     <div style="margin-top: 15px;">
-      <button onclick="loadStockLevels()" class="btn-secondary">🔄 Refresh</button>
+      <button data-action="refresh-stock" class="btn-secondary">🔄 Refresh</button>
     </div>
   `;
   
   container.innerHTML = html;
+  
+  // Add event delegation for stock management buttons
+  container.addEventListener('click', (e) => {
+    const action = e.target.dataset.action;
+    if (action === 'adjust-stock') {
+      const productId = e.target.dataset.productId;
+      const productName = e.target.dataset.productName;
+      const currentStock = e.target.dataset.currentStock;
+      adjustStock(productId, productName, currentStock);
+    } else if (action === 'set-reorder') {
+      const productId = e.target.dataset.productId;
+      const productName = e.target.dataset.productName;
+      const reorderLevel = e.target.dataset.reorderLevel;
+      setReorderLevel(productId, productName, reorderLevel);
+    } else if (action === 'refresh-stock') {
+      loadStockLevels();
+    }
+  });
 }
 
 // Get stock status color
@@ -2314,7 +2340,7 @@ function displayStockAlerts(alertsData) {
         <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${alert.current_stock}</td>
         <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${alert.reorder_level}</td>
         <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
-          <button onclick="acknowledgeAlert(${alert.id})" 
+          <button data-action="acknowledge-alert" data-alert-id="${alert.id}"
                   style="padding: 4px 8px; margin: 2px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer;">
             Acknowledge
           </button>
@@ -2328,11 +2354,22 @@ function displayStockAlerts(alertsData) {
       </table>
     </div>
     <div style="margin-top: 15px;">
-      <button onclick="loadStockAlerts()" class="btn-secondary">🔄 Refresh</button>
+      <button data-action="refresh-alerts" class="btn-secondary">🔄 Refresh</button>
     </div>
   `;
   
   container.innerHTML = html;
+  
+  // Add event delegation for alerts buttons
+  container.addEventListener('click', (e) => {
+    const action = e.target.dataset.action;
+    if (action === 'acknowledge-alert') {
+      const alertId = e.target.dataset.alertId;
+      acknowledgeAlert(alertId);
+    } else if (action === 'refresh-alerts') {
+      loadStockAlerts();
+    }
+  });
 }
 
 // Get alert level color
@@ -3338,10 +3375,18 @@ function showIOSInstallInstructions() {
     `;
     iosInstallBanner.innerHTML = `
       📱 To install this app on iOS: Tap <strong>Share</strong> then <strong>Add to Home Screen</strong>
-      <button onclick="this.parentElement.remove(); localStorage.setItem('iosInstallDismissed', 'true')" 
+      <button data-action="dismiss-ios-install"
               style="float: right; background: none; border: none; color: white; font-size: 18px;">✕</button>
     `;
     document.body.prepend(iosInstallBanner);
+    
+    // Add event listener for dismiss button
+    iosInstallBanner.addEventListener('click', (e) => {
+      if (e.target.dataset.action === 'dismiss-ios-install') {
+        iosInstallBanner.remove();
+        localStorage.setItem('iosInstallDismissed', 'true');
+      }
+    });
     
     setTimeout(() => {
       if (iosInstallBanner.parentElement) {

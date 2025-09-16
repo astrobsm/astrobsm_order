@@ -205,7 +205,7 @@ function showPaymentReceiptModal(orderId) {
       <div class="modal-content" style="max-width: 500px;">
         <div class="modal-header">
           <h3>Generate Payment Receipt</h3>
-          <span class="modal-close" onclick="closePaymentReceiptModal()">&times;</span>
+          <span class="modal-close" data-action="close">&times;</span>
         </div>
         <div class="modal-body">
           <form id="paymentReceiptForm">
@@ -234,8 +234,8 @@ function showPaymentReceiptModal(orderId) {
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="closePaymentReceiptModal()">Cancel</button>
-          <button type="button" class="btn btn-primary" onclick="generateReceiptFromModal(${orderId})">Generate Receipt</button>
+          <button type="button" class="btn btn-secondary" data-action="cancel">Cancel</button>
+          <button type="button" class="btn btn-primary" data-action="generate" data-order-id="${orderId}">Generate Receipt</button>
         </div>
       </div>
     </div>
@@ -243,6 +243,25 @@ function showPaymentReceiptModal(orderId) {
   
   // Add modal to page
   document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  // Add event listeners for modal actions
+  const modal = document.getElementById('paymentReceiptModal');
+  modal.addEventListener('click', (e) => {
+    const action = e.target.dataset.action;
+    if (action === 'close' || action === 'cancel') {
+      closePaymentReceiptModal();
+    } else if (action === 'generate') {
+      const orderId = e.target.dataset.orderId;
+      generateReceiptFromModal(orderId);
+    }
+  });
+  
+  // Close modal when clicking outside
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closePaymentReceiptModal();
+    }
+  });
 }
 
 // Close payment receipt modal
