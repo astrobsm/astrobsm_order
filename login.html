@@ -309,9 +309,9 @@
                 <label for="userRole">Select Your Role</label>
                 <select id="userRole" required>
                     <option value="">Choose your access level...</option>
-                    <option value="customer">Customer - Place Orders</option>
-                    <option value="sales_staff">Sales Staff - View Orders & Generate Documents</option>
-                    <option value="superadmin">Super Admin - Full System Access</option>
+                    <option value="customer">Customer</option>
+                    <option value="sales_staff">Sales Staff</option>
+                    <option value="superadmin">Super Admin</option>
                 </select>
             </div>
 
@@ -409,7 +409,7 @@
                 if (role.is_active !== false) {
                     const option = document.createElement('option');
                     option.value = role.role_name;
-                    option.textContent = `${role.role_display_name} - ${role.description || 'System Access'}`;
+                    option.textContent = role.role_display_name;
                     roleSelect.appendChild(option);
                 }
             });
