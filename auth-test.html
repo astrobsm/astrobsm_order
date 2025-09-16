@@ -4,10 +4,19 @@
     <title>Auth Test</title>
 </head>
 <body>
-    <h1>Authentication Test</h1>
-    <button onclick="testCustomer()">Test Customer Login (No Password)</button>
-    <button onclick="testSuperAdmin()">Test SuperAdmin Login</button>
-    <input type="password" id="password" placeholder="Password for SuperAdmin">
+    <h1>Authentication & Role Access Test</h1>
+    
+    <div style="margin: 20px 0;">
+        <button onclick="testCustomer()">Test Customer Login (No Password)</button>
+        <button onclick="testSalesStaff()">Test Sales Staff (unicorn)</button>
+        <button onclick="testSuperAdmin()">Test SuperAdmin (natiss)</button>
+    </div>
+    
+    <div style="margin: 20px 0;">
+        <button onclick="testAllRoles()">Test All Roles</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+    
     <div id="results"></div>
 
     <script>
@@ -23,20 +32,52 @@
                 });
                 
                 const result = await response.json();
-                results.innerHTML = `
-                    <h3>Customer Login Result:</h3>
-                    <p>Status: ${response.status}</p>
-                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                results.innerHTML += `
+                    <div style="border: 1px solid #ddd; margin: 10px 0; padding: 10px;">
+                        <h4>Customer Login Result:</h4>
+                        <p>Status: ${response.status}</p>
+                        <p>Success: ${result.success}</p>
+                        <p>Role: ${result.sessionData?.role}</p>
+                        <p>Permissions: ${JSON.stringify(result.sessionData?.permissions)}</p>
+                    </div>
                 `;
             } catch (error) {
                 results.innerHTML = `<p>Error: ${error.message}</p>`;
             }
         }
         
+        async function testSalesStaff() {
+            const results = document.getElementById('results');
+            results.innerHTML += '<h3>Testing Sales Staff login...</h3>';
+            
+            try {
+                const response = await fetch('/api/users/authenticate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        role_name: 'sales_staff',
+                        password: 'unicorn' 
+                    })
+                });
+                
+                const result = await response.json();
+                results.innerHTML += `
+                    <div style="border: 1px solid #ddd; margin: 10px 0; padding: 10px;">
+                        <h4>Sales Staff Login Result:</h4>
+                        <p>Status: ${response.status}</p>
+                        <p>Success: ${result.success}</p>
+                        <p>Role: ${result.sessionData?.role}</p>
+                        <p>Permissions: ${JSON.stringify(result.sessionData?.permissions)}</p>
+                    </div>
+                `;
+            } catch (error) {
+                results.innerHTML += `<p>Error: ${error.message}</p>`;
+            }
+        }
+        
         async function testSuperAdmin() {
             const results = document.getElementById('results');
-            const password = document.getElementById('password').value;
-            results.innerHTML = 'Testing SuperAdmin login...';
+            results.innerHTML += '<h3>Testing SuperAdmin login...</h3>';
             
             try {
                 const response = await fetch('/api/users/authenticate', {
@@ -44,19 +85,34 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         role_name: 'superadmin',
-                        password: password 
+                        password: 'natiss' 
                     })
                 });
                 
                 const result = await response.json();
-                results.innerHTML = `
-                    <h3>SuperAdmin Login Result:</h3>
-                    <p>Status: ${response.status}</p>
-                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                results.innerHTML += `
+                    <div style="border: 1px solid #ddd; margin: 10px 0; padding: 10px;">
+                        <h4>SuperAdmin Login Result:</h4>
+                        <p>Status: ${response.status}</p>
+                        <p>Success: ${result.success}</p>
+                        <p>Role: ${result.sessionData?.role}</p>
+                        <p>Permissions: ${JSON.stringify(result.sessionData?.permissions)}</p>
+                    </div>
                 `;
             } catch (error) {
-                results.innerHTML = `<p>Error: ${error.message}</p>`;
+                results.innerHTML += `<p>Error: ${error.message}</p>`;
             }
+        }
+        
+        async function testAllRoles() {
+            clearResults();
+            await testCustomer();
+            await testSalesStaff(); 
+            await testSuperAdmin();
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
         }
     </script>
 </body>
