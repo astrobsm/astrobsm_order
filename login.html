@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASTRO-BSM Login - Order Management System</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <style>
+        :root {
+            --primary-color: #1e3a8a;
+            --primary-dark: #1e40af;
+            --secondary-color: #3b82f6;
+            --accent-color: #10b981;
+            --success-color: #059669;
+            --warning-color: #f59e0b;
+            --danger-color: #dc2626;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --white: #ffffff;
+            --gray-light: #f3f4f6;
+            --gray-medium: #e5e7eb;
+            --border-color: #d1d5db;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --border-radius: 8px;
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #10b981 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-md);
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+
+        .login-container {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 400px;
+            padding: var(--spacing-xl);
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .logo-image {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto var(--spacing-md);
+            display: block;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            object-fit: contain;
+            background: var(--white);
+            padding: var(--spacing-xs);
+        }
+
+        .company-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .company-tagline {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .login-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-align: center;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        label {
+            display: block;
+            margin-bottom: var(--spacing-xs);
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        select, input[type="password"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: var(--white);
+            color: var(--text-primary);
+        }
+
+        select:focus, input[type="password"]:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .role-option {
+            padding: 12px;
+            background: var(--white);
+            color: var(--text-primary);
+        }
+
+        .password-field {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 4px;
+        }
+
+        .password-toggle:hover {
+            color: var(--text-primary);
+        }
+
+        .login-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: var(--white);
+            border: none;
+            padding: 14px 24px;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: var(--spacing-md);
+        }
+
+        .login-btn:hover {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-btn:disabled {
+            background: var(--gray-medium);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .role-description {
+            background: var(--gray-light);
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius);
+            margin-top: var(--spacing-md);
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            display: none;
+        }
+
+        .role-description.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .error-message {
+            background: #fef2f2;
+            color: var(--danger-color);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--border-radius);
+            margin-top: var(--spacing-md);
+            font-size: 0.875rem;
+            border-left: 4px solid var(--danger-color);
+            display: none;
+        }
+
+        .success-message {
+            background: #f0fdf4;
+            color: var(--success-color);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--border-radius);
+            margin-top: var(--spacing-md);
+            font-size: 0.875rem;
+            border-left: 4px solid var(--success-color);
+            display: none;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: var(--spacing-xl);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 480px) {
+            body {
+                padding: var(--spacing-sm);
+            }
+
+            .login-container {
+                padding: var(--spacing-lg);
+            }
+
+            .logo-image {
+                width: 70px;
+                height: 70px;
+            }
+
+            .company-name {
+                font-size: 1.25rem;
+            }
+
+            .login-title {
+                font-size: 1.125rem;
+            }
+
+            select, input[type="password"] {
+                padding: 10px 12px;
+                font-size: 0.875rem;
+            }
+
+            .login-btn {
+                padding: 12px 20px;
+                font-size: 0.875rem;
+            }
+        }
+
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            :root {
+                --border-color: #000000;
+                --text-secondary: #000000;
+            }
+        }
+
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo-container">
+            <img src="public/company_logo.PNG" alt="ASTRO-BSM Logo" class="logo-image">
+            <div class="company-name">ASTRO-BSM</div>
+            <div class="company-tagline">Order Management System</div>
+        </div>
+
+        <h2 class="login-title">Welcome Back</h2>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="userRole">Select Your Role</label>
+                <select id="userRole" required>
+                    <option value="">Choose your access level...</option>
+                    <option value="customer">Customer - Place Orders</option>
+                    <option value="sales_staff">Sales Staff - View Orders & Generate Documents</option>
+                    <option value="superadmin">Super Admin - Full System Access</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="passwordGroup" style="display: none;">
+                <label for="password">Password</label>
+                <div class="password-field">
+                    <input type="password" id="password" placeholder="Enter your password">
+                    <button type="button" class="password-toggle" id="togglePassword">👁️</button>
+                </div>
+            </div>
+
+            <button type="submit" class="login-btn" id="loginBtn">
+                Access System
+            </button>
+
+            <div id="roleDescription" class="role-description"></div>
+            <div id="errorMessage" class="error-message"></div>
+            <div id="successMessage" class="success-message"></div>
+        </form>
+
+        <div class="footer">
+            <p>&copy; 2025 ASTRO-BSM. Professional Order Management.</p>
+        </div>
+    </div>
+
+    <script>
+        const roleSelect = document.getElementById('userRole');
+        const passwordGroup = document.getElementById('passwordGroup');
+        const passwordInput = document.getElementById('password');
+        const roleDescription = document.getElementById('roleDescription');
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const togglePassword = document.getElementById('togglePassword');
+
+        const roleDescriptions = {
+            customer: "As a Customer, you can place new orders, view order status, and access the product catalog. No password required.",
+            sales_staff: "As Sales Staff, you can view all orders, generate invoices and payment receipts, and manage order notifications. Password required.",
+            superadmin: "As Super Admin, you have full access to all system features including product management, stock control, and system settings. Password required."
+        };
+
+        const rolePasswords = {
+            customer: null, // No password required
+            sales_staff: 'unicorn',
+            superadmin: 'natiss'
+        };
+
+        roleSelect.addEventListener('change', function() {
+            const selectedRole = this.value;
+            
+            // Hide all messages
+            hideMessages();
+            
+            if (selectedRole) {
+                // Show role description
+                roleDescription.textContent = roleDescriptions[selectedRole];
+                roleDescription.classList.add('active');
+                
+                // Show/hide password field based on role
+                if (selectedRole === 'customer') {
+                    passwordGroup.style.display = 'none';
+                    passwordInput.removeAttribute('required');
+                } else {
+                    passwordGroup.style.display = 'block';
+                    passwordInput.setAttribute('required', 'required');
+                }
+            } else {
+                roleDescription.classList.remove('active');
+                passwordGroup.style.display = 'none';
+                passwordInput.removeAttribute('required');
+            }
+        });
+
+        togglePassword.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.textContent = type === 'password' ? '👁️' : '🙈';
+        });
+
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const selectedRole = roleSelect.value;
+            const enteredPassword = passwordInput.value;
+            
+            hideMessages();
+            
+            if (!selectedRole) {
+                showError('Please select your role.');
+                return;
+            }
+            
+            // Validate password for roles that require it
+            if (selectedRole !== 'customer') {
+                if (!enteredPassword) {
+                    showError('Password is required for this role.');
+                    return;
+                }
+                
+                if (enteredPassword !== rolePasswords[selectedRole]) {
+                    showError('Incorrect password. Please try again.');
+                    return;
+                }
+            }
+            
+            // Successful login
+            showSuccess(`Welcome! Redirecting to your ${selectedRole.replace('_', ' ')} dashboard...`);
+            
+            // Store authentication in localStorage
+            const authData = {
+                role: selectedRole,
+                loginTime: new Date().toISOString(),
+                authenticated: true
+            };
+            
+            localStorage.setItem('astro_auth', JSON.stringify(authData));
+            
+            // Redirect after short delay
+            setTimeout(() => {
+                if (selectedRole === 'customer') {
+                    window.location.href = 'index.html?role=customer';
+                } else if (selectedRole === 'sales_staff') {
+                    window.location.href = 'index.html?role=sales_staff';
+                } else if (selectedRole === 'superadmin') {
+                    window.location.href = 'index.html?role=superadmin';
+                }
+            }, 1500);
+        });
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+        }
+
+        function hideMessages() {
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+        }
+
+        // Check if already authenticated and redirect
+        window.addEventListener('load', function() {
+            const authData = localStorage.getItem('astro_auth');
+            if (authData) {
+                try {
+                    const auth = JSON.parse(authData);
+                    if (auth.authenticated && auth.role) {
+                        // Check if login is recent (within 24 hours)
+                        const loginTime = new Date(auth.loginTime);
+                        const now = new Date();
+                        const hoursDiff = (now - loginTime) / (1000 * 60 * 60);
+                        
+                        if (hoursDiff < 24) {
+                            window.location.href = `index.html?role=${auth.role}`;
+                            return;
+                        } else {
+                            // Clear expired auth
+                            localStorage.removeItem('astro_auth');
+                        }
+                    }
+                } catch (error) {
+                    // Clear invalid auth data
+                    localStorage.removeItem('astro_auth');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

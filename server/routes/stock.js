@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../database/db');
 const { updateProductStock, checkLowStockAlert } = require('../database/stock-setup');
+const { requireStockAccess } = require('../middleware/auth');
 
 // Get all stock levels with product information
 router.get('/levels', async (req, res) => {
@@ -110,7 +111,7 @@ router.get('/levels/:productId', async (req, res) => {
 });
 
 // Add stock (stock intake)
-router.post('/intake', async (req, res) => {
+router.post('/intake', requireStockAccess, async (req, res) => {
   const client = await pool.connect();
   try {
     const {

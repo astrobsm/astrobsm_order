@@ -14,8 +14,6 @@ const adminModal = document.getElementById('adminModal');
 const productModal = document.getElementById('productModal');
 const closeModal = document.querySelector('.close');
 const loginBtn = document.getElementById('loginBtn');
-const adminPassword = document.getElementById('adminModalPassword');
-const passwordSection = document.getElementById('passwordSection');
 const ordersSection = document.getElementById('ordersSection');
 const ordersList = document.getElementById('ordersList');
 
@@ -24,8 +22,6 @@ const notificationBtn = document.getElementById('notificationBtn');
 const notificationBadge = document.getElementById('notificationBadge');
 const notificationCenter = document.getElementById('notificationCenter');
 const closeNotifications = document.getElementById('closeNotifications');
-const adminPasswordInput = document.getElementById('adminPassword');
-const unlockNotifications = document.getElementById('unlockNotifications');
 const notificationsList = document.getElementById('notificationsList');
 const notificationsContent = document.getElementById('notificationsContent');
 const clearAllNotifications = document.getElementById('clearAllNotifications');
@@ -34,8 +30,6 @@ const markAllRead = document.getElementById('markAllRead');
 // Notification State
 let notifications = [];
 let notificationInterval = null;
-let isNotificationUnlocked = false;
-const ADMIN_PASSWORD = 'roseball';
 
 let itemCount = 0;
 let orderTotal = { subtotal: 0, vat: 0, total: 0 };
@@ -455,76 +449,75 @@ document.addEventListener('DOMContentLoaded', async () => {
       addItemBtn.addEventListener('click', createItemRow);
     }
     
-    // Set up admin functionality
+    // Set up admin functionality - Role-based access
     if (adminBtn) {
       adminBtn.addEventListener('click', () => {
-        adminModal.style.display = 'block';
+        if (!authManager.canAccess('view_all_orders')) {
+          alert('Access denied. You do not have permission to view the admin panel.');
+          return;
+        }
+        
+        if (adminModal) {
+          adminModal.style.display = 'block';
+          // Directly show orders section for authorized users
+          if (ordersSection) ordersSection.style.display = 'block';
+          loadAllOrders();
+        }
+      });
+    }
+    
+    // Set up logout functionality
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to logout?')) {
+          authManager.logout();
+        }
       });
     }
     
     if (closeModal) {
       closeModal.addEventListener('click', () => {
-        adminModal.style.display = 'none';
-        passwordSection.style.display = 'block';
-        ordersSection.style.display = 'none';
-        adminPassword.value = '';
+        if (adminModal) adminModal.style.display = 'none';
+        if (ordersSection) ordersSection.style.display = 'none';
       });
     }
     
     window.addEventListener('click', (event) => {
       if (event.target === adminModal) {
-        adminModal.style.display = 'none';
-        passwordSection.style.display = 'block';
-        ordersSection.style.display = 'none';
-        adminPassword.value = '';
+        if (adminModal) adminModal.style.display = 'none';
+        if (ordersSection) ordersSection.style.display = 'none';
       }
       if (productModal && event.target === productModal) {
         productModal.style.display = 'none';
       }
     });
     
-    if (loginBtn) {
-      loginBtn.addEventListener('click', async () => {
-        const password = adminPassword.value;
-        if (password === 'pinkpetals') {
-          passwordSection.style.display = 'none';
-          ordersSection.style.display = 'block';
-          await loadAllOrders();
-        } else {
-          alert('Incorrect password');
-          adminPassword.value = '';
-        }
-      });
-    }
-    
-    if (adminPassword) {
-      adminPassword.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          loginBtn.click();
-        }
-      });
-    }
-
-    // Set up Product Management button
+    // Set up Product Management button - Role-based access
     const manageProductsBtn = document.getElementById('manageProductsBtn');
     if (manageProductsBtn) {
       manageProductsBtn.addEventListener('click', () => {
-        const password = prompt('Enter password for product management:');
-        if (password === 'pinkpetals') {
-          if (productModal) {
-            productModal.style.display = 'block';
-            loadProductManagement();
-          }
-        } else if (password !== null) {
-          alert('Incorrect password');
+        if (!authManager.canAccess('manage_products')) {
+          alert('Access denied. You do not have permission to manage products.');
+          return;
+        }
+        
+        if (productModal) {
+          productModal.style.display = 'block';
+          loadProductManagement();
         }
       });
     }
 
-    // Set up Stock Management button
+    // Set up Stock Management button - Role-based access
     const manageStockBtn = document.getElementById('manageStockBtn');
     if (manageStockBtn) {
       manageStockBtn.addEventListener('click', () => {
+        if (!authManager.canAccess('manage_stock')) {
+          alert('Access denied. You do not have permission to manage stock.');
+          return;
+        }
+        
         showStockManagement();
       });
     }
@@ -1823,7 +1816,7 @@ async function saveNewProduct() {
         name,
         price,
         description,
-        adminPassword: 'pinkpetals'
+        userRole: authManager.getCurrentRole()
       })
     });
     
@@ -1860,31 +1853,26 @@ function editProduct(id, name, price, description) {
     return;
   }
   
-  // Check if price is being changed
-  let pricePassword = '';
-  if (priceValue !== price) {
-    pricePassword = prompt('Price change requires additional password:');
-    if (pricePassword === null) return;
+  // Check role-based permission for price changes
+  if (priceValue !== price && !authManager.canAccess('priceChanges')) {
+    alert('Access denied. You do not have permission to change prices.');
+    return;
   }
   
   const newDescription = prompt('Enter description (optional):', description);
   if (newDescription === null) return;
   
-  updateProduct(id, newName.trim(), priceValue, newDescription.trim(), pricePassword);
+  updateProduct(id, newName.trim(), priceValue, newDescription.trim());
 }
 
-async function updateProduct(id, name, price, description, pricePassword) {
+async function updateProduct(id, name, price, description) {
   try {
     const body = {
       name,
       price,
       description,
-      adminPassword: 'pinkpetals'
+      userRole: authManager.getCurrentRole()
     };
-    
-    if (pricePassword) {
-      body.pricePassword = pricePassword;
-    }
     
     const response = await fetch(`${API_BASE_URL}/admin/products/${id}`, {
       method: 'PUT',
@@ -1922,7 +1910,7 @@ async function deleteProduct(id, name) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        adminPassword: 'pinkpetals'
+        userRole: authManager.getCurrentRole()
       })
     });
     
@@ -2905,9 +2893,7 @@ function initializeNotificationSystem() {
     closeNotifications.addEventListener('click', closeNotificationCenter);
   }
   
-  if (unlockNotifications) {
-    unlockNotifications.addEventListener('click', unlockNotificationCenter);
-  }
+  // Remove old unlock notifications button - no longer needed with role-based access
   
   if (clearAllNotifications) {
     clearAllNotifications.addEventListener('click', clearAllNotificationHistory);
@@ -3002,16 +2988,15 @@ function updateNotificationBadge() {
 function toggleNotificationCenter() {
   if (notificationCenter) {
     const isVisible = notificationCenter.style.display !== 'none';
-    notificationCenter.style.display = isVisible ? 'none' : 'block';
-    
-    if (!isVisible) {
-      // Reset auth state when opening
-      isNotificationUnlocked = false;
-      notificationsList.style.display = 'none';
-      document.querySelector('.notification-auth').style.display = 'block';
-      if (adminPasswordInput) {
-        adminPasswordInput.value = '';
-        adminPasswordInput.focus();
+    if (isVisible) {
+      notificationCenter.style.display = 'none';
+    } else {
+      // Check role-based access for notifications
+      if (authManager.canAccess('notifications')) {
+        notificationCenter.style.display = 'block';
+        renderNotifications();
+      } else {
+        alert('Access denied. Please log in with appropriate permissions.');
       }
     }
   }
@@ -3023,21 +3008,7 @@ function closeNotificationCenter() {
   }
 }
 
-function unlockNotificationCenter() {
-  const password = adminPasswordInput?.value;
-  if (password === ADMIN_PASSWORD) {
-    isNotificationUnlocked = true;
-    document.querySelector('.notification-auth').style.display = 'none';
-    notificationsList.style.display = 'block';
-    renderNotifications();
-  } else {
-    alert('Invalid password!');
-    if (adminPasswordInput) {
-      adminPasswordInput.value = '';
-      adminPasswordInput.focus();
-    }
-  }
-}
+// Removed unlockNotificationCenter - notifications now use role-based access
 
 function renderNotifications() {
   if (!notificationsContent) return;

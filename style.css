@@ -84,6 +84,23 @@ header h1 {
   background: #d97706;
 }
 
+.btn-logout {
+  background: #dc3545;
+  color: var(--white);
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--border-radius);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-left: 8px;
+}
+
+.btn-logout:hover {
+  background: #c82333;
+}
+
 /* Header Actions */
 .header-actions {
   display: flex;

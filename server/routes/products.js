@@ -27,8 +27,10 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+const { requireAdmin } = require('../middleware/auth');
+
 // Create new product
-router.post('/', async (req, res) => {
+router.post('/', requireAdmin, async (req, res) => {
   try {
     const { name, unit_price, description } = req.body;
     
@@ -62,7 +64,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update product
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, unit_price, description } = req.body;
@@ -103,7 +105,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete product
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     

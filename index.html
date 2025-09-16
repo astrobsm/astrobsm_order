@@ -30,6 +30,31 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@300;400;700&display=swap" rel="stylesheet">
+  
+  <!-- Early authentication check -->
+  <script>
+    // Check if user is authenticated, redirect to login if not
+    const authData = localStorage.getItem('astro_auth');
+    if (!authData) {
+      window.location.href = 'login.html';
+    } else {
+      try {
+        const auth = JSON.parse(authData);
+        const loginTime = new Date(auth.loginTime);
+        const now = new Date();
+        const hoursDiff = (now - loginTime) / (1000 * 60 * 60);
+        
+        // Check if session expired (24 hours) or not authenticated
+        if (hoursDiff >= 24 || !auth.authenticated) {
+          localStorage.removeItem('astro_auth');
+          window.location.href = 'login.html';
+        }
+      } catch (e) {
+        localStorage.removeItem('astro_auth');
+        window.location.href = 'login.html';
+      }
+    }
+  </script>
 </head>
 <body>
   <header>
@@ -41,6 +66,7 @@
           🔔 <span id="notificationBadge" class="notification-badge">0</span>
         </button>
         <button id="adminBtn" class="btn-admin">Admin</button>
+        <button id="logoutBtn" class="btn-logout">Logout</button>
       </div>
     </div>
   </header>
@@ -51,11 +77,7 @@
       <h3>🔔 Order Notifications</h3>
       <button id="closeNotifications" class="btn-close">&times;</button>
     </div>
-    <div class="notification-auth">
-      <input type="password" id="adminPassword" placeholder="Enter admin password" />
-      <button id="unlockNotifications" class="btn-unlock">Unlock</button>
-    </div>
-    <div id="notificationsList" class="notifications-list" style="display: none;">
+    <div id="notificationsList" class="notifications-list">
       <div class="notification-controls">
         <button id="clearAllNotifications" class="btn-clear">Clear All</button>
         <button id="markAllRead" class="btn-mark-read">Mark All Read</button>
@@ -254,10 +276,16 @@
     <p>&copy; 2025 ASTRO-BSM. All rights reserved.</p>
   </footer>
 
-  <script src="app.js?v=7"></script>
+  <!-- Load authentication first -->
+  <script src="auth.js"></script>
+  
+  <!-- External libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  
+  <!-- Application scripts -->
   <script src="naira-converter.js"></script>
   <script src="payment-receipt.js"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>

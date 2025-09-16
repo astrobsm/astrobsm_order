@@ -1,0 +1,299 @@
+// Authentication and Role Management System
+class AuthManager {
+    constructor() {
+        this.currentAuth = null;
+        this.init();
+    }
+
+    init() {
+        this.loadAuthFromStorage();
+        this.setupAuthCheck();
+    }
+
+    loadAuthFromStorage() {
+        try {
+            const authData = localStorage.getItem('astro_auth');
+            if (authData) {
+                const auth = JSON.parse(authData);
+                
+                // Check if auth is still valid (24 hours)
+                const loginTime = new Date(auth.loginTime);
+                const now = new Date();
+                const hoursDiff = (now - loginTime) / (1000 * 60 * 60);
+                
+                if (hoursDiff < 24 && auth.authenticated) {
+                    this.currentAuth = auth;
+                    return true;
+                } else {
+                    this.logout();
+                    return false;
+                }
+            }
+        } catch (error) {
+            console.error('Error loading auth:', error);
+            this.logout();
+        }
+        return false;
+    }
+
+    setupAuthCheck() {
+        // Check authentication on page load
+        if (!this.isAuthenticated()) {
+            this.redirectToLogin();
+            return;
+        }
+
+        // Apply role-based UI modifications
+        this.applyRoleBasedUI();
+        
+        // Set up periodic auth check (every 5 minutes)
+        setInterval(() => {
+            if (!this.loadAuthFromStorage()) {
+                this.redirectToLogin();
+            }
+        }, 5 * 60 * 1000);
+    }
+
+    isAuthenticated() {
+        return this.currentAuth && this.currentAuth.authenticated;
+    }
+
+    getCurrentRole() {
+        return this.currentAuth ? this.currentAuth.role : null;
+    }
+
+    hasRole(role) {
+        return this.getCurrentRole() === role;
+    }
+
+    hasAnyRole(roles) {
+        return roles.includes(this.getCurrentRole());
+    }
+
+    canAccess(permission) {
+        const role = this.getCurrentRole();
+        const permissions = {
+            customer: [
+                'place_orders',
+                'view_products',
+                'view_order_status'
+            ],
+            sales_staff: [
+                'place_orders',
+                'view_products', 
+                'view_order_status',
+                'view_all_orders',
+                'generate_invoices',
+                'generate_receipts',
+                'view_notifications',
+                'export_orders',
+                'notifications'
+            ],
+            superadmin: [
+                'place_orders',
+                'view_products',
+                'view_order_status', 
+                'view_all_orders',
+                'generate_invoices',
+                'generate_receipts',
+                'view_notifications',
+                'export_orders',
+                'manage_products',
+                'manage_stock',
+                'view_admin_panel',
+                'system_settings',
+                'priceChanges',
+                'notifications'
+            ]
+        };
+
+        return permissions[role] && permissions[role].includes(permission);
+    }
+
+    applyRoleBasedUI() {
+        const role = this.getCurrentRole();
+        
+        // Hide/show elements based on role permissions
+        this.toggleElementsByPermission('place_orders', '.order-form, #orderForm, .customer-section');
+        this.toggleElementsByPermission('view_all_orders', '.admin-panel, #adminPanel, .btn-admin');
+        this.toggleElementsByPermission('manage_products', '.product-management, #productManagement');
+        this.toggleElementsByPermission('manage_stock', '.stock-management, #stockManagement');
+        this.toggleElementsByPermission('view_notifications', '.notification-section, #notificationSection, .btn-notification');
+        
+        // Update header based on role
+        this.updateHeaderForRole();
+        
+        // Add role indicator
+        this.addRoleIndicator();
+        
+        // Remove old password inputs
+        this.removeOldPasswordInputs();
+        
+        console.log(`🔐 UI configured for role: ${role}`);
+    }
+
+    toggleElementsByPermission(permission, selector) {
+        const elements = document.querySelectorAll(selector);
+        const canAccess = this.canAccess(permission);
+        
+        elements.forEach(element => {
+            if (canAccess) {
+                element.style.display = '';
+                element.removeAttribute('disabled');
+            } else {
+                element.style.display = 'none';
+                element.setAttribute('disabled', 'true');
+            }
+        });
+    }
+
+    updateHeaderForRole() {
+        const role = this.getCurrentRole();
+        const roleNames = {
+            customer: 'Customer Portal',
+            sales_staff: 'Sales Dashboard', 
+            superadmin: 'Admin Dashboard'
+        };
+
+        // Update page title
+        document.title = `${roleNames[role]} - ASTRO-BSM`;
+        
+        // Update header text if it exists
+        const headerTitle = document.querySelector('header h1');
+        if (headerTitle) {
+            headerTitle.textContent = `ASTRO-BSM ${roleNames[role]}`;
+        }
+    }
+
+    addRoleIndicator() {
+        const role = this.getCurrentRole();
+        const roleNames = {
+            customer: 'Customer',
+            sales_staff: 'Sales Staff',
+            superadmin: 'Super Admin'
+        };
+
+        const roleColors = {
+            customer: '#10b981',
+            sales_staff: '#3b82f6', 
+            superadmin: '#dc2626'
+        };
+
+        // Create role indicator
+        const existingIndicator = document.getElementById('roleIndicator');
+        if (existingIndicator) {
+            existingIndicator.remove();
+        }
+
+        const roleIndicator = document.createElement('div');
+        roleIndicator.id = 'roleIndicator';
+        roleIndicator.innerHTML = `
+            <div style="
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                background: ${roleColors[role]};
+                color: white;
+                padding: 8px 12px;
+                border-radius: 20px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                z-index: 1000;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            ">
+                <span>${roleNames[role]}</span>
+                <button onclick="authManager.logout()" style="
+                    background: rgba(255,255,255,0.2);
+                    border: none;
+                    color: white;
+                    border-radius: 50%;
+                    width: 20px;
+                    height: 20px;
+                    cursor: pointer;
+                    font-size: 12px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                " title="Logout">×</button>
+            </div>
+        `;
+        document.body.appendChild(roleIndicator);
+    }
+
+    removeOldPasswordInputs() {
+        // Remove old admin password inputs
+        const oldPasswordSections = document.querySelectorAll('#passwordSection, .password-section, .admin-password');
+        oldPasswordSections.forEach(section => {
+            section.remove();
+        });
+
+        // Remove old password modals
+        const oldPasswordModals = document.querySelectorAll('#adminPasswordModal, .password-modal');
+        oldPasswordModals.forEach(modal => {
+            modal.remove();
+        });
+    }
+
+    logout() {
+        localStorage.removeItem('astro_auth');
+        this.currentAuth = null;
+        
+        // Show logout message briefly
+        const message = document.createElement('div');
+        message.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1e3a8a;
+            color: white;
+            padding: 20px 30px;
+            border-radius: 8px;
+            z-index: 10000;
+            font-weight: 600;
+        `;
+        message.textContent = 'Logging out...';
+        document.body.appendChild(message);
+        
+        setTimeout(() => {
+            this.redirectToLogin();
+        }, 1000);
+    }
+
+    redirectToLogin() {
+        // Check if already on login page
+        if (window.location.pathname.includes('login.html')) {
+            return;
+        }
+        
+        window.location.href = 'login.html';
+    }
+
+    // Utility method to check role in templates
+    checkRole(requiredRole) {
+        return this.hasRole(requiredRole);
+    }
+
+    // Utility method to check multiple roles
+    checkAnyRole(roles) {
+        return this.hasAnyRole(roles);
+    }
+
+    // Utility method to check permissions
+    checkPermission(permission) {
+        return this.canAccess(permission);
+    }
+}
+
+// Initialize global auth manager
+const authManager = new AuthManager();
+
+// Export for use in other scripts
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = AuthManager;
+}
+
+console.log('🔐 Authentication system initialized');
