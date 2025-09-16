@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Test</title>
+</head>
+<body>
+    <h1>Authentication Test</h1>
+    <button onclick="testCustomer()">Test Customer Login (No Password)</button>
+    <button onclick="testSuperAdmin()">Test SuperAdmin Login</button>
+    <input type="password" id="password" placeholder="Password for SuperAdmin">
+    <div id="results"></div>
+
+    <script>
+        async function testCustomer() {
+            const results = document.getElementById('results');
+            results.innerHTML = 'Testing Customer login...';
+            
+            try {
+                const response = await fetch('/api/users/authenticate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ role_name: 'customer' })
+                });
+                
+                const result = await response.json();
+                results.innerHTML = `
+                    <h3>Customer Login Result:</h3>
+                    <p>Status: ${response.status}</p>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+            } catch (error) {
+                results.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function testSuperAdmin() {
+            const results = document.getElementById('results');
+            const password = document.getElementById('password').value;
+            results.innerHTML = 'Testing SuperAdmin login...';
+            
+            try {
+                const response = await fetch('/api/users/authenticate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        role_name: 'superadmin',
+                        password: password 
+                    })
+                });
+                
+                const result = await response.json();
+                results.innerHTML = `
+                    <h3>SuperAdmin Login Result:</h3>
+                    <p>Status: ${response.status}</p>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+            } catch (error) {
+                results.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

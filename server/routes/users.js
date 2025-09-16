@@ -307,10 +307,13 @@ router.patch('/:roleId/password', requireSuperAdmin, async (req, res) => {
 
 // Authenticate user with role and password
 router.post('/authenticate', async (req, res) => {
+  console.log('🔐 Authentication request received:', { role_name: req.body.role_name, has_password: !!req.body.password });
+  
   try {
     const { role_name, password } = req.body;
 
     if (!role_name) {
+      console.log('❌ No role provided');
       return res.status(400).json({
         success: false,
         error: 'Role is required'
@@ -329,6 +332,7 @@ router.post('/authenticate', async (req, res) => {
       `, [role_name]);
 
       if (result.rows.length === 0) {
+        console.log('❌ Role not found:', role_name);
         return res.status(404).json({
           success: false,
           error: 'Invalid role'
@@ -336,6 +340,7 @@ router.post('/authenticate', async (req, res) => {
       }
 
       const role = result.rows[0];
+      console.log('✅ Role found:', role.role_name, 'requires_password:', role.requires_password);
 
       // Check if password is required
       if (role.requires_password) {
@@ -347,13 +352,16 @@ router.post('/authenticate', async (req, res) => {
         }
 
         // Verify password
+        console.log('🔑 Verifying password for role:', role.role_name);
         const isValidPassword = await bcrypt.compare(password, role.password_hash);
         if (!isValidPassword) {
+          console.log('❌ Password verification failed');
           return res.status(401).json({
             success: false,
             error: 'Invalid password'
           });
         }
+        console.log('✅ Password verified successfully');
       }
 
       // Generate session (you could implement JWT here)
