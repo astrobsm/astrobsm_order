@@ -348,17 +348,76 @@
         const successMessage = document.getElementById('successMessage');
         const togglePassword = document.getElementById('togglePassword');
 
-        const roleDescriptions = {
+        // Dynamic roles loaded from API
+        let availableRoles = [];
+        
+        // Default fallback role descriptions
+        const fallbackRoleDescriptions = {
             customer: "As a Customer, you can place new orders, view order status, and access the product catalog. No password required.",
             sales_staff: "As Sales Staff, you can view all orders, generate invoices and payment receipts, and manage order notifications. Password required.",
             superadmin: "As Super Admin, you have full access to all system features including product management, stock control, and system settings. Password required."
         };
 
-        const rolePasswords = {
-            customer: null, // No password required
-            sales_staff: 'unicorn',
-            superadmin: 'natiss'
-        };
+        // Load available roles from API
+        async function loadRoles() {
+            try {
+                console.log('🔍 Loading roles from API...');
+                const response = await fetch('/api/users/public/roles');
+                if (response.ok) {
+                    const data = await response.json();
+                    availableRoles = data.roles || [];
+                    console.log('✅ Loaded roles:', availableRoles);
+                    populateRoleSelect();
+                } else {
+                    throw new Error(`Failed to load roles: ${response.status} ${response.statusText}`);
+                }
+            } catch (error) {
+                console.warn('Could not load dynamic roles, using defaults:', error);
+                // Use fallback roles
+                availableRoles = [
+                    {
+                        role_name: 'customer',
+                        role_display_name: 'Customer',
+                        description: fallbackRoleDescriptions.customer,
+                        requires_password: false
+                    },
+                    {
+                        role_name: 'sales_staff', 
+                        role_display_name: 'Sales Staff',
+                        description: fallbackRoleDescriptions.sales_staff,
+                        requires_password: true
+                    },
+                    {
+                        role_name: 'superadmin',
+                        role_display_name: 'Super Administrator', 
+                        description: fallbackRoleDescriptions.superadmin,
+                        requires_password: true
+                    }
+                ];
+                populateRoleSelect();
+            }
+        }
+
+        function populateRoleSelect() {
+            // Clear existing options except the first one
+            const firstOption = roleSelect.querySelector('option');
+            roleSelect.innerHTML = '';
+            roleSelect.appendChild(firstOption);
+            
+            // Add dynamic roles
+            availableRoles.forEach(role => {
+                if (role.is_active !== false) {
+                    const option = document.createElement('option');
+                    option.value = role.role_name;
+                    option.textContent = `${role.role_display_name} - ${role.description || 'System Access'}`;
+                    roleSelect.appendChild(option);
+                }
+            });
+        }
+
+        function getRoleInfo(roleName) {
+            return availableRoles.find(role => role.role_name === roleName) || null;
+        }
 
         roleSelect.addEventListener('change', function() {
             const selectedRole = this.value;
@@ -367,17 +426,21 @@
             hideMessages();
             
             if (selectedRole) {
-                // Show role description
-                roleDescription.textContent = roleDescriptions[selectedRole];
-                roleDescription.classList.add('active');
+                const roleInfo = getRoleInfo(selectedRole);
                 
-                // Show/hide password field based on role
-                if (selectedRole === 'customer') {
-                    passwordGroup.style.display = 'none';
-                    passwordInput.removeAttribute('required');
-                } else {
-                    passwordGroup.style.display = 'block';
-                    passwordInput.setAttribute('required', 'required');
+                if (roleInfo) {
+                    // Show role description
+                    roleDescription.textContent = roleInfo.description || fallbackRoleDescriptions[selectedRole] || 'System access role';
+                    roleDescription.classList.add('active');
+                    
+                    // Show/hide password field based on role requirements
+                    if (roleInfo.requires_password) {
+                        passwordGroup.style.display = 'block';
+                        passwordInput.setAttribute('required', 'required');
+                    } else {
+                        passwordGroup.style.display = 'none';
+                        passwordInput.removeAttribute('required');
+                    }
                 }
             } else {
                 roleDescription.classList.remove('active');
@@ -392,11 +455,12 @@
             this.textContent = type === 'password' ? '👁️' : '🙈';
         });
 
-        loginForm.addEventListener('submit', function(e) {
+        loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const selectedRole = roleSelect.value;
             const enteredPassword = passwordInput.value;
+            const roleInfo = getRoleInfo(selectedRole);
             
             hideMessages();
             
@@ -405,41 +469,68 @@
                 return;
             }
             
-            // Validate password for roles that require it
-            if (selectedRole !== 'customer') {
-                if (!enteredPassword) {
-                    showError('Password is required for this role.');
-                    return;
-                }
-                
-                if (enteredPassword !== rolePasswords[selectedRole]) {
-                    showError('Incorrect password. Please try again.');
-                    return;
-                }
+            if (!roleInfo) {
+                showError('Invalid role selected.');
+                return;
             }
             
-            // Successful login
-            showSuccess(`Welcome! Redirecting to your ${selectedRole.replace('_', ' ')} dashboard...`);
+            // Validate password for roles that require it
+            if (roleInfo.requires_password && !enteredPassword) {
+                showError('Password is required for this role.');
+                return;
+            }
             
-            // Store authentication in localStorage
-            const authData = {
-                role: selectedRole,
-                loginTime: new Date().toISOString(),
-                authenticated: true
-            };
+            // Show loading state
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Authenticating...';
             
-            localStorage.setItem('astro_auth', JSON.stringify(authData));
-            
-            // Redirect after short delay
-            setTimeout(() => {
-                if (selectedRole === 'customer') {
-                    window.location.href = 'index.html?role=customer';
-                } else if (selectedRole === 'sales_staff') {
-                    window.location.href = 'index.html?role=sales_staff';
-                } else if (selectedRole === 'superadmin') {
-                    window.location.href = 'index.html?role=superadmin';
+            try {
+                // Authenticate with API
+                const response = await fetch('/api/users/authenticate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        role_name: selectedRole,
+                        password: roleInfo.requires_password ? enteredPassword : null
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Successful login
+                    showSuccess(`Welcome! Redirecting to your ${roleInfo.role_display_name} dashboard...`);
+                    
+                    // Store authentication in localStorage
+                    const authData = {
+                        ...result.sessionData,
+                        role: result.sessionData.role,
+                        permissions: result.sessionData.permissions,
+                        authenticated: true,
+                        loginTime: new Date().toISOString()
+                    };
+                    
+                    localStorage.setItem('astro_auth', JSON.stringify(authData));
+                    
+                    // Redirect after short delay
+                    setTimeout(() => {
+                        window.location.href = `index.html?role=${selectedRole}`;
+                    }, 1500);
+                    
+                } else {
+                    showError(result.error || 'Authentication failed. Please check your credentials.');
                 }
-            }, 1500);
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                showError('Network error. Please check your connection and try again.');
+            } finally {
+                // Reset button state
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Access System';
+            }
         });
 
         function showError(message) {
@@ -484,6 +575,9 @@
                     localStorage.removeItem('astro_auth');
                 }
             }
+            
+            // Load available roles when page loads
+            loadRoles();
         });
     </script>
 </body>

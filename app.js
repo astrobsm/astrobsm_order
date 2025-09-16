@@ -522,6 +522,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
 
+    // Set up User Management button - Superadmin only
+    const manageUsersBtn = document.getElementById('manageUsersBtn');
+    if (manageUsersBtn) {
+      manageUsersBtn.addEventListener('click', () => {
+        if (!authManager.canAccess('manage_users')) {
+          alert('Access denied. Only superadmins can manage users.');
+          return;
+        }
+        
+        showUserManagement();
+      });
+    }
+
     // Set up Stock Management navigation buttons
     const backToOrders = document.getElementById('backToOrders');
     if (backToOrders) {
@@ -3358,6 +3371,380 @@ function showIOSInstallInstructions() {
         localStorage.setItem('iosInstallDismissed', 'true');
       }
     });
+  }
+}
+
+// ===== USER MANAGEMENT FUNCTIONS =====
+
+let currentUsers = [];
+
+function showUserManagement() {
+  console.log('🔧 Showing user management...');
+  
+  const ordersSection = document.getElementById('ordersSection');
+  const productsSection = document.getElementById('productsSection');
+  const stockSection = document.getElementById('stockSection');
+  const userManagementSection = document.getElementById('userManagementSection');
+  
+  if (ordersSection) ordersSection.style.display = 'none';
+  if (productsSection) productsSection.style.display = 'none';
+  if (stockSection) stockSection.style.display = 'none';
+  if (userManagementSection) {
+    userManagementSection.style.display = 'block';
+    loadUsers();
+    setupUserManagementEventListeners();
+  }
+}
+
+function hideUserManagement() {
+  console.log('🔧 Hiding user management...');
+  
+  const userManagementSection = document.getElementById('userManagementSection');
+  const ordersSection = document.getElementById('ordersSection');
+  
+  if (userManagementSection) userManagementSection.style.display = 'none';
+  if (ordersSection) ordersSection.style.display = 'block';
+}
+
+async function loadUsers() {
+  try {
+    console.log('📊 Loading users...');
+    
+    // Get current user authentication info
+    const currentRole = authManager.getCurrentRole();
+    if (!currentRole) {
+      throw new Error('No user role found. Please login again.');
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/users`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      currentUsers = data.roles || [];
+      renderUsers();
+    } else {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to load users');
+    }
+  } catch (error) {
+    console.error('Error loading users:', error);
+    alert('Error loading users: ' + error.message);
+  }
+}
+
+function renderUsers() {
+  const usersList = document.getElementById('usersList');
+  if (!usersList) return;
+  
+  console.log('🎯 Rendering users:', currentUsers);
+  
+  if (currentUsers.length === 0) {
+    usersList.innerHTML = '<div class="no-data">No users found</div>';
+    return;
+  }
+  
+  const html = currentUsers.map(user => {
+    console.log('👤 Processing user:', user);
+    
+    // Handle permissions - they might be stored as JSON string
+    let permissions = user.permissions;
+    if (typeof permissions === 'string') {
+      try {
+        permissions = JSON.parse(permissions);
+      } catch (e) {
+        console.warn('Failed to parse permissions for user:', user.role_name, e);
+        permissions = [];
+      }
+    }
+    
+    return `
+    <div class="user-item" data-user-id="${user.id}">
+      <h4>
+        ${user.role_display_name}
+        <span class="user-role-badge">${user.role_name}</span>
+      </h4>
+      <p>${user.description || 'No description provided'}</p>
+      <div class="user-permissions">
+        ${permissions.map(perm => `<span class="permission-tag">${perm}</span>`).join('')}
+      </div>
+      <div class="user-actions">
+        <button class="btn-edit-user" data-user-id="${user.id}">✏️ Edit</button>
+        ${!['customer', 'sales_staff', 'superadmin'].includes(user.role_name) ? 
+          `<button class="btn-delete-user" data-user-id="${user.id}">🗑️ Delete</button>` : ''}
+        ${user.requires_password ? 
+          `<button class="btn-change-password" data-user-id="${user.id}">🔑 Change Password</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  
+  usersList.innerHTML = html;
+}
+
+function setupUserManagementEventListeners() {
+  // Add User button
+  const addUserBtn = document.getElementById('addUserBtn');
+  const changePasswordBtn = document.getElementById('changePasswordBtn');
+  const backToOrdersFromUsers = document.getElementById('backToOrdersFromUsers');
+  
+  if (addUserBtn && !addUserBtn.hasEventListener) {
+    addUserBtn.addEventListener('click', showAddUserForm);
+    addUserBtn.hasEventListener = true;
+  }
+  
+  if (changePasswordBtn && !changePasswordBtn.hasEventListener) {
+    changePasswordBtn.addEventListener('click', showChangePasswordForm);
+    changePasswordBtn.hasEventListener = true;
+  }
+  
+  if (backToOrdersFromUsers && !backToOrdersFromUsers.hasEventListener) {
+    backToOrdersFromUsers.addEventListener('click', hideUserManagement);
+    backToOrdersFromUsers.hasEventListener = true;
+  }
+  
+  // Form submission handlers
+  const saveUserBtn = document.getElementById('saveUserBtn');
+  const cancelUserBtn = document.getElementById('cancelUserBtn');
+  const savePasswordChanges = document.getElementById('savePasswordChanges');
+  const cancelPasswordChanges = document.getElementById('cancelPasswordChanges');
+  
+  if (saveUserBtn && !saveUserBtn.hasEventListener) {
+    saveUserBtn.addEventListener('click', handleSaveUser);
+    saveUserBtn.hasEventListener = true;
+  }
+  
+  if (cancelUserBtn && !cancelUserBtn.hasEventListener) {
+    cancelUserBtn.addEventListener('click', hideAddUserForm);
+    cancelUserBtn.hasEventListener = true;
+  }
+  
+  if (savePasswordChanges && !savePasswordChanges.hasEventListener) {
+    savePasswordChanges.addEventListener('click', handleSavePasswordChanges);
+    savePasswordChanges.hasEventListener = true;
+  }
+  
+  if (cancelPasswordChanges && !cancelPasswordChanges.hasEventListener) {
+    cancelPasswordChanges.addEventListener('click', hideChangePasswordForm);
+    cancelPasswordChanges.hasEventListener = true;
+  }
+  
+  // Dynamic event delegation for user action buttons
+  const usersList = document.getElementById('usersList');
+  if (usersList && !usersList.hasEventListener) {
+    usersList.addEventListener('click', handleUserAction);
+    usersList.hasEventListener = true;
+  }
+}
+
+function showAddUserForm() {
+  const addUserForm = document.getElementById('addUserForm');
+  if (addUserForm) {
+    addUserForm.style.display = 'block';
+    
+    // Clear form
+    document.getElementById('newUserRole').value = '';
+    document.getElementById('newUserPassword').value = '';
+    document.getElementById('newUserDescription').value = '';
+    
+    // Clear all checkboxes
+    const checkboxes = addUserForm.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(cb => cb.checked = false);
+  }
+}
+
+function hideAddUserForm() {
+  const addUserForm = document.getElementById('addUserForm');
+  if (addUserForm) addUserForm.style.display = 'none';
+}
+
+function showChangePasswordForm() {
+  const changePasswordForm = document.getElementById('changePasswordForm');
+  const passwordChangeList = document.getElementById('passwordChangeList');
+  
+  if (!changePasswordForm || !passwordChangeList) return;
+  
+  // Get users that require passwords
+  const usersWithPasswords = currentUsers.filter(user => user.requires_password);
+  
+  const html = usersWithPasswords.map(user => `
+    <div class="password-change-item">
+      <label for="password_${user.id}">${user.role_display_name} (${user.role_name})</label>
+      <input type="password" id="password_${user.id}" data-user-id="${user.id}" 
+             placeholder="Enter new password for ${user.role_display_name}">
+    </div>
+  `).join('');
+  
+  passwordChangeList.innerHTML = html;
+  changePasswordForm.style.display = 'block';
+}
+
+function hideChangePasswordForm() {
+  const changePasswordForm = document.getElementById('changePasswordForm');
+  if (changePasswordForm) changePasswordForm.style.display = 'none';
+}
+
+async function handleSaveUser() {
+  try {
+    const roleName = document.getElementById('newUserRole').value.trim();
+    const password = document.getElementById('newUserPassword').value;
+    const description = document.getElementById('newUserDescription').value.trim();
+    
+    if (!roleName) {
+      alert('Please enter a role name.');
+      return;
+    }
+    
+    // Get selected permissions
+    const checkboxes = document.querySelectorAll('#addUserForm input[type="checkbox"]:checked');
+    const permissions = Array.from(checkboxes).map(cb => cb.value);
+    
+    if (permissions.length === 0) {
+      alert('Please select at least one permission.');
+      return;
+    }
+    
+    const requiresPassword = permissions.some(p => !['place_orders', 'view_products', 'view_order_status'].includes(p));
+    
+    if (requiresPassword && !password) {
+      alert('Password is required for roles with elevated permissions.');
+      return;
+    }
+    
+    // Get current user authentication info
+    const currentRole = authManager.getCurrentRole();
+    if (!currentRole) {
+      throw new Error('No user role found. Please login again.');
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/users`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        role_name: roleName.toLowerCase().replace(/\s+/g, '_'),
+        role_display_name: roleName,
+        description: description,
+        permissions: permissions,
+        password: requiresPassword ? password : null,
+        requires_password: requiresPassword,
+        userRole: currentRole
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      alert('User role created successfully!');
+      hideAddUserForm();
+      loadUsers();
+    } else {
+      alert('Error creating user: ' + result.error);
+    }
+  } catch (error) {
+    console.error('Error saving user:', error);
+    alert('Error saving user: ' + error.message);
+  }
+}
+
+async function handleSavePasswordChanges() {
+  try {
+    const passwordInputs = document.querySelectorAll('#passwordChangeList input[type="password"]');
+    const changes = [];
+    
+    passwordInputs.forEach(input => {
+      if (input.value.trim()) {
+        changes.push({
+          userId: input.dataset.userId,
+          password: input.value.trim()
+        });
+      }
+    });
+    
+    if (changes.length === 0) {
+      alert('No password changes to save.');
+      return;
+    }
+    
+    // Get current user authentication info
+    const currentRole = authManager.getCurrentRole();
+    if (!currentRole) {
+      throw new Error('No user role found. Please login again.');
+    }
+    
+    for (const change of changes) {
+      const response = await fetch(`${API_BASE_URL}/users/${change.userId}/password`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: change.password,
+          userRole: currentRole
+        })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(`Failed to change password: ${error.error}`);
+      }
+    }
+    
+    alert('Passwords updated successfully!');
+    hideChangePasswordForm();
+    
+  } catch (error) {
+    console.error('Error changing passwords:', error);
+    alert('Error changing passwords: ' + error.message);
+  }
+}
+
+function handleUserAction(event) {
+  const target = event.target;
+  const userId = target.dataset.userId;
+  
+  if (target.classList.contains('btn-delete-user')) {
+    handleDeleteUser(userId);
+  } else if (target.classList.contains('btn-change-password')) {
+    // Show individual password change for this user
+    showChangePasswordForm();
+  }
+}
+
+async function handleDeleteUser(userId) {
+  const user = currentUsers.find(u => u.id == userId);
+  if (!user) return;
+  
+  if (!confirm(`Are you sure you want to delete the role "${user.role_display_name}"? This action cannot be undone.`)) {
+    return;
+  }
+  
+  try {
+    // Get current user authentication info
+    const currentRole = authManager.getCurrentRole();
+    if (!currentRole) {
+      throw new Error('No user role found. Please login again.');
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userRole: currentRole
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      alert('User role deleted successfully!');
+      loadUsers();
+    } else {
+      alert('Error deleting user: ' + result.error);
+    }
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    alert('Error deleting user: ' + error.message);
     
     setTimeout(() => {
       if (iosInstallBanner.parentElement) {

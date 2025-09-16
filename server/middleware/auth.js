@@ -1,5 +1,13 @@
 // Authentication middleware for role-based access
-const rolePermissions = {
+const pool = require('../database/db');
+
+// Cache for role permissions to avoid database hits on every request
+let rolePermissionsCache = {};
+let cacheLastUpdated = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Fallback static permissions for when database is not available
+const fallbackRolePermissions = {
     customer: [
         'place_orders',
         'view_products',
@@ -30,9 +38,49 @@ const rolePermissions = {
         'view_admin_panel',
         'system_settings',
         'priceChanges',
-        'notifications'
+        'notifications',
+        'manage_users'
     ]
 };
+
+// Load role permissions from database
+async function loadRolePermissions() {
+    try {
+        const now = Date.now();
+        
+        // Return cached permissions if still valid
+        if (Object.keys(rolePermissionsCache).length > 0 && (now - cacheLastUpdated) < CACHE_DURATION) {
+            return rolePermissionsCache;
+        }
+        
+        const client = await pool.connect();
+        
+        try {
+            const result = await client.query(`
+                SELECT role_name, permissions 
+                FROM user_roles 
+                WHERE is_active = true
+            `);
+            
+            const permissions = {};
+            for (const row of result.rows) {
+                permissions[row.role_name] = row.permissions;
+            }
+            
+            // Update cache
+            rolePermissionsCache = permissions;
+            cacheLastUpdated = now;
+            
+            return permissions;
+            
+        } finally {
+            client.release();
+        }
+    } catch (error) {
+        console.error('Error loading role permissions from database, using fallback:', error.message);
+        return fallbackRolePermissions;
+    }
+}
 
 // Legacy password check for backward compatibility during transition
 const legacyPasswords = {
@@ -42,9 +90,15 @@ const legacyPasswords = {
 };
 
 function checkRole(requiredPermission) {
-    return (req, res, next) => {
+    return async (req, res, next) => {
         try {
+            console.log(`🔐 Auth middleware: checking permission '${requiredPermission}'`);
+            console.log(`🔐 Request body:`, req.body);
+            
             const { userRole, adminPassword, stockPassword, pricePassword } = req.body;
+            
+            // Load current role permissions from database
+            const rolePermissions = await loadRolePermissions();
             
             // Check role-based permission
             if (userRole && rolePermissions[userRole] && rolePermissions[userRole].includes(requiredPermission)) {
@@ -100,6 +154,5 @@ module.exports = {
     requireAdmin,
     requireStockAccess,
     requirePriceChangeAccess,
-    requireNotificationAccess,
-    rolePermissions
+    requireNotificationAccess
 };

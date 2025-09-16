@@ -197,6 +197,7 @@
           <div style="margin-bottom: 20px;">
             <button id="manageProductsBtn" class="btn-secondary">🛠️ Manage Products</button>
             <button id="manageStockBtn" class="btn-secondary">📦 Stock Management</button>
+            <button id="manageUsersBtn" class="btn-secondary">👥 User Management</button>
           </div>
           <div id="ordersList"></div>
         </div>
@@ -269,6 +270,81 @@
         <!-- Products List -->
         <div id="productsList"></div>
       </div>
+      
+      <!-- User Management Section -->
+      <div id="userManagementSection" style="display: none;">
+        <h2>User Management</h2>
+        <p class="section-description">Manage user roles, passwords, and permissions for the system.</p>
+        
+        <div style="margin-bottom: 20px;">
+          <button id="addUserBtn" class="btn-primary">👤 Add New User</button>
+          <button id="changePasswordBtn" class="btn-warning">🔑 Change Passwords</button>
+          <button id="backToOrdersFromUsers" class="btn-secondary">← Back to Orders</button>
+        </div>
+
+        <!-- Add User Form -->
+        <div id="addUserForm" style="display: none; margin-bottom: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9;">
+          <h3>Add New User Role</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div>
+              <label for="newUserRole">Role Name:</label>
+              <input type="text" id="newUserRole" placeholder="e.g., manager, supervisor" required>
+            </div>
+            <div>
+              <label for="newUserPassword">Password:</label>
+              <input type="password" id="newUserPassword" placeholder="Enter secure password" required>
+            </div>
+          </div>
+          <div style="margin-bottom: 15px;">
+            <label for="newUserDescription">Role Description:</label>
+            <textarea id="newUserDescription" placeholder="Describe the role and responsibilities..." rows="2"></textarea>
+          </div>
+          
+          <div style="margin-bottom: 15px;">
+            <label><strong>Permissions:</strong></label>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 10px;">
+              <label><input type="checkbox" value="place_orders"> Place Orders</label>
+              <label><input type="checkbox" value="view_products"> View Products</label>
+              <label><input type="checkbox" value="view_order_status"> View Order Status</label>
+              <label><input type="checkbox" value="view_all_orders"> View All Orders</label>
+              <label><input type="checkbox" value="generate_invoices"> Generate Invoices</label>
+              <label><input type="checkbox" value="generate_receipts"> Generate Receipts</label>
+              <label><input type="checkbox" value="view_notifications"> View Notifications</label>
+              <label><input type="checkbox" value="export_orders"> Export Orders</label>
+              <label><input type="checkbox" value="manage_products"> Manage Products</label>
+              <label><input type="checkbox" value="manage_stock"> Manage Stock</label>
+              <label><input type="checkbox" value="view_admin_panel"> Admin Panel Access</label>
+              <label><input type="checkbox" value="priceChanges"> Change Prices</label>
+              <label><input type="checkbox" value="notifications"> Notifications Access</label>
+            </div>
+          </div>
+          
+          <div style="margin-top: 15px;">
+            <button id="saveUserBtn" class="btn-primary">💾 Save User</button>
+            <button id="cancelUserBtn" class="btn-secondary">❌ Cancel</button>
+          </div>
+        </div>
+
+        <!-- Change Password Form -->
+        <div id="changePasswordForm" style="display: none; margin-bottom: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #fff3cd;">
+          <h3>Change User Passwords</h3>
+          <div id="passwordChangeList">
+            <!-- Dynamically populated with existing users -->
+          </div>
+          <div style="margin-top: 15px;">
+            <button id="savePasswordChanges" class="btn-warning">🔑 Update Passwords</button>
+            <button id="cancelPasswordChanges" class="btn-secondary">❌ Cancel</button>
+          </div>
+        </div>
+
+        <!-- Users List -->
+        <div id="usersListSection">
+          <h3>Current Users & Roles</h3>
+          <div id="usersList">
+            <!-- Dynamically populated with user data -->
+          </div>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -286,6 +362,6 @@
   <!-- Application scripts -->
   <script src="naira-converter.js"></script>
   <script src="payment-receipt.js"></script>
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>

@@ -356,7 +356,7 @@ router.get('/alerts', async (req, res) => {
           lsa.product_id,
           lsa.current_stock,
           lsa.reorder_level,
-          lsa.alert_type,
+          lsa.alert_level,
           lsa.acknowledged,
           lsa.created_at,
           lsa.acknowledged_at,

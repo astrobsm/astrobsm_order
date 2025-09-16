@@ -70,9 +70,16 @@ class AuthManager {
         return roles.includes(this.getCurrentRole());
     }
 
-    canAccess(permission) {
+    async canAccess(permission) {
         const role = this.getCurrentRole();
-        const permissions = {
+        
+        // If we have cached permissions in the current auth, use them
+        if (this.currentAuth && this.currentAuth.permissions) {
+            return this.currentAuth.permissions.includes(permission);
+        }
+        
+        // Fallback to static permissions if no cached permissions
+        const fallbackPermissions = {
             customer: [
                 'place_orders',
                 'view_products',
@@ -103,11 +110,86 @@ class AuthManager {
                 'view_admin_panel',
                 'system_settings',
                 'priceChanges',
-                'notifications'
+                'notifications',
+                'manage_users'
             ]
         };
 
-        return permissions[role] && permissions[role].includes(permission);
+        return fallbackPermissions[role] && fallbackPermissions[role].includes(permission);
+    }
+
+    async loadAvailableRoles() {
+        try {
+            const response = await fetch('/api/users');
+            if (response.ok) {
+                const data = await response.json();
+                return data.roles || [];
+            }
+        } catch (error) {
+            console.warn('Could not load dynamic roles, using defaults:', error);
+        }
+        
+        // Return default roles if API fails
+        return [
+            {
+                role_name: 'customer',
+                role_display_name: 'Customer',
+                description: 'Place orders and view products',
+                requires_password: false
+            },
+            {
+                role_name: 'sales_staff', 
+                role_display_name: 'Sales Staff',
+                description: 'View orders and generate documents',
+                requires_password: true
+            },
+            {
+                role_name: 'superadmin',
+                role_display_name: 'Super Administrator', 
+                description: 'Full system access',
+                requires_password: true
+            }
+        ];
+    }
+
+    async authenticateWithAPI(role, password = null) {
+        try {
+            const response = await fetch('/api/users/authenticate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    role_name: role,
+                    password: password
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.sessionData) {
+                    // Store the complete session data with permissions
+                    this.currentAuth = {
+                        ...data.sessionData,
+                        role: data.sessionData.role,
+                        permissions: data.sessionData.permissions,
+                        authenticated: true,
+                        loginTime: new Date().toISOString()
+                    };
+                    
+                    localStorage.setItem('astro_auth', JSON.stringify(this.currentAuth));
+                    return { success: true, auth: this.currentAuth };
+                }
+            } else {
+                const error = await response.json();
+                return { success: false, error: error.error || 'Authentication failed' };
+            }
+        } catch (error) {
+            console.error('API authentication error:', error);
+            return { success: false, error: 'Network error during authentication' };
+        }
+        
+        return { success: false, error: 'Authentication failed' };
     }
 
     applyRoleBasedUI() {

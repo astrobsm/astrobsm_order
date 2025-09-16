@@ -9,6 +9,7 @@ const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
 const adminRoutes = require('./routes/admin');
 const stockRoutes = require('./routes/stock');
+const userRoutes = require('./routes/users');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -53,6 +54,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/stock', stockRoutes);
+app.use('/api/users', userRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -222,6 +224,16 @@ async function startServer() {
       console.log('✅ Payment system ready');
     } catch (paymentError) {
       console.log('⚠️ Payment system setup failed (may already exist):', paymentError.message);
+    }
+    
+    // Initialize user management system
+    console.log('🔄 Setting up user management system...');
+    try {
+      const { createUserManagementTables } = require('./database/user-management-setup');
+      await createUserManagementTables();
+      console.log('✅ User management system ready');
+    } catch (userMgmtError) {
+      console.log('⚠️ User management setup failed (may already exist):', userMgmtError.message);
     }
     
     // Start server

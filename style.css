@@ -1357,3 +1357,180 @@ button:focus {
     justify-content: center;
   }
 }
+
+/* User Management Styles */
+#userManagementSection {
+  padding: var(--spacing-lg);
+}
+
+#userManagementSection .section-description {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-lg);
+  font-style: italic;
+}
+
+.user-item {
+  background: var(--white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.user-item h4 {
+  margin: 0 0 var(--spacing-sm) 0;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.user-role-badge {
+  background: var(--primary-color);
+  color: var(--white);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.user-permissions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-sm);
+}
+
+.permission-tag {
+  background: var(--gray-light);
+  color: var(--text-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  border: 1px solid var(--border-color);
+}
+
+.user-actions {
+  margin-top: var(--spacing-md);
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.btn-edit-user {
+  background: var(--secondary-color);
+  color: var(--white);
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-edit-user:hover {
+  background: #2563eb;
+}
+
+.btn-delete-user {
+  background: var(--danger-color);
+  color: var(--white);
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-delete-user:hover {
+  background: #b91c1c;
+}
+
+.btn-change-password {
+  background: var(--warning-color);
+  color: var(--white);
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-change-password:hover {
+  background: #d97706;
+}
+
+.password-change-item {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.password-change-item label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: var(--spacing-xs);
+  color: var(--text-primary);
+}
+
+.password-change-item input[type="password"] {
+  width: 100%;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+/* Permissions Grid */
+#addUserForm label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+#addUserForm label:hover {
+  background-color: var(--gray-light);
+}
+
+#addUserForm input[type="checkbox"] {
+  margin: 0;
+}
+
+/* Mobile responsiveness for user management */
+@media (max-width: 768px) {
+  #userManagementSection {
+    padding: var(--spacing-md);
+  }
+  
+  .user-item {
+    padding: var(--spacing-sm);
+  }
+  
+  .user-actions {
+    flex-direction: column;
+  }
+  
+  .btn-edit-user, .btn-delete-user {
+    width: 100%;
+    padding: var(--spacing-sm);
+    font-size: 0.85rem;
+  }
+  
+  #addUserForm > div[style*="grid"] {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .permission-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
