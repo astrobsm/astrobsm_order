@@ -5,9 +5,9 @@ class AuthManager {
         this.init();
     }
 
-    init() {
+    async init() {
         this.loadAuthFromStorage();
-        this.setupAuthCheck();
+        await this.setupAuthCheck();
     }
 
     loadAuthFromStorage() {
@@ -36,7 +36,7 @@ class AuthManager {
         return false;
     }
 
-    setupAuthCheck() {
+    async setupAuthCheck() {
         // Check authentication on page load
         if (!this.isAuthenticated()) {
             this.redirectToLogin();
@@ -44,7 +44,7 @@ class AuthManager {
         }
 
         // Apply role-based UI modifications
-        this.applyRoleBasedUI();
+        await this.applyRoleBasedUI();
         
         // Set up periodic auth check (every 5 minutes)
         setInterval(() => {
@@ -192,15 +192,23 @@ class AuthManager {
         return { success: false, error: 'Authentication failed' };
     }
 
-    applyRoleBasedUI() {
+    async applyRoleBasedUI() {
         const role = this.getCurrentRole();
         
+        console.log(`🔐 Applying UI restrictions for role: ${role}`);
+        
         // Hide/show elements based on role permissions
-        this.toggleElementsByPermission('place_orders', '.order-form, #orderForm, .customer-section');
-        this.toggleElementsByPermission('view_all_orders', '.admin-panel, #adminPanel, .btn-admin');
-        this.toggleElementsByPermission('manage_products', '.product-management, #productManagement');
-        this.toggleElementsByPermission('manage_stock', '.stock-management, #stockManagement');
-        this.toggleElementsByPermission('view_notifications', '.notification-section, #notificationSection, .btn-notification');
+        await this.toggleElementsByPermission('place_orders', '.order-form, #orderForm, .customer-section');
+        await this.toggleElementsByPermission('view_all_orders', '.admin-panel, #adminPanel, .btn-admin, #adminBtn');
+        await this.toggleElementsByPermission('manage_products', '.product-management, #productManagement');
+        await this.toggleElementsByPermission('manage_stock', '.stock-management, #stockManagement');
+        await this.toggleElementsByPermission('view_notifications', '.notification-section, #notificationSection, .btn-notification, #notificationBtn');
+        
+        // Apply strict customer restrictions
+        if (role === 'customer') {
+            console.log('🔒 Applying customer restrictions...');
+            this.applyCustomerRestrictions();
+        }
         
         // Update header based on role
         this.updateHeaderForRole();
@@ -211,12 +219,40 @@ class AuthManager {
         // Remove old password inputs
         this.removeOldPasswordInputs();
         
-        console.log(`🔐 UI configured for role: ${role}`);
+        console.log(`✅ UI configured for role: ${role}`);
     }
 
-    toggleElementsByPermission(permission, selector) {
+    applyCustomerRestrictions() {
+        // Hide admin elements that customers should never see
+        const restrictedSelectors = [
+            '#adminBtn', '.btn-admin',
+            '#notificationBtn', '.btn-notification',
+            '.admin-panel', '#adminPanel',
+            '.user-management', '#userManagement',
+            '.stock-management', '#stockManagement', 
+            '.product-management', '#productManagement',
+            '.price-management', '#priceManagement',
+            '.notification-center', '#notificationCenter',
+            '.admin-controls', '.management-controls'
+        ];
+        
+        restrictedSelectors.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(element => {
+                element.style.display = 'none';
+                element.style.visibility = 'hidden';
+                element.setAttribute('disabled', 'true');
+            });
+        });
+        
+        console.log('🔒 Customer restrictions applied - admin features hidden');
+    }
+
+    async toggleElementsByPermission(permission, selector) {
         const elements = document.querySelectorAll(selector);
-        const canAccess = this.canAccess(permission);
+        const canAccess = await this.canAccess(permission);
+        
+        console.log(`🔍 Permission check: ${permission} = ${canAccess} for role ${this.getCurrentRole()}`);
         
         elements.forEach(element => {
             if (canAccess) {
@@ -372,6 +408,18 @@ class AuthManager {
 
 // Initialize global auth manager
 const authManager = new AuthManager();
+
+// Ensure proper async initialization
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', async () => {
+        await authManager.init();
+    });
+} else {
+    // DOM is already loaded
+    (async () => {
+        await authManager.init();
+    })();
+}
 
 // Export for use in other scripts
 if (typeof module !== 'undefined' && module.exports) {
