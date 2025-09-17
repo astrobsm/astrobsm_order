@@ -1269,8 +1269,12 @@ function generateThermalPrintContent(customerData, orderData, items, order) {
     <div class="thermal-receipt">
       <!-- Header -->
       <div class="receipt-header">
-        <div class="company-name">ASTRO-BSM</div>
-        <div class="company-info">Order Management System</div>
+        <div class="company-logo">
+          <!-- Company Logo for Thermal Printing -->
+          <div class="logo-placeholder">[LOGO]</div>
+        </div>
+        <div class="company-name">BONNESANTE MEDICALS</div>
+        <div class="company-info">Professional Medical Supplies</div>
         <div class="separator">================================</div>
       </div>
       
@@ -1302,9 +1306,9 @@ function generateThermalPrintContent(customerData, orderData, items, order) {
           const lineTotal = price * quantity;
           return `
           <div class="item-row">
-            <div class="item-name">${item.name || 'Unknown Item'}</div>
+            <div class="item-name">${item.product_name || item.name || 'Unknown Item'}</div>
             <div class="item-details">
-              ${quantity}x @ $${price.toFixed(2)} = $${lineTotal.toFixed(2)}
+              ${quantity}x @ ₦${price.toFixed(2)} = ₦${lineTotal.toFixed(2)}
             </div>
           </div>
         `;
@@ -1314,17 +1318,18 @@ function generateThermalPrintContent(customerData, orderData, items, order) {
       
       <!-- Totals -->
       <div class="receipt-section">
-        <div class="total-line">Subtotal: $${subtotal.toFixed(2)}</div>
-        <div class="total-line">Tax (10%): $${tax.toFixed(2)}</div>
-        <div class="total-line total-final">TOTAL: $${total.toFixed(2)}</div>
+        <div class="total-line">Subtotal: ₦${subtotal.toFixed(2)}</div>
+        <div class="total-line">Tax (10%): ₦${tax.toFixed(2)}</div>
+        <div class="total-line total-final">TOTAL: ₦${total.toFixed(2)}</div>
         <div class="separator">================================</div>
       </div>
       
       <!-- Footer -->
       <div class="receipt-footer">
         <div class="footer-text">Thank you for your business!</div>
-        <div class="footer-text">ASTRO-BSM Order System</div>
-        <div class="footer-text">Powered by Order Management</div>
+        <div class="footer-text">BONNESANTE MEDICALS</div>
+        <div class="footer-text">Professional Medical Supplies</div>
+        <div class="footer-text">Contact: +234-XXX-XXXX-XXX</div>
       </div>
       
       <!-- QR Code Placeholder -->
@@ -1450,7 +1455,12 @@ function generateThermalInvoiceContent(orderData) {
     <div class="thermal-receipt">
       <!-- Header -->
       <div class="receipt-header">
-        <div class="company-name">ASTRO-BSM</div>
+        <div class="company-logo">
+          <!-- Company Logo for Thermal Printing -->
+          <div class="logo-placeholder">[LOGO]</div>
+        </div>
+        <div class="company-name">BONNESANTE MEDICALS</div>
+        <div class="company-info">Professional Medical Supplies</div>
         <div class="company-info">INVOICE</div>
         <div class="separator">================================</div>
       </div>
@@ -1486,9 +1496,9 @@ function generateThermalInvoiceContent(orderData) {
           const lineTotal = price * quantity;
           return `
           <div class="item-row">
-            <div class="item-name">${item.name || 'Unknown Item'}</div>
+            <div class="item-name">${item.product_name || item.name || 'Unknown Item'}</div>
             <div class="item-details">
-              ${quantity}x @ $${price.toFixed(2)} = $${lineTotal.toFixed(2)}
+              ${quantity}x @ ₦${price.toFixed(2)} = ₦${lineTotal.toFixed(2)}
             </div>
           </div>
         `;
@@ -1515,8 +1525,9 @@ function generateThermalInvoiceContent(orderData) {
       <!-- Footer -->
       <div class="receipt-footer">
         <div class="footer-text">Thank you for your business!</div>
-        <div class="footer-text">ASTRO-BSM</div>
-        <div class="footer-text">Order Management System</div>
+        <div class="footer-text">BONNESANTE MEDICALS</div>
+        <div class="footer-text">Professional Medical Supplies</div>
+        <div class="footer-text">Contact: +234-XXX-XXXX-XXX</div>
       </div>
       
       <!-- QR Code Placeholder -->
