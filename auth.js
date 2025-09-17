@@ -277,7 +277,7 @@ class AuthManager {
         const roleNames = {
             customer: 'Customer Portal',
             sales_staff: 'Sales Dashboard', 
-            superadmin: 'Admin Dashboard'
+            superadmin: 'System Management'
         };
 
         // Update page title
