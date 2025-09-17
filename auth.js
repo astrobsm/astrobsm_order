@@ -6,6 +6,8 @@ class AuthManager {
     }
 
     async init() {
+        // Clean up any existing floating role indicators
+        this.removeRoleIndicators();
         this.loadAuthFromStorage();
         await this.setupAuthCheck();
     }
@@ -210,8 +212,11 @@ class AuthManager {
         // Update header based on role
         this.updateHeaderForRole();
         
-        // Add role indicator
-        this.addRoleIndicator();
+        // Add role indicator - DISABLED to remove floating bar
+        // this.addRoleIndicator();
+        
+        // Remove any existing role indicators
+        this.removeRoleIndicators();
         
         // Remove old password inputs
         this.removeOldPasswordInputs();
@@ -355,6 +360,15 @@ class AuthManager {
         oldPasswordModals.forEach(modal => {
             modal.remove();
         });
+    }
+
+    removeRoleIndicators() {
+        // Remove any existing role indicator floating bars
+        const existingIndicators = document.querySelectorAll('#roleIndicator, .role-indicator, .floating-role-bar');
+        existingIndicators.forEach(indicator => {
+            indicator.remove();
+        });
+        console.log('🧹 Role indicators removed');
     }
 
     logout() {
