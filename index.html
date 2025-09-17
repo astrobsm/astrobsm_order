@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; script-src-attr 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com; img-src 'self' data:; connect-src 'self' https://cdnjs.cloudflare.com;">
   <title>ASTRO-BSM Product Order</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=7">
-  <link rel="stylesheet" href="thermal-print.css?v=1">
-  
-  <!-- PWA Icons and Meta Tags -->
+    <link rel="stylesheet" href="style.css?v=10">
+    <link rel="stylesheet" href="thermal-print.css?v=1">  <!-- PWA Icons and Meta Tags -->
   <link rel="icon" type="image/png" href="public/company_logo.PNG">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
@@ -271,78 +272,324 @@
         <div id="productsList"></div>
       </div>
       
-      <!-- User Management Section -->
-      <div id="userManagementSection" style="display: none;">
-        <h2>User Management</h2>
-        <p class="section-description">Manage user roles, passwords, and permissions for the system.</p>
-        
-        <div style="margin-bottom: 20px;">
-          <button id="addUserBtn" class="btn-primary">👤 Add New User</button>
-          <button id="changePasswordBtn" class="btn-warning">🔑 Change Passwords</button>
-          <button id="backToOrdersFromUsers" class="btn-secondary">← Back to Orders</button>
+      <!-- User Management Section - Completely Rebuilt -->
+      <div id="userManagementSection" class="management-section" style="display: none;">
+        <div class="section-header">
+          <div class="header-content">
+            <h2><i class="fas fa-users"></i> User Management</h2>
+            <p class="section-subtitle">Manage system users, roles, and permissions</p>
+          </div>
+          <div class="header-actions">
+            <button id="addNewUserBtn" class="btn btn-primary">
+              <i class="fas fa-user-plus"></i> Add User
+            </button>
+            <button id="backToAdminBtn" class="btn btn-secondary">
+              <i class="fas fa-arrow-left"></i> Back to Admin
+            </button>
+          </div>
         </div>
 
-        <!-- Add User Form -->
-        <div id="addUserForm" style="display: none; margin-bottom: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9;">
-          <h3>Add New User Role</h3>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-            <div>
-              <label for="newUserRole">Role Name:</label>
-              <input type="text" id="newUserRole" placeholder="e.g., manager, supervisor" required>
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fas fa-users"></i>
             </div>
-            <div>
-              <label for="newUserPassword">Password:</label>
-              <input type="password" id="newUserPassword" placeholder="Enter secure password" required>
+            <div class="stat-content">
+              <h3 id="totalUsersCount">0</h3>
+              <p>Total Users</p>
             </div>
           </div>
-          <div style="margin-bottom: 15px;">
-            <label for="newUserDescription">Role Description:</label>
-            <textarea id="newUserDescription" placeholder="Describe the role and responsibilities..." rows="2"></textarea>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fas fa-user-shield"></i>
+            </div>
+            <div class="stat-content">
+              <h3 id="adminUsersCount">0</h3>
+              <p>Admin Users</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fas fa-user-tie"></i>
+            </div>
+            <div class="stat-content">
+              <h3 id="salesUsersCount">0</h3>
+              <p>Sales Staff</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fas fa-user"></i>
+            </div>
+            <div class="stat-content">
+              <h3 id="customerUsersCount">0</h3>
+              <p>Customers</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Users List Section -->
+        <div class="users-list-container">
+          <div class="list-header">
+            <h3><i class="fas fa-list"></i> All Users & Roles</h3>
+            <div class="list-controls">
+              <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="userSearchInput" placeholder="Search users...">
+              </div>
+              <select id="roleFilterSelect" class="role-filter">
+                <option value="">All Roles</option>
+                <option value="superadmin">Super Admin</option>
+                <option value="sales_staff">Sales Staff</option>
+                <option value="customer">Customer</option>
+              </select>
+            </div>
           </div>
           
-          <div style="margin-bottom: 15px;">
-            <label><strong>Permissions:</strong></label>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 10px;">
-              <label><input type="checkbox" value="place_orders"> Place Orders</label>
-              <label><input type="checkbox" value="view_products"> View Products</label>
-              <label><input type="checkbox" value="view_order_status"> View Order Status</label>
-              <label><input type="checkbox" value="view_all_orders"> View All Orders</label>
-              <label><input type="checkbox" value="generate_invoices"> Generate Invoices</label>
-              <label><input type="checkbox" value="generate_receipts"> Generate Receipts</label>
-              <label><input type="checkbox" value="view_notifications"> View Notifications</label>
-              <label><input type="checkbox" value="export_orders"> Export Orders</label>
-              <label><input type="checkbox" value="manage_products"> Manage Products</label>
-              <label><input type="checkbox" value="manage_stock"> Manage Stock</label>
-              <label><input type="checkbox" value="view_admin_panel"> Admin Panel Access</label>
-              <label><input type="checkbox" value="priceChanges"> Change Prices</label>
-              <label><input type="checkbox" value="notifications"> Notifications Access</label>
-            </div>
+          <div id="usersListGrid" class="users-grid">
+            <!-- Users will be loaded here dynamically -->
           </div>
           
-          <div style="margin-top: 15px;">
-            <button id="saveUserBtn" class="btn-primary">💾 Save User</button>
-            <button id="cancelUserBtn" class="btn-secondary">❌ Cancel</button>
+          <div id="emptyUsersState" class="empty-state" style="display: none;">
+            <i class="fas fa-users"></i>
+            <h3>No Users Found</h3>
+            <p>No users match your current filters.</p>
           </div>
         </div>
 
-        <!-- Change Password Form -->
-        <div id="changePasswordForm" style="display: none; margin-bottom: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #fff3cd;">
-          <h3>Change User Passwords</h3>
-          <div id="passwordChangeList">
-            <!-- Dynamically populated with existing users -->
-          </div>
-          <div style="margin-top: 15px;">
-            <button id="savePasswordChanges" class="btn-warning">🔑 Update Passwords</button>
-            <button id="cancelPasswordChanges" class="btn-secondary">❌ Cancel</button>
+        <!-- Add/Edit User Modal -->
+        <div id="userModal" class="modal" style="display: none;">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3 id="userModalTitle"><i class="fas fa-user-plus"></i> Add New User</h3>
+              <button id="closeUserModal" class="close-btn">&times;</button>
+            </div>
+            
+            <form id="userForm" class="user-form">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="userRoleName">
+                    <i class="fas fa-tag"></i> Role Name
+                  </label>
+                  <input type="text" id="userRoleName" name="roleName" 
+                         placeholder="e.g., manager, supervisor" required>
+                  <small class="form-hint">Unique identifier for this role</small>
+                </div>
+                
+                <div class="form-group">
+                  <label for="userDisplayName">
+                    <i class="fas fa-user"></i> Display Name
+                  </label>
+                  <input type="text" id="userDisplayName" name="displayName" 
+                         placeholder="e.g., Store Manager" required>
+                  <small class="form-hint">Human-readable role name</small>
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label for="userDescription">
+                  <i class="fas fa-info-circle"></i> Description
+                </label>
+                <textarea id="userDescription" name="description" rows="3" 
+                          placeholder="Describe the role and responsibilities..."></textarea>
+              </div>
+              
+              <div class="form-group">
+                <label for="userPassword">
+                  <i class="fas fa-lock"></i> Password
+                </label>
+                <div class="password-input-group">
+                  <input type="password" id="userPassword" name="password" 
+                         placeholder="Enter secure password">
+                  <button type="button" id="togglePasswordBtn" class="toggle-password">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                </div>
+                <small class="form-hint">Leave blank to generate random password</small>
+              </div>
+
+              <!-- Permissions Section -->
+              <div class="permissions-section">
+                <h4><i class="fas fa-shield-alt"></i> Permissions</h4>
+                <div class="permissions-grid">
+                  <!-- Basic Permissions -->
+                  <div class="permission-group">
+                    <h5><i class="fas fa-shopping-cart"></i> Orders</h5>
+                    <label class="permission-item">
+                      <input type="checkbox" name="permissions" value="place_orders">
+                      <span class="checkmark"></span>
+                      Place Orders
+                    </label>
+                    <label class="permission-item">
+                      <input type="checkbox" name="permissions" value="view_order_status">
+                      <span class="checkmark"></span>
+                      View Order Status
+                    </label>
+                    <label class="permission-item">
+                      <input type="checkbox" name="permissions" value="view_all_orders">
+                      <span class="checkmark"></span>
+                      View All Orders
+                    </label>
+                  </div>
+
+                  <!-- Product Permissions -->
+                  <div class="permission-group">
+                    <h5><i class="fas fa-box"></i> Products</h5>
+                    <label class="permission-item">
+                      <input type="checkbox" name="permissions" value="view_products">
+                      <span class="checkmark"></span>
+                      View Products
+                    </label>
+                    <label class="permission-item">
+                      <input type="checkbox" name="permissions" value="manage_products">
+                      <span class="checkmark"></span>
+                      Manage Products
+                    </label>
+                  </div>
+
+                  <!-- Financial Permissions -->
+                  <div class="permission-group">
+                    <h5><i class="fas fa-file-invoice"></i> Financial</h5>
+                    <label class="permission-item">
+                      <input type="checkbox" name="permissions" value="generate_invoices">
+                      <span class="checkmark"></span>
+                      Generate Invoices
+                    </label>
+                    <label class="permission-item">
+                      <input type="checkbox" name="permissions" value="generate_receipts">
+                      <span class="checkmark"></span>
+                      Generate Receipts
+                    </label>
+                  </div>
+
+                  <!-- Stock Permissions -->
+                  <div class="permission-group">
+                    <h5><i class="fas fa-warehouse"></i> Stock</h5>
+                    <label class="permission-item">
+                      <input type="checkbox" name="permissions" value="manage_stock">
+                      <span class="checkmark"></span>
+                      Manage Stock
+                    </label>
+                  </div>
+
+                  <!-- Admin Permissions -->
+                  <div class="permission-group">
+                    <h5><i class="fas fa-cog"></i> Administration</h5>
+                    <label class="permission-item">
+                      <input type="checkbox" name="permissions" value="view_admin_panel">
+                      <span class="checkmark"></span>
+                      Admin Panel Access
+                    </label>
+                    <label class="permission-item">
+                      <input type="checkbox" name="permissions" value="manage_users">
+                      <span class="checkmark"></span>
+                      User Management
+                    </label>
+                    <label class="permission-item">
+                      <input type="checkbox" name="permissions" value="priceChanges">
+                      <span class="checkmark"></span>
+                      Change Prices
+                    </label>
+                  </div>
+
+                  <!-- System Permissions -->
+                  <div class="permission-group">
+                    <h5><i class="fas fa-bell"></i> System</h5>
+                    <label class="permission-item">
+                      <input type="checkbox" name="permissions" value="view_notifications">
+                      <span class="checkmark"></span>
+                      View Notifications
+                    </label>
+                    <label class="permission-item">
+                      <input type="checkbox" name="permissions" value="export_orders">
+                      <span class="checkmark"></span>
+                      Export Orders
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" id="cancelUserBtn" class="btn btn-secondary">
+                  <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="submit" id="saveUserBtn" class="btn btn-primary">
+                  <i class="fas fa-save"></i> Save User
+                </button>
+              </div>
+            </form>
           </div>
         </div>
 
-        <!-- Users List -->
-        <div id="usersListSection">
-          <h3>Current Users & Roles</h3>
-          <div id="usersList">
-            <!-- Dynamically populated with user data -->
+        <!-- Password Change Modal -->
+        <div id="passwordModal" class="modal" style="display: none;">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3><i class="fas fa-key"></i> Change Password</h3>
+              <button id="closePasswordModal" class="close-btn">&times;</button>
+            </div>
+            
+            <div class="password-change-content">
+              <div class="user-info">
+                <div class="user-avatar">
+                  <i class="fas fa-user"></i>
+                </div>
+                <div class="user-details">
+                  <h4 id="passwordChangeUserName">User Name</h4>
+                  <p id="passwordChangeUserRole">Role</p>
+                </div>
+              </div>
+              
+              <form id="passwordChangeForm">
+                <input type="hidden" id="passwordChangeUserId">
+                <div class="form-group">
+                  <label for="newPassword">
+                    <i class="fas fa-lock"></i> New Password
+                  </label>
+                  <div class="password-input-group">
+                    <input type="password" id="newPassword" name="newPassword" 
+                           placeholder="Enter new password" required>
+                    <button type="button" id="toggleNewPasswordBtn" class="toggle-password">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="form-group">
+                  <label for="confirmPassword">
+                    <i class="fas fa-lock"></i> Confirm Password
+                  </label>
+                  <div class="password-input-group">
+                    <input type="password" id="confirmPassword" name="confirmPassword" 
+                           placeholder="Confirm new password" required>
+                    <button type="button" id="toggleConfirmPasswordBtn" class="toggle-password">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="form-actions">
+                  <button type="button" id="cancelPasswordBtn" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                  </button>
+                  <button type="submit" id="savePasswordBtn" class="btn btn-primary">
+                    <i class="fas fa-key"></i> Update Password
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="userManagementLoader" class="loading-overlay" style="display: none;">
+          <div class="spinner">
+            <div class="bounce1"></div>
+            <div class="bounce2"></div>
+            <div class="bounce3"></div>
+          </div>
+          <p>Processing...</p>
         </div>
       </div>
     </div>
@@ -362,6 +609,7 @@
   <!-- Application scripts -->
   <script src="naira-converter.js"></script>
   <script src="payment-receipt.js"></script>
-  <script src="app.js?v=8"></script>
+  <script src="user-management.js?v=1.0.3"></script>
+  <script src="app.js?v=1.4.3"></script>
 </body>
 </html>

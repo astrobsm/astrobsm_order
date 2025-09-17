@@ -35,12 +35,12 @@ async function createUserManagementTables() {
       {
         role_name: 'sales_staff',
         role_display_name: 'Sales Staff',
-        description: 'Sales staff with order management and invoice generation capabilities',
+        description: 'Sales staff with limited access to place orders, view orders, and generate invoices/receipts',
         permissions: JSON.stringify([
           'place_orders', 'view_products', 'view_order_status', 'view_all_orders',
-          'generate_invoices', 'generate_receipts', 'view_notifications', 'export_orders', 'notifications'
+          'generate_invoices', 'generate_receipts'
         ]),
-        password_hash: '$2a$10$V7qWXn0zX.XQmJ0Rlh3xJ.QW8YiD8O3ER.GvK5j2.hYoXE6GPqHmO', // bcrypt hash for 'unicorn'
+        password_hash: '$2a$10$S6n2dfqTP83kkoHZu2ryEO3f81BXAAo8ILV1fI7WoxSjm.EffKPae', // bcrypt hash for 'unicorn'
         requires_password: true
       },
       {
@@ -53,7 +53,7 @@ async function createUserManagementTables() {
           'manage_products', 'manage_stock', 'view_admin_panel', 'system_settings',
           'priceChanges', 'notifications', 'manage_users'
         ]),
-        password_hash: '$2a$10$8H2kX9mL6N0pQ.4RzT3fJ.eW7YiM1K9FR.NvB8c4.tXoZE7HPdKlS', // bcrypt hash for 'natiss'
+        password_hash: '$2a$10$ileOxLsHw5Ubq5ZtiIj8qOienViZNJ64QezXg9ZSc3vJzuA/TkyjO', // bcrypt hash for 'natiss'
         requires_password: true
       }
     ];

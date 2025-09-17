@@ -4,28 +4,11 @@ const API_BASE_URL = window.location.origin + '/api';
 // Product list - will be loaded from API
 let productList = [];
 
-// DOM Elements
-const itemsContainer = document.getElementById('itemsContainer');
-const addItemBtn = document.getElementById('addItemBtn');
-const orderForm = document.getElementById('orderForm');
-const orderSummary = document.getElementById('orderSummary');
-const adminBtn = document.getElementById('adminBtn');
-const adminModal = document.getElementById('adminModal');
-const productModal = document.getElementById('productModal');
-const closeModal = document.querySelector('.close');
-const loginBtn = document.getElementById('loginBtn');
-const ordersSection = document.getElementById('ordersSection');
-const ordersList = document.getElementById('ordersList');
+// DOM Elements - will be initialized after DOM loads
+let itemsContainer, addItemBtn, orderForm, orderSummary, adminBtn, adminModal, productModal, closeModal, loginBtn, ordersSection, ordersList;
 
-// Notification System Variables
-const notificationBtn = document.getElementById('notificationBtn');
-const notificationBadge = document.getElementById('notificationBadge');
-const notificationCenter = document.getElementById('notificationCenter');
-const closeNotifications = document.getElementById('closeNotifications');
-const notificationsList = document.getElementById('notificationsList');
-const notificationsContent = document.getElementById('notificationsContent');
-const clearAllNotifications = document.getElementById('clearAllNotifications');
-const markAllRead = document.getElementById('markAllRead');
+// Notification System Variables - will be initialized after DOM loads
+let notificationBtn, notificationBadge, notificationCenter, closeNotifications, notificationsList, notificationsContent, clearAllNotifications, markAllRead;
 
 // Notification State
 let notifications = [];
@@ -33,6 +16,7 @@ let notificationInterval = null;
 
 let itemCount = 0;
 let orderTotal = { subtotal: 0, vat: 0, total: 0 };
+let currentUsers = [];
 
 // Function to convert number to words (for Nigerian Naira)
 function numberToWords(num) {
@@ -435,6 +419,29 @@ function addItemChangeListeners() {
 // Initialize item change listeners
 document.addEventListener('DOMContentLoaded', async () => {
   try {
+    // Initialize DOM elements
+    itemsContainer = document.getElementById('itemsContainer');
+    addItemBtn = document.getElementById('addItemBtn');
+    orderForm = document.getElementById('orderForm');
+    orderSummary = document.getElementById('orderSummary');
+    adminBtn = document.getElementById('adminBtn');
+    adminModal = document.getElementById('adminModal');
+    productModal = document.getElementById('productModal');
+    closeModal = document.querySelector('.close');
+    loginBtn = document.getElementById('loginBtn');
+    ordersSection = document.getElementById('ordersSection');
+    ordersList = document.getElementById('ordersList');
+    
+    // Initialize notification elements
+    notificationBtn = document.getElementById('notificationBtn');
+    notificationBadge = document.getElementById('notificationBadge');
+    notificationCenter = document.getElementById('notificationCenter');
+    closeNotifications = document.getElementById('closeNotifications');
+    notificationsList = document.getElementById('notificationsList');
+    notificationsContent = document.getElementById('notificationsContent');
+    clearAllNotifications = document.getElementById('clearAllNotifications');
+    markAllRead = document.getElementById('markAllRead');
+    
     // Load products first
     await loadProducts();
     
@@ -531,7 +538,17 @@ document.addEventListener('DOMContentLoaded', async () => {
           return;
         }
         
-        showUserManagement();
+        // User Management is now handled by user-management.js
+        // Hide other sections and show user management
+        const ordersSection = document.getElementById('ordersSection');
+        const stockSection = document.getElementById('stockSection');
+        const userManagementSection = document.getElementById('userManagementSection');
+        
+        if (ordersSection) ordersSection.style.display = 'none';
+        if (stockSection) stockSection.style.display = 'none';
+        if (userManagementSection) {
+          userManagementSection.style.display = 'block';
+        }
       });
     }
 
@@ -621,13 +638,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize notification system
     initializeNotificationSystem();
     
-  } catch (error) {
-    console.error('Error initializing application:', error);
-  }
-});
-
-// Form submission handler
-orderForm.addEventListener('submit', async function(e) {
+    // Form submission handler
+    if (orderForm) {
+      orderForm.addEventListener('submit', async function(e) {
   e.preventDefault();
   
   const submitBtn = this.querySelector('button[type="submit"]');
@@ -717,6 +730,13 @@ orderForm.addEventListener('submit', async function(e) {
     this.classList.remove('loading');
   }
 });
+
+    }
+
+  } catch (error) {
+    console.error('Error initializing app:', error);
+  }
+}); // End DOMContentLoaded
 
 // Display order summary
 function displayOrderSummary(customerData, orderData, items, order) {
@@ -3376,23 +3396,68 @@ function showIOSInstallInstructions() {
 
 // ===== USER MANAGEMENT FUNCTIONS =====
 
-let currentUsers = [];
-
 function showUserManagement() {
   console.log('🔧 Showing user management...');
+  
+  // Hide the admin modal first
+  const adminModal = document.getElementById('adminModal');
+  console.log('🔍 Admin modal found:', !!adminModal);
+  if (adminModal) {
+    adminModal.style.display = 'none';
+    console.log('✅ Admin modal hidden');
+  }
   
   const ordersSection = document.getElementById('ordersSection');
   const productsSection = document.getElementById('productsSection');
   const stockSection = document.getElementById('stockSection');
   const userManagementSection = document.getElementById('userManagementSection');
   
+  console.log('🔍 Elements found:');
+  console.log('  - ordersSection:', !!ordersSection);
+  console.log('  - productsSection:', !!productsSection);
+  console.log('  - stockSection:', !!stockSection);
+  console.log('  - userManagementSection:', !!userManagementSection);
+  
   if (ordersSection) ordersSection.style.display = 'none';
   if (productsSection) productsSection.style.display = 'none';
   if (stockSection) stockSection.style.display = 'none';
   if (userManagementSection) {
-    userManagementSection.style.display = 'block';
+    console.log('✅ User management section found! Styling and showing...');
+    // Show user management section with VERY STRONG styling for maximum visibility
+    userManagementSection.style.display = 'block !important';
+    userManagementSection.style.visibility = 'visible !important';
+    userManagementSection.style.opacity = '1 !important';
+    userManagementSection.style.backgroundColor = '#ffff00 !important'; // Bright yellow
+    userManagementSection.style.border = '5px solid #ff0000 !important'; // Red border
+    userManagementSection.style.padding = '30px !important';
+    userManagementSection.style.margin = '20px !important';
+    userManagementSection.style.borderRadius = '10px !important';
+    userManagementSection.style.position = 'relative !important';
+    userManagementSection.style.zIndex = '9999 !important';
+    userManagementSection.style.width = '100% !important';
+    userManagementSection.style.minHeight = '400px !important';
+    userManagementSection.style.top = '0 !important';
+    userManagementSection.style.left = '0 !important';
+    
+    console.log('🎯 User management section styled and shown');
+    
+    // Scroll to the section to ensure it's visible
+    userManagementSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+    console.log('📍 User management section dimensions:', {
+      width: userManagementSection.offsetWidth,
+      height: userManagementSection.offsetHeight,
+      top: userManagementSection.offsetTop,
+      left: userManagementSection.offsetLeft,
+      display: userManagementSection.style.display,
+      visibility: userManagementSection.style.visibility
+    });
+    
     loadUsers();
     setupUserManagementEventListeners();
+  } else {
+    console.log('❌ User management section NOT FOUND!');
+    alert('User Management section not found in the DOM. Please check the page structure.');
   }
 }
 
@@ -3423,11 +3488,15 @@ async function loadUsers() {
     
     if (response.ok) {
       const data = await response.json();
+      console.log('🎯 API response data:', data);
       currentUsers = data.roles || [];
+      console.log('🎯 Current users loaded:', currentUsers.length, 'users');
       renderUsers();
     } else {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to load users');
+      console.log('❌ API response failed:', response.status, response.statusText);
+      const errorData = await response.text(); // Use text() to avoid JSON parsing errors
+      console.log('❌ Error response:', errorData);
+      throw new Error(errorData || `Failed to load users (${response.status})`);
     }
   } catch (error) {
     console.error('Error loading users:', error);
@@ -3481,6 +3550,18 @@ function renderUsers() {
   }).join('');
   
   usersList.innerHTML = html;
+  
+  // Make usersList highly visible
+  if (usersList) {
+    usersList.style.display = 'block';
+    usersList.style.visibility = 'visible';
+    usersList.style.backgroundColor = '#d4edda';
+    usersList.style.border = '2px solid #28a745';
+    usersList.style.padding = '15px';
+    usersList.style.margin = '10px 0';
+    usersList.style.borderRadius = '5px';
+    console.log('🎯 Users list populated with', currentUsers.length, 'users');
+  }
 }
 
 function setupUserManagementEventListeners() {

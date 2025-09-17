@@ -19,10 +19,7 @@ const fallbackRolePermissions = {
         'view_order_status',
         'view_all_orders',
         'generate_invoices',
-        'generate_receipts',
-        'view_notifications',
-        'export_orders',
-        'notifications'
+        'generate_receipts'
     ],
     superadmin: [
         'place_orders',
