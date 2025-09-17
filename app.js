@@ -586,9 +586,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
 
-    const submitStockIntake = document.getElementById('submitStockIntake');
-    if (submitStockIntake) {
-      submitStockIntake.addEventListener('click', () => {
+    const submitStockIntakeBtn = document.getElementById('submitStockIntake');
+    if (submitStockIntakeBtn) {
+      submitStockIntakeBtn.addEventListener('click', () => {
         submitStockIntake();
       });
     }
@@ -1646,6 +1646,7 @@ async function saveProduct(editIndex = null) {
   try {
     // Get current user authentication
     const auth = JSON.parse(localStorage.getItem('astro_auth') || '{}');
+    console.log('🔐 Auth data for product save:', auth);
     
     const productData = {
       name: name,
@@ -1653,6 +1654,8 @@ async function saveProduct(editIndex = null) {
       description: description,
       userRole: auth.role // Include user role for authentication
     };
+    
+    console.log('📦 Product data being sent:', productData);
     
     let response;
     if (editIndex !== null) {
