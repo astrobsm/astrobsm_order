@@ -1602,9 +1602,14 @@ function editProduct(index) {
 async function deleteProduct(index) {
   if (confirm('Are you sure you want to delete this product?')) {
     try {
+      // Get current user authentication
+      const auth = JSON.parse(localStorage.getItem('astro_auth') || '{}');
+      
       const product = productList[index];
       const response = await fetch(`${API_BASE_URL}/products/${product.id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userRole: auth.role })
       });
       
       if (response.ok) {
@@ -1639,10 +1644,14 @@ async function saveProduct(editIndex = null) {
   }
   
   try {
+    // Get current user authentication
+    const auth = JSON.parse(localStorage.getItem('astro_auth') || '{}');
+    
     const productData = {
       name: name,
       unit_price: price,
-      description: description
+      description: description,
+      userRole: auth.role // Include user role for authentication
     };
     
     let response;
@@ -1816,7 +1825,14 @@ window.addEventListener('load', async () => {
 // Product Management Functions
 async function loadProductsForManagement() {
   try {
-    const response = await fetch(`${API_BASE_URL}/admin/products`);
+    // Get current user authentication
+    const auth = JSON.parse(localStorage.getItem('astro_auth') || '{}');
+    
+    const response = await fetch(`${API_BASE_URL}/admin/products`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userRole: auth.role })
+    });
     if (!response.ok) {
       throw new Error('Failed to fetch products for management');
     }
