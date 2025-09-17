@@ -9,30 +9,44 @@ let currentEditingUser = null;
 function initializeUserManagement() {
   console.log('🚀 Initializing User Management System...');
   
-  // Hide all other sections
+  // Hide all other sections first
   hideAllSections();
   
-  // Show user management section
+  // Show and setup user management section
   const userManagementSection = document.getElementById('userManagementSection');
-  if (userManagementSection) {
-    userManagementSection.style.display = 'block';
-    
-    // Initialize all components
-    setupUserManagementEventListeners();
-    loadAllUsers();
-    
-    // Scroll to section
-    userManagementSection.scrollIntoView({ behavior: 'smooth' });
-    
-    console.log('✅ User Management System initialized');
-  } else {
+  if (!userManagementSection) {
     console.error('❌ User Management section not found');
     alert('User Management interface not available. Please refresh the page.');
+    return;
   }
+  
+  // Make user management section visible and prevent hiding
+  userManagementSection.style.display = 'block';
+  userManagementSection.style.position = 'relative';
+  userManagementSection.style.zIndex = '1000';
+  
+  // Add click event to prevent bubbling and hiding
+  userManagementSection.onclick = function(e) {
+    e.stopPropagation();
+    console.log('🛡️ Prevented click from bubbling up from User Management section');
+  };
+  
+  // Clear any existing event listeners and setup new ones
+  setupUserManagementEventListeners();
+  
+  // Load user data
+  loadAllUsers();
+  
+  // Scroll to section
+  userManagementSection.scrollIntoView({ behavior: 'smooth' });
+  
+  console.log('✅ User Management System initialized and protected from hiding');
 }
 
-// Hide all sections
+// Hide all sections except user management
 function hideAllSections() {
+  console.log('🙈 Hiding all sections to show User Management');
+  
   const sectionsToHide = [
     'adminModal', 'ordersSection', 'productsSection', 'stockSection'
   ];
@@ -49,57 +63,101 @@ function hideAllSections() {
 function setupUserManagementEventListeners() {
   console.log('🔗 Setting up User Management event listeners...');
   
-  // Header buttons
+  // Remove existing listeners by cloning buttons
+  removeExistingListeners();
+  
+  // Setup new listeners
   setupHeaderEventListeners();
-  
-  // Search and filter
   setupSearchAndFilterListeners();
-  
-  // Modal event listeners
   setupModalEventListeners();
-  
-  // Form event listeners
   setupFormEventListeners();
-  
-  // User card action listeners (using event delegation)
   setupUserCardListeners();
 }
 
+// Remove existing event listeners by cloning elements
+function removeExistingListeners() {
+  const buttonsToClean = ['addNewUserBtn', 'backToAdminBtn'];
+  
+  buttonsToClean.forEach(buttonId => {
+    const button = document.getElementById(buttonId);
+    if (button) {
+      const newButton = button.cloneNode(true);
+      button.parentNode.replaceChild(newButton, button);
+    }
+  });
+}
+
 function setupHeaderEventListeners() {
+  console.log('🔗 Setting up header event listeners...');
+  
   // Add New User button
   const addNewUserBtn = document.getElementById('addNewUserBtn');
   if (addNewUserBtn) {
-    addNewUserBtn.replaceWith(addNewUserBtn.cloneNode(true));
-    document.getElementById('addNewUserBtn').addEventListener('click', () => {
+    console.log('✅ Found Add New User button, adding event listener');
+    addNewUserBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('🎯 Add New User button clicked - event triggered!');
       showUserModal('add');
     });
+    
+    // Test button responsiveness
+    addNewUserBtn.addEventListener('mouseenter', () => {
+      console.log('🖱️ Mouse entered Add New User button');
+    });
+    
+    console.log('✅ Add New User button listeners added');
+  } else {
+    console.error('❌ Add New User button not found in DOM');
   }
   
   // Back to Admin button
   const backToAdminBtn = document.getElementById('backToAdminBtn');
   if (backToAdminBtn) {
-    backToAdminBtn.replaceWith(backToAdminBtn.cloneNode(true));
-    document.getElementById('backToAdminBtn').addEventListener('click', () => {
+    console.log('✅ Found Back to Admin button, adding event listener');
+    backToAdminBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('🎯 Back to Admin button clicked - event triggered!');
       hideUserManagement();
     });
+    
+    // Test button responsiveness
+    backToAdminBtn.addEventListener('mouseenter', () => {
+      console.log('🖱️ Mouse entered Back to Admin button');
+    });
+    
+    console.log('✅ Back to Admin button listeners added');
+  } else {
+    console.error('❌ Back to Admin button not found in DOM');
   }
 }
 
 function setupSearchAndFilterListeners() {
+  console.log('🔍 Setting up search and filter listeners...');
+  
   // Search input
   const userSearchInput = document.getElementById('userSearchInput');
   if (userSearchInput) {
+    console.log('✅ Found userSearchInput, adding listener');
     userSearchInput.addEventListener('input', (e) => {
+      console.log('🔍 Search input changed:', e.target.value);
       filterUsers(e.target.value, document.getElementById('roleFilterSelect').value);
     });
+  } else {
+    console.error('❌ userSearchInput not found');
   }
   
   // Role filter
   const roleFilterSelect = document.getElementById('roleFilterSelect');
   if (roleFilterSelect) {
+    console.log('✅ Found roleFilterSelect, adding listener');
     roleFilterSelect.addEventListener('change', (e) => {
+      console.log('🏷️ Role filter changed:', e.target.value);
       filterUsers(document.getElementById('userSearchInput').value, e.target.value);
     });
+  } else {
+    console.error('❌ roleFilterSelect not found');
   }
 }
 
@@ -191,19 +249,24 @@ async function loadAllUsers() {
   showLoader(true);
   
   try {
+    console.log(`📡 Fetching from: ${API_BASE_URL}/users`);
     const response = await fetch(`${API_BASE_URL}/users`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
     });
+    
+    console.log(`📡 Response status: ${response.status}`);
     
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
     
     const data = await response.json();
+    console.log('📡 Raw API response:', data);
+    
     allUsers = data.roles || [];
     
-    console.log(`✅ Loaded ${allUsers.length} users`);
+    console.log(`✅ Loaded ${allUsers.length} users:`, allUsers);
     
     // Update statistics
     updateUserStatistics();
@@ -213,6 +276,7 @@ async function loadAllUsers() {
     
   } catch (error) {
     console.error('❌ Error loading users:', error);
+    console.error('❌ Error details:', error.stack);
     showNotification('Error loading users: ' + error.message, 'error');
   } finally {
     showLoader(false);
@@ -235,6 +299,9 @@ function updateUserStatistics() {
 
 // Filter users based on search and role filter
 function filterUsers(searchTerm, roleFilter) {
+  console.log(`🔍 Filtering users. Search: "${searchTerm}", Role: "${roleFilter}"`);
+  console.log(`📊 Total users available: ${allUsers.length}`);
+  
   filteredUsers = allUsers.filter(user => {
     const matchesSearch = !searchTerm || 
       user.role_display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -246,24 +313,36 @@ function filterUsers(searchTerm, roleFilter) {
     return matchesSearch && matchesRole;
   });
   
+  console.log(`📊 Filtered users: ${filteredUsers.length}`, filteredUsers);
+  
   renderUsersList();
 }
 
 // Render the users list
 function renderUsersList() {
+  console.log('🎨 Rendering users list...');
   const usersListGrid = document.getElementById('usersListGrid');
   const emptyUsersState = document.getElementById('emptyUsersState');
   
+  if (!usersListGrid) {
+    console.error('❌ usersListGrid element not found!');
+    return;
+  }
+  
   if (filteredUsers.length === 0) {
+    console.log('📊 No filtered users to display - showing empty state');
     usersListGrid.innerHTML = '';
     emptyUsersState.style.display = 'block';
     return;
   }
   
+  console.log(`🎨 Rendering ${filteredUsers.length} user cards`);
   emptyUsersState.style.display = 'none';
   
   const usersHTML = filteredUsers.map(user => createUserCard(user)).join('');
+  console.log('🎨 Generated HTML length:', usersHTML.length);
   usersListGrid.innerHTML = usersHTML;
+  console.log('✅ Users list rendered successfully');
 }
 
 // Create a user card HTML
@@ -606,13 +685,25 @@ async function deleteUser(userId) {
 
 // Hide user management and return to admin
 function hideUserManagement() {
+  console.log('🚪 hideUserManagement() called');
+  console.trace('📍 Call stack for hideUserManagement:');
+  
   const userManagementSection = document.getElementById('userManagementSection');
   const adminModal = document.getElementById('adminModal');
   const ordersSection = document.getElementById('ordersSection');
   
-  if (userManagementSection) userManagementSection.style.display = 'none';
-  if (adminModal) adminModal.style.display = 'block';
-  if (ordersSection) ordersSection.style.display = 'block';
+  if (userManagementSection) {
+    userManagementSection.style.display = 'none';
+    console.log('🙈 User Management section hidden');
+  }
+  if (adminModal) {
+    adminModal.style.display = 'block';
+    console.log('👀 Admin modal shown');
+  }
+  if (ordersSection) {
+    ordersSection.style.display = 'block';
+    console.log('👀 Orders section shown');
+  }
 }
 
 // Toggle password visibility

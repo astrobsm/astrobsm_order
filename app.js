@@ -538,16 +538,21 @@ document.addEventListener('DOMContentLoaded', async () => {
           return;
         }
         
-        // User Management is now handled by user-management.js
-        // Hide other sections and show user management
-        const ordersSection = document.getElementById('ordersSection');
-        const stockSection = document.getElementById('stockSection');
-        const userManagementSection = document.getElementById('userManagementSection');
+        console.log('🔧 User Management button clicked');
         
-        if (ordersSection) ordersSection.style.display = 'none';
-        if (stockSection) stockSection.style.display = 'none';
-        if (userManagementSection) {
-          userManagementSection.style.display = 'block';
+        // Close admin modal first
+        const adminModal = document.getElementById('adminModal');
+        if (adminModal) {
+          adminModal.style.display = 'none';
+        }
+        
+        // Only call initializeUserManagement - it handles everything
+        if (typeof initializeUserManagement === 'function') {
+          console.log('🔧 Calling initializeUserManagement()');
+          initializeUserManagement();
+        } else {
+          console.log('⚠️ initializeUserManagement function not found - fallback to showUserManagement()');
+          showUserManagement();
         }
       });
     }
@@ -1669,12 +1674,21 @@ async function saveProduct(editIndex = null) {
       }
       
       alert(editIndex !== null ? 'Product updated successfully' : 'Product added successfully');
+    } else if (response.status === 403) {
+      throw new Error('Access denied. Only superadmins can manage products. Please log in as superadmin to add or modify products.');
     } else {
-      throw new Error('Failed to save product');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to save product');
     }
   } catch (error) {
     console.error('Error saving product:', error);
-    alert('Error saving product: ' + error.message);
+    
+    // Show user-friendly error message
+    if (error.message.includes('Access denied')) {
+      alert('⚠️ ' + error.message + '\n\nTo manage products:\n1. Log out of current session\n2. Log in as Superadmin\n3. Use password: natiss');
+    } else {
+      alert('Error saving product: ' + error.message);
+    }
   }
 }
 
@@ -1947,8 +1961,10 @@ async function deleteProduct(id, name) {
       })
     });
     
-    if (!response.ok) {
-      const error = await response.json();
+    if (response.status === 403) {
+      throw new Error('Access denied. Only superadmins can manage products. Please log in as superadmin to delete products.');
+    } else if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
       throw new Error(error.error || 'Failed to delete product');
     }
     
@@ -1959,7 +1975,13 @@ async function deleteProduct(id, name) {
     alert('Product deleted successfully!');
   } catch (error) {
     console.error('Error deleting product:', error);
-    alert('Error deleting product: ' + error.message);
+    
+    // Show user-friendly error message
+    if (error.message.includes('Access denied')) {
+      alert('⚠️ ' + error.message + '\n\nTo manage products:\n1. Log out of current session\n2. Log in as Superadmin\n3. Use password: natiss');
+    } else {
+      alert('Error deleting product: ' + error.message);
+    }
   }
 }
 
@@ -2907,6 +2929,12 @@ function setupDynamicEventListeners() {
 
 // Notification System Functions
 function initializeNotificationSystem() {
+  // Only initialize notifications if user has notification permissions
+  if (!authManager.canAccess('view_notifications')) {
+    console.log('🔒 Notification system disabled for current role');
+    return;
+  }
+
   // Request notification permission
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission().then(permission => {
@@ -2946,6 +2974,12 @@ function initializeNotificationSystem() {
 }
 
 function createNotification(orderId, customerName, orderTotal) {
+  // Only create notifications for users with notification permissions
+  if (!authManager.canAccess('view_notifications')) {
+    console.log('🔒 Notification creation disabled for current role');
+    return;
+  }
+
   const notification = {
     id: Date.now(),
     orderId: orderId,
@@ -3396,80 +3430,9 @@ function showIOSInstallInstructions() {
 
 // ===== USER MANAGEMENT FUNCTIONS =====
 
-function showUserManagement() {
-  console.log('🔧 Showing user management...');
-  
-  // Hide the admin modal first
-  const adminModal = document.getElementById('adminModal');
-  console.log('🔍 Admin modal found:', !!adminModal);
-  if (adminModal) {
-    adminModal.style.display = 'none';
-    console.log('✅ Admin modal hidden');
-  }
-  
-  const ordersSection = document.getElementById('ordersSection');
-  const productsSection = document.getElementById('productsSection');
-  const stockSection = document.getElementById('stockSection');
-  const userManagementSection = document.getElementById('userManagementSection');
-  
-  console.log('🔍 Elements found:');
-  console.log('  - ordersSection:', !!ordersSection);
-  console.log('  - productsSection:', !!productsSection);
-  console.log('  - stockSection:', !!stockSection);
-  console.log('  - userManagementSection:', !!userManagementSection);
-  
-  if (ordersSection) ordersSection.style.display = 'none';
-  if (productsSection) productsSection.style.display = 'none';
-  if (stockSection) stockSection.style.display = 'none';
-  if (userManagementSection) {
-    console.log('✅ User management section found! Styling and showing...');
-    // Show user management section with VERY STRONG styling for maximum visibility
-    userManagementSection.style.display = 'block !important';
-    userManagementSection.style.visibility = 'visible !important';
-    userManagementSection.style.opacity = '1 !important';
-    userManagementSection.style.backgroundColor = '#ffff00 !important'; // Bright yellow
-    userManagementSection.style.border = '5px solid #ff0000 !important'; // Red border
-    userManagementSection.style.padding = '30px !important';
-    userManagementSection.style.margin = '20px !important';
-    userManagementSection.style.borderRadius = '10px !important';
-    userManagementSection.style.position = 'relative !important';
-    userManagementSection.style.zIndex = '9999 !important';
-    userManagementSection.style.width = '100% !important';
-    userManagementSection.style.minHeight = '400px !important';
-    userManagementSection.style.top = '0 !important';
-    userManagementSection.style.left = '0 !important';
-    
-    console.log('🎯 User management section styled and shown');
-    
-    // Scroll to the section to ensure it's visible
-    userManagementSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    
-    console.log('📍 User management section dimensions:', {
-      width: userManagementSection.offsetWidth,
-      height: userManagementSection.offsetHeight,
-      top: userManagementSection.offsetTop,
-      left: userManagementSection.offsetLeft,
-      display: userManagementSection.style.display,
-      visibility: userManagementSection.style.visibility
-    });
-    
-    loadUsers();
-    setupUserManagementEventListeners();
-  } else {
-    console.log('❌ User management section NOT FOUND!');
-    alert('User Management section not found in the DOM. Please check the page structure.');
-  }
-}
+// showUserManagement function removed - using initializeUserManagement from user-management.js instead
 
-function hideUserManagement() {
-  console.log('🔧 Hiding user management...');
-  
-  const userManagementSection = document.getElementById('userManagementSection');
-  const ordersSection = document.getElementById('ordersSection');
-  
-  if (userManagementSection) userManagementSection.style.display = 'none';
-  if (ordersSection) ordersSection.style.display = 'block';
-}
+// hideUserManagement function moved to user-management.js to avoid conflicts
 
 async function loadUsers() {
   try {
@@ -3564,60 +3527,7 @@ function renderUsers() {
   }
 }
 
-function setupUserManagementEventListeners() {
-  // Add User button
-  const addUserBtn = document.getElementById('addUserBtn');
-  const changePasswordBtn = document.getElementById('changePasswordBtn');
-  const backToOrdersFromUsers = document.getElementById('backToOrdersFromUsers');
-  
-  if (addUserBtn && !addUserBtn.hasEventListener) {
-    addUserBtn.addEventListener('click', showAddUserForm);
-    addUserBtn.hasEventListener = true;
-  }
-  
-  if (changePasswordBtn && !changePasswordBtn.hasEventListener) {
-    changePasswordBtn.addEventListener('click', showChangePasswordForm);
-    changePasswordBtn.hasEventListener = true;
-  }
-  
-  if (backToOrdersFromUsers && !backToOrdersFromUsers.hasEventListener) {
-    backToOrdersFromUsers.addEventListener('click', hideUserManagement);
-    backToOrdersFromUsers.hasEventListener = true;
-  }
-  
-  // Form submission handlers
-  const saveUserBtn = document.getElementById('saveUserBtn');
-  const cancelUserBtn = document.getElementById('cancelUserBtn');
-  const savePasswordChanges = document.getElementById('savePasswordChanges');
-  const cancelPasswordChanges = document.getElementById('cancelPasswordChanges');
-  
-  if (saveUserBtn && !saveUserBtn.hasEventListener) {
-    saveUserBtn.addEventListener('click', handleSaveUser);
-    saveUserBtn.hasEventListener = true;
-  }
-  
-  if (cancelUserBtn && !cancelUserBtn.hasEventListener) {
-    cancelUserBtn.addEventListener('click', hideAddUserForm);
-    cancelUserBtn.hasEventListener = true;
-  }
-  
-  if (savePasswordChanges && !savePasswordChanges.hasEventListener) {
-    savePasswordChanges.addEventListener('click', handleSavePasswordChanges);
-    savePasswordChanges.hasEventListener = true;
-  }
-  
-  if (cancelPasswordChanges && !cancelPasswordChanges.hasEventListener) {
-    cancelPasswordChanges.addEventListener('click', hideChangePasswordForm);
-    cancelPasswordChanges.hasEventListener = true;
-  }
-  
-  // Dynamic event delegation for user action buttons
-  const usersList = document.getElementById('usersList');
-  if (usersList && !usersList.hasEventListener) {
-    usersList.addEventListener('click', handleUserAction);
-    usersList.hasEventListener = true;
-  }
-}
+// Old setupUserManagementEventListeners removed - using version from user-management.js
 
 function showAddUserForm() {
   const addUserForm = document.getElementById('addUserForm');

@@ -13,26 +13,36 @@ router.post('/', async (req, res) => {
     
     await client.query('BEGIN');
     
-    // Step 1: Validate stock availability
+    // Step 1: Validate stock availability and get product IDs
     const stockIssues = [];
+    const itemsWithIds = [];
+    
     for (const item of items) {
       const stockCheck = await client.query(`
         SELECT 
+          p.id,
           p.name, 
           COALESCE(si.current_stock, p.stock_quantity, 0) as current_stock
         FROM products p
         LEFT JOIN stock_inventory si ON p.id = si.product_id
-        WHERE p.id = $1
-      `, [item.product_id]);
+        WHERE p.name = $1
+      `, [item.product_name]);
       
       if (stockCheck.rows.length === 0) {
-        stockIssues.push(`Product ID ${item.product_id} not found`);
+        stockIssues.push(`Product "${item.product_name}" not found`);
         continue;
       }
       
-      const { name, current_stock } = stockCheck.rows[0];
+      const { id, name, current_stock } = stockCheck.rows[0];
       if (current_stock < item.quantity) {
         stockIssues.push(`Insufficient stock for ${name}. Available: ${current_stock}, Requested: ${item.quantity}`);
+      } else {
+        // Add product_id to item for later use
+        itemsWithIds.push({
+          ...item,
+          product_id: id,
+          product_name: name
+        });
       }
     }
     
@@ -56,12 +66,12 @@ router.post('/', async (req, res) => {
       delivery_route: orderData.delivery_route,
       preferred_delivery_method: orderData.preferred_delivery_method,
       request_status: orderData.request_status,
-      items: items
+      items: itemsWithIds
     });
     
     // Step 4: Deduct stock for each item
     const stockUpdates = [];
-    for (const item of items) {
+    for (const item of itemsWithIds) {
       const currentStockResult = await client.query(`
         SELECT COALESCE(si.current_stock, p.stock_quantity, 0) as current_stock, p.name
         FROM products p

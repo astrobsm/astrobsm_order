@@ -107,7 +107,6 @@ class AuthManager {
                 'view_admin_panel',
                 'system_settings',
                 'priceChanges',
-                'notifications',
                 'manage_users'
             ]
         };
@@ -224,14 +223,19 @@ class AuthManager {
         // Hide admin elements that customers should never see
         const restrictedSelectors = [
             '#adminBtn', '.btn-admin',
-            '#notificationBtn', '.btn-notification',
+            '#notificationBtn', '.btn-notification', '#notificationBadge',
             '.admin-panel', '#adminPanel',
             '.user-management', '#userManagement', '#manageUsersBtn', '#userManagementSection',
             '.stock-management', '#stockManagement', '#manageStockBtn',
-            '.product-management', '#productManagement', '#manageProductsBtn',
+            '.product-management', '#productManagement', '#manageProductsBtn', '#addProductBtn',
             '.price-management', '#priceManagement',
-            '.notification-center', '#notificationCenter',
-            '.admin-controls', '.management-controls'
+            '.notification-center', '#notificationCenter', '#notificationsList',
+            '.admin-controls', '.management-controls',
+            '.floating-notification', '.notification-bar', '.alert-bar',
+            '#productModal', '#adminModal', '#stockModal', '#userModal',
+            '.add-product-btn', '.manage-btn', '.admin-section',
+            '.notification-container', '.floating-alerts',
+            '#addProductForm', '.product-add-form'
         ];
         
         restrictedSelectors.forEach(selector => {

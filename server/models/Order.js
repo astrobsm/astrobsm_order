@@ -9,10 +9,10 @@ class Order {
       
       const { customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status, items } = orderData;
       
-      // Create order with basic fields that likely exist
+      // Create order with all provided fields
       const orderResult = await client.query(
-        'INSERT INTO orders (customer_id) VALUES ($1) RETURNING *',
-        [customer_id]
+        'INSERT INTO orders (customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status]
       );
       
       const order = orderResult.rows[0];
@@ -44,8 +44,8 @@ class Order {
         console.log('🔄 About to insert order item with subtotal:', itemSubtotal);
         
         await client.query(
-          'INSERT INTO order_items (order_id, product_id, quantity, product_name, price, subtotal) VALUES ($1, $2, $3, $4, $5, $6)',
-          [order.id, product.id, quantity, product.name, price, itemSubtotal]
+          'INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal) VALUES ($1, $2, $3, $4, $5)',
+          [order.id, product.id, quantity, price, itemSubtotal]
         );
       }
       

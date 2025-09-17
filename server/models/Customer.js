@@ -6,26 +6,34 @@ class Customer {
         try {
             await client.query('BEGIN');
             
-            console.log('Creating customer with data:', customerData);
+            console.log('Creating/finding customer with data:', customerData);
             
-            // Generate unique customer_id (required by schema)
-            const customerId = 'CUST_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+            const email = customerData.customerEmail || customerData.email || '';
+            const name = customerData.customerName || customerData.name || 'Unknown Customer';
+            const phone = customerData.customerPhone || customerData.phone || '';
+            const address = customerData.customerAddress || customerData.address || customerData.delivery_address || '';
             
-            // Schema: id, name, customer_id (NOT NULL), phone, address, company, created_at
+            // First, try to find existing customer by email (if email is provided)
+            if (email) {
+                const findQuery = `SELECT id, name, email, phone, delivery_address FROM customers WHERE email = $1`;
+                const findResult = await client.query(findQuery, [email]);
+                
+                if (findResult.rows.length > 0) {
+                    console.log('✅ Found existing customer:', findResult.rows[0]);
+                    await client.query('COMMIT');
+                    return findResult.rows[0];
+                }
+            }
+            
+            // If no existing customer found, create new one
             const customerQuery = `
-                INSERT INTO customers (name, customer_id, phone, address, company) 
-                VALUES ($1, $2, $3, $4, $5) 
-                RETURNING id, name, customer_id, phone, address, company`;
+                INSERT INTO customers (name, email, phone, delivery_address) 
+                VALUES ($1, $2, $3, $4) 
+                RETURNING id, name, email, phone, delivery_address`;
             
-            const customerValues = [
-                customerData.customerName || customerData.name || 'Unknown Customer',
-                customerId,  // Always provide unique customer_id
-                customerData.customerPhone || customerData.phone || '',
-                customerData.customerAddress || customerData.address || customerData.delivery_address || '',
-                customerData.customerCompany || customerData.company || ''
-            ];
+            const customerValues = [name, email, phone, address];
             
-            console.log('Inserting customer with values:', customerValues);
+            console.log('Inserting new customer with values:', customerValues);
             
             const customerResult = await client.query(customerQuery, customerValues);
             await client.query('COMMIT');
