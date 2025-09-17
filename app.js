@@ -1254,10 +1254,12 @@ function generateThermalPrintContent(customerData, orderData, items, order) {
   const currentDate = new Date().toLocaleDateString();
   const currentTime = new Date().toLocaleTimeString();
   
-  // Calculate totals
+  // Calculate totals with null safety
   let subtotal = 0;
   items.forEach(item => {
-    subtotal += item.price * item.quantity;
+    const price = parseFloat(item.price || item.unit_price || 0);
+    const quantity = parseInt(item.quantity || 0);
+    subtotal += price * quantity;
   });
   
   const tax = subtotal * 0.1; // 10% tax
@@ -1294,14 +1296,19 @@ function generateThermalPrintContent(customerData, orderData, items, order) {
       <!-- Items -->
       <div class="receipt-section">
         <div class="section-title">ORDER ITEMS</div>
-        ${items.map(item => `
+        ${items.map(item => {
+          const price = parseFloat(item.price || item.unit_price || 0);
+          const quantity = parseInt(item.quantity || 0);
+          const lineTotal = price * quantity;
+          return `
           <div class="item-row">
-            <div class="item-name">${item.name}</div>
+            <div class="item-name">${item.name || 'Unknown Item'}</div>
             <div class="item-details">
-              ${item.quantity}x @ $${item.price.toFixed(2)} = $${(item.price * item.quantity).toFixed(2)}
+              ${quantity}x @ $${price.toFixed(2)} = $${lineTotal.toFixed(2)}
             </div>
           </div>
-        `).join('')}
+        `;
+        }).join('')}
         <div class="separator">--------------------------------</div>
       </div>
       
@@ -1427,11 +1434,13 @@ function generateThermalInvoiceContent(orderData) {
   const currentTime = new Date().toLocaleTimeString();
   const orderDate = new Date(orderData.created_at).toLocaleDateString();
   
-  // Calculate totals
+  // Calculate totals with null safety
   let subtotal = 0;
   const items = orderData.items || [];
   items.forEach(item => {
-    subtotal += item.price * item.quantity;
+    const price = parseFloat(item.price || item.unit_price || 0);
+    const quantity = parseInt(item.quantity || 0);
+    subtotal += price * quantity;
   });
   
   const tax = subtotal * 0.1; // 10% tax
@@ -1471,14 +1480,19 @@ function generateThermalInvoiceContent(orderData) {
       <!-- Items -->
       <div class="receipt-section">
         <div class="section-title">ITEMS</div>
-        ${items.map(item => `
+        ${items.map(item => {
+          const price = parseFloat(item.price || item.unit_price || 0);
+          const quantity = parseInt(item.quantity || 0);
+          const lineTotal = price * quantity;
+          return `
           <div class="item-row">
-            <div class="item-name">${item.name}</div>
+            <div class="item-name">${item.name || 'Unknown Item'}</div>
             <div class="item-details">
-              ${item.quantity}x @ $${item.price.toFixed(2)} = $${(item.price * item.quantity).toFixed(2)}
+              ${quantity}x @ $${price.toFixed(2)} = $${lineTotal.toFixed(2)}
             </div>
           </div>
-        `).join('')}
+        `;
+        }).join('')}
         <div class="separator">--------------------------------</div>
       </div>
       

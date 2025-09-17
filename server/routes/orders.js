@@ -305,16 +305,16 @@ router.put('/:orderId/payment', async (req, res) => {
     await client.query(`
       UPDATE orders 
       SET 
-        payment_status = $1,
-        payment_method = $2,
-        payment_reference = $3,
-        payment_date = $4,
-        payment_notes = $5,
+        payment_status = $1::varchar,
+        payment_method = $2::varchar,
+        payment_reference = $3::varchar,
+        payment_date = $4::date,
+        payment_notes = $5::text,
         status = CASE 
-          WHEN $1 = 'paid' THEN 'confirmed' 
+          WHEN $1::varchar = 'paid' THEN 'confirmed' 
           ELSE status 
         END
-      WHERE id = $6
+      WHERE id = $6::integer
     `, [payment_status, payment_method, payment_reference, payment_date, payment_notes, orderId]);
     
     // If payment is confirmed, create receipt record
