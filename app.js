@@ -2313,6 +2313,9 @@ async function submitStockIntake() {
       alert('Please select a product and enter a valid quantity');
       return;
     }
+
+    // Get current user authentication
+    const auth = JSON.parse(localStorage.getItem('astro_auth') || '{}');
     
     const intakeData = {
       product_id: parseInt(productId),
@@ -2321,7 +2324,8 @@ async function submitStockIntake() {
       supplier: supplier || null,
       batch_number: batchNumber || null,
       expiry_date: expiryDate || null,
-      notes: notes || null
+      notes: notes || null,
+      userRole: auth.role // Include user role for authentication
     };
     
     const response = await fetch(`${API_BASE_URL}/stock/intake`, {
