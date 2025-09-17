@@ -1271,7 +1271,7 @@ function generateThermalPrintContent(customerData, orderData, items, order) {
       <div class="receipt-header">
         <div class="company-logo">
           <!-- Company Logo for Thermal Printing -->
-          <div class="logo-placeholder">[LOGO]</div>
+          <img src="company_logo.PNG" alt="BONNESANTE MEDICALS" class="thermal-logo" />
         </div>
         <div class="company-name">BONNESANTE MEDICALS</div>
         <div class="company-info">Professional Medical Supplies</div>
@@ -1457,7 +1457,7 @@ function generateThermalInvoiceContent(orderData) {
       <div class="receipt-header">
         <div class="company-logo">
           <!-- Company Logo for Thermal Printing -->
-          <div class="logo-placeholder">[LOGO]</div>
+          <img src="company_logo.PNG" alt="BONNESANTE MEDICALS" class="thermal-logo" />
         </div>
         <div class="company-name">BONNESANTE MEDICALS</div>
         <div class="company-info">Professional Medical Supplies</div>

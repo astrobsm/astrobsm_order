@@ -34,6 +34,15 @@
     margin-bottom: 2mm !important;
   }
   
+  .thermal-logo {
+    max-width: 20mm !important;
+    max-height: 15mm !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 auto 1mm auto !important;
+    display: block !important;
+  }
+  
   .thermal-company-name {
     font-size: 10px !important;
     font-weight: bold !important;
@@ -203,6 +212,15 @@
   margin-bottom: 2mm;
 }
 
+.thermal-preview .thermal-logo {
+  max-width: 20mm;
+  max-height: 15mm;
+  width: auto;
+  height: auto;
+  margin: 0 auto 1mm auto;
+  display: block;
+}
+
 .thermal-preview .thermal-company-name {
   font-size: 10px;
   font-weight: bold;
@@ -290,6 +308,131 @@
   margin-top: 3mm;
   text-align: center;
   font-size: 6px;
+}
+
+/* Thermal Receipt Styles */
+.thermal-receipt {
+  width: 58mm;
+  max-width: 58mm;
+  font-family: 'Courier New', monospace;
+  font-size: 8px;
+  line-height: 1.2;
+  color: black;
+  background: white;
+  margin: 10px auto;
+  padding: 2mm;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.thermal-receipt .receipt-header {
+  text-align: center;
+  margin-bottom: 2mm;
+}
+
+.thermal-receipt .company-logo .thermal-logo {
+  max-width: 20mm;
+  max-height: 15mm;
+  width: auto;
+  height: auto;
+  margin: 0 auto 1mm auto;
+  display: block;
+}
+
+.thermal-receipt .company-name {
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-bottom: 1mm;
+}
+
+.thermal-receipt .company-info {
+  font-size: 7px;
+  margin-bottom: 1mm;
+}
+
+.thermal-receipt .separator {
+  border-bottom: 1px dashed black;
+  margin: 2mm 0;
+  width: 100%;
+}
+
+.thermal-receipt .receipt-section {
+  margin-bottom: 2mm;
+}
+
+.thermal-receipt .section-title {
+  font-weight: bold;
+  font-size: 8px;
+  margin-bottom: 1mm;
+}
+
+.thermal-receipt .info-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 7px;
+  margin-bottom: 0.5mm;
+}
+
+.thermal-receipt .item-row {
+  margin-bottom: 1mm;
+  border-bottom: 1px dotted #ccc;
+  padding-bottom: 1mm;
+}
+
+.thermal-receipt .item-name {
+  font-weight: bold;
+  font-size: 7px;
+  margin-bottom: 0.5mm;
+}
+
+.thermal-receipt .item-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 6px;
+}
+
+.thermal-receipt .total-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  margin-bottom: 0.5mm;
+}
+
+.thermal-receipt .total-final {
+  font-weight: bold;
+  font-size: 9px;
+  border-top: 1px solid black;
+  padding-top: 1mm;
+  margin-top: 1mm;
+}
+
+.thermal-receipt .receipt-footer {
+  margin-top: 3mm;
+  text-align: center;
+  font-size: 6px;
+}
+
+.thermal-receipt .footer-text {
+  margin-bottom: 0.5mm;
+}
+
+.thermal-receipt .qr-section {
+  text-align: center;
+  margin-top: 2mm;
+  font-size: 6px;
+}
+
+/* Print styles for thermal receipt */
+@media print {
+  .thermal-receipt .company-logo .thermal-logo {
+    max-width: 20mm !important;
+    max-height: 15mm !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 auto 1mm auto !important;
+    display: block !important;
+  }
 }
 
 .thermal-preview .thermal-thank-you {
