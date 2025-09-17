@@ -196,7 +196,7 @@ class AuthManager {
         // Hide/show elements based on role permissions
         await this.toggleElementsByPermission('place_orders', '.order-form, #orderForm, .customer-section');
         await this.toggleElementsByPermission('view_all_orders', '.admin-panel, #adminPanel, .btn-admin, #adminBtn');
-        await this.toggleElementsByPermission('manage_products', '.product-management, #productManagement, #manageProductsBtn');
+        await this.toggleElementsByPermission('manage_products', '.product-management, #productManagement, #manageProductsBtn, #productModal, #addProductBtn, #addProductForm, .product-add-form, #saveProductBtn, #cancelProductBtn, #newProductName, #newProductPrice, #newProductDescription');
         await this.toggleElementsByPermission('manage_stock', '.stock-management, #stockManagement, #manageStockBtn');
         await this.toggleElementsByPermission('manage_users', '#manageUsersBtn, #userManagementSection');
         await this.toggleElementsByPermission('view_notifications', '.notification-section, #notificationSection, .btn-notification, #notificationBtn');
