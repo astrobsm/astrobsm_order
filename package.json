@@ -5,6 +5,7 @@
   "main": "server/server.js",
   "scripts": {
     "start": "node server/server.js",
+    "start:production": "NODE_ENV=production FIX_AUTH=true node server/server.js",
     "dev": "nodemon server/server.js",
     "build": "echo 'Frontend build complete'",
     "create-db": "node server/database/create-db.js",

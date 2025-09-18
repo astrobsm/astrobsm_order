@@ -237,11 +237,34 @@ async function startServer() {
     }
     
     // Start server
-    const server = app.listen(PORT, '0.0.0.0', () => {
+    const server = app.listen(PORT, '0.0.0.0', async () => {
       console.log(`🚀 ASTRO-BSM Server running on port ${PORT}`);
       console.log(`📱 App available at http://localhost:${PORT}`);
       console.log(`🔗 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`💾 Database: Connected and ready`);
+      
+      // Run authentication fix for production if needed
+      if (process.env.NODE_ENV === 'production' || process.env.FIX_AUTH === 'true') {
+        try {
+          console.log('🔐 Running production authentication fix...');
+          const fs = require('fs');
+          const authFixedFlag = '.auth_fixed';
+          
+          // Only run fix if it hasn't been run before
+          if (!fs.existsSync(authFixedFlag)) {
+            const { fixProductionAuthentication } = require('../production_server_fix.js');
+            await fixProductionAuthentication();
+            
+            // Create flag file to prevent running again
+            fs.writeFileSync(authFixedFlag, `Auth fixed on ${new Date().toISOString()}`);
+            console.log('✅ Production authentication fix completed successfully!');
+          } else {
+            console.log('✅ Authentication already fixed (flag file exists)');
+          }
+        } catch (error) {
+          console.log('⚠️ Authentication fix failed (may not be needed):', error.message);
+        }
+      }
     });
     
     // Handle server shutdown gracefully
