@@ -7,10 +7,29 @@ const router = express.Router();
 
 // Create new order with stock validation and deduction
 router.post('/', async (req, res) => {
+  console.log('📥 Order submission received');
+  console.log('📋 Request body:', JSON.stringify(req.body, null, 2));
+  
   const client = await pool.connect();
   try {
     const { customerData, orderData, items } = req.body;
     
+    // Validate required fields
+    if (!customerData || !orderData || !items || !Array.isArray(items)) {
+      return res.status(400).json({
+        error: 'Missing required fields: customerData, orderData, and items are required',
+        success: false
+      });
+    }
+    
+    if (items.length === 0) {
+      return res.status(400).json({
+        error: 'At least one item is required',
+        success: false
+      });
+    }
+    
+    console.log('✅ Request validation passed');
     await client.query('BEGIN');
     
     // Step 1: Validate stock availability and get product IDs
@@ -69,7 +88,7 @@ router.post('/', async (req, res) => {
       items: itemsWithIds
     });
     
-    // Step 4: Deduct stock for each item
+    // Step 4: Deduct stock for each item (manual update to avoid nested transactions)
     const stockUpdates = [];
     for (const item of itemsWithIds) {
       const currentStockResult = await client.query(`
@@ -82,14 +101,38 @@ router.post('/', async (req, res) => {
       const { current_stock, name } = currentStockResult.rows[0];
       const newStock = current_stock - item.quantity;
       
-      // Update stock using the stock management function
-      const stockResult = await updateProductStock(
+      console.log(`📦 Updating stock for ${name}: ${current_stock} -> ${newStock}`);
+      
+      // Update stock directly within this transaction (avoid nested transaction)
+      
+      // Update stock_inventory
+      await client.query(`
+        UPDATE stock_inventory 
+        SET current_stock = $1, updated_at = CURRENT_TIMESTAMP 
+        WHERE product_id = $2
+      `, [newStock, item.product_id]);
+
+      // Update products table
+      await client.query(`
+        UPDATE products 
+        SET stock_quantity = $1 
+        WHERE id = $2
+      `, [newStock, item.product_id]);
+
+      // Record stock movement
+      await client.query(`
+        INSERT INTO stock_movements (product_id, movement_type, quantity, reason, previous_stock, new_stock, reference_type, reference_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `, [
         item.product_id,
-        newStock,
+        'OUT',
+        item.quantity,
         `Stock deduction for order #${order.id}`,
+        current_stock,
+        newStock,
         'ORDER',
         order.id
-      );
+      ]);
       
       stockUpdates.push({
         product_name: name,
@@ -97,6 +140,8 @@ router.post('/', async (req, res) => {
         previous_stock: current_stock,
         new_stock: newStock
       });
+      
+      console.log(`✅ Stock updated for ${name}`);
     }
     
     await client.query('COMMIT');
@@ -110,7 +155,13 @@ router.post('/', async (req, res) => {
     });
     
   } catch (error) {
-    await client.query('ROLLBACK');
+    try {
+      await client.query('ROLLBACK');
+      console.log('✅ Transaction rolled back successfully');
+    } catch (rollbackError) {
+      console.error('❌ Error during rollback:', rollbackError.message);
+    }
+    
     console.error('❌ Error creating order:', error.message);
     console.error('❌ Error stack:', error.stack);
     console.error('📋 Request body received:', JSON.stringify(req.body, null, 2));
@@ -121,8 +172,16 @@ router.post('/', async (req, res) => {
     res.status(500).json({ 
       error: 'Failed to create order', 
       details: error.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      success: false
     });
+  } finally {
+    try {
+      client.release();
+      console.log('✅ Database client released');
+    } catch (releaseError) {
+      console.error('❌ Error releasing client:', releaseError.message);
+    }
   }
 });
 
