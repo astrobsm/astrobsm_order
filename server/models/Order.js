@@ -9,11 +9,36 @@ class Order {
       
       const { customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status, items } = orderData;
       
-      // Create order with all provided fields
-      const orderResult = await client.query(
-        'INSERT INTO orders (customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-        [customer_id, delivery_date, delivery_route, preferred_delivery_method, request_status]
-      );
+      // Check what columns exist in the orders table
+      const columnsResult = await client.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'orders' AND table_schema = 'public'
+      `);
+      const availableColumns = columnsResult.rows.map(row => row.column_name);
+      console.log('📋 Available orders columns:', availableColumns);
+      
+      // Build dynamic INSERT based on available columns
+      const baseData = { customer_id, request_status: request_status || 'pending' };
+      const optionalData = { delivery_date, delivery_route, preferred_delivery_method };
+      
+      const columnsToInsert = ['customer_id', 'request_status'];
+      const valuesToInsert = [customer_id, request_status || 'pending'];
+      let paramIndex = 2;
+      
+      // Add optional columns if they exist in the table
+      Object.entries(optionalData).forEach(([key, value]) => {
+        if (availableColumns.includes(key) && value !== undefined && value !== null) {
+          columnsToInsert.push(key);
+          valuesToInsert.push(value);
+          paramIndex++;
+        }
+      });
+      
+      const insertSQL = `INSERT INTO orders (${columnsToInsert.join(', ')}) VALUES (${columnsToInsert.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`;
+      console.log('📋 Order INSERT SQL:', insertSQL, 'Values:', valuesToInsert);
+      
+      const orderResult = await client.query(insertSQL, valuesToInsert);
       
       const order = orderResult.rows[0];
       let orderSubtotal = 0;
