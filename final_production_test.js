@@ -19,11 +19,17 @@ async function finalProductionTest() {
       })
     });
     
+    const loginData = await loginResponse.json();
+    console.log('📋 Login response:', loginData);
+    
     if (!loginResponse.ok) {
-      throw new Error(`Login failed: ${loginResponse.status}`);
+      throw new Error(`Login failed: ${loginResponse.status} - ${loginData.error || 'Unknown error'}`);
     }
     
-    const loginData = await loginResponse.json();
+    if (!loginData.success || !loginData.user) {
+      throw new Error(`Login failed: ${loginData.error || 'Invalid response structure'}`);
+    }
+    
     console.log('✅ Login successful:', loginData.user.role_name);
     
     console.log('📦 Step 2: Loading Products...');
