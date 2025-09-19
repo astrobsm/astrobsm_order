@@ -13,25 +13,55 @@ class Customer {
             const phone = customerData.customerPhone || customerData.phone || '';
             const address = customerData.customerAddress || customerData.address || customerData.delivery_address || '';
             
-            // First, try to find existing customer by email (if email is provided)
-            if (email) {
-                const findQuery = `SELECT id, name, email, phone, delivery_address FROM customers WHERE email = $1`;
-                const findResult = await client.query(findQuery, [email]);
-                
-                if (findResult.rows.length > 0) {
-                    console.log('✅ Found existing customer:', findResult.rows[0]);
-                    await client.query('COMMIT');
-                    return findResult.rows[0];
+            // Check if email column exists by testing the table schema
+            let hasEmailColumn = false;
+            try {
+                const schemaCheck = await client.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'customers' 
+                    AND table_schema = 'public' 
+                    AND column_name = 'email'
+                `);
+                hasEmailColumn = schemaCheck.rows.length > 0;
+                console.log('📋 Email column exists in customers table:', hasEmailColumn);
+            } catch (schemaError) {
+                console.log('⚠️ Could not check schema, assuming no email column:', schemaError.message);
+            }
+            
+            // First, try to find existing customer by email (if email column exists and email is provided)
+            if (hasEmailColumn && email) {
+                try {
+                    const findQuery = `SELECT id, name, email, phone, delivery_address FROM customers WHERE email = $1`;
+                    const findResult = await client.query(findQuery, [email]);
+                    
+                    if (findResult.rows.length > 0) {
+                        console.log('✅ Found existing customer:', findResult.rows[0]);
+                        await client.query('COMMIT');
+                        return findResult.rows[0];
+                    }
+                } catch (emailError) {
+                    console.log('⚠️ Email query failed:', emailError.message);
                 }
             }
             
             // If no existing customer found, create new one
-            const customerQuery = `
-                INSERT INTO customers (name, email, phone, delivery_address) 
-                VALUES ($1, $2, $3, $4) 
-                RETURNING id, name, email, phone, delivery_address`;
+            let customerQuery, customerValues;
             
-            const customerValues = [name, email, phone, address];
+            if (hasEmailColumn) {
+                customerQuery = `
+                    INSERT INTO customers (name, email, phone, delivery_address) 
+                    VALUES ($1, $2, $3, $4) 
+                    RETURNING id, name, email, phone, delivery_address`;
+                customerValues = [name, email, phone, address];
+            } else {
+                console.log('⚠️ Creating customer without email column (not available in schema)');
+                customerQuery = `
+                    INSERT INTO customers (name, phone, delivery_address) 
+                    VALUES ($1, $2, $3) 
+                    RETURNING id, name, phone, delivery_address`;
+                customerValues = [name, phone, address];
+            }
             
             console.log('Inserting new customer with values:', customerValues);
             
