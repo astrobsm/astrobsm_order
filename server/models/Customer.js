@@ -13,26 +13,37 @@ class Customer {
             const phone = customerData.customerPhone || customerData.phone || '';
             const address = customerData.customerAddress || customerData.address || customerData.delivery_address || '';
             
-            // Check if email column exists by testing the table schema
-            let hasEmailColumn = false;
+            // Check customer table schema dynamically
+            let availableColumns = [];
             try {
                 const schemaCheck = await client.query(`
                     SELECT column_name 
                     FROM information_schema.columns 
                     WHERE table_name = 'customers' 
-                    AND table_schema = 'public' 
-                    AND column_name = 'email'
+                    AND table_schema = 'public'
+                    ORDER BY ordinal_position
                 `);
-                hasEmailColumn = schemaCheck.rows.length > 0;
-                console.log('📋 Email column exists in customers table:', hasEmailColumn);
+                availableColumns = schemaCheck.rows.map(row => row.column_name);
+                console.log('📋 Available columns in customers table:', availableColumns);
             } catch (schemaError) {
-                console.log('⚠️ Could not check schema, assuming no email column:', schemaError.message);
+                console.log('⚠️ Could not check schema, using basic columns:', schemaError.message);
+                availableColumns = ['id', 'name', 'phone']; // Minimal fallback
             }
             
+            const hasEmail = availableColumns.includes('email');
+            const hasDeliveryAddress = availableColumns.includes('delivery_address');
+            const hasAddress = availableColumns.includes('address');
+            
             // First, try to find existing customer by email (if email column exists and email is provided)
-            if (hasEmailColumn && email) {
+            if (hasEmail && email) {
                 try {
-                    const findQuery = `SELECT id, name, email, phone, delivery_address FROM customers WHERE email = $1`;
+                    const selectColumns = ['id', 'name'];
+                    if (hasEmail) selectColumns.push('email');
+                    if (hasDeliveryAddress) selectColumns.push('delivery_address');
+                    if (hasAddress) selectColumns.push('address');
+                    selectColumns.push('phone');
+                    
+                    const findQuery = `SELECT ${selectColumns.join(', ')} FROM customers WHERE email = $1`;
                     const findResult = await client.query(findQuery, [email]);
                     
                     if (findResult.rows.length > 0) {
@@ -45,27 +56,38 @@ class Customer {
                 }
             }
             
-            // If no existing customer found, create new one
-            let customerQuery, customerValues;
+            // If no existing customer found, create new one with available columns
+            const insertColumns = ['name', 'phone'];
+            const insertValues = [name, phone];
+            const returnColumns = ['id', 'name', 'phone'];
             
-            if (hasEmailColumn) {
-                customerQuery = `
-                    INSERT INTO customers (name, email, phone, delivery_address) 
-                    VALUES ($1, $2, $3, $4) 
-                    RETURNING id, name, email, phone, delivery_address`;
-                customerValues = [name, email, phone, address];
-            } else {
-                console.log('⚠️ Creating customer without email column (not available in schema)');
-                customerQuery = `
-                    INSERT INTO customers (name, phone, delivery_address) 
-                    VALUES ($1, $2, $3) 
-                    RETURNING id, name, phone, delivery_address`;
-                customerValues = [name, phone, address];
+            if (hasEmail) {
+                insertColumns.push('email');
+                insertValues.push(email);
+                returnColumns.push('email');
             }
             
-            console.log('Inserting new customer with values:', customerValues);
+            if (hasDeliveryAddress) {
+                insertColumns.push('delivery_address');
+                insertValues.push(address);
+                returnColumns.push('delivery_address');
+            } else if (hasAddress) {
+                insertColumns.push('address');
+                insertValues.push(address);
+                returnColumns.push('address');
+            }
             
-            const customerResult = await client.query(customerQuery, customerValues);
+            const customerQuery = `
+                INSERT INTO customers (${insertColumns.join(', ')}) 
+                VALUES (${insertValues.map((_, i) => `$${i + 1}`).join(', ')}) 
+                RETURNING ${returnColumns.join(', ')}`;
+            
+            console.log('🔧 Dynamic customer insert query:', customerQuery);
+            console.log('🔧 Values:', insertValues);
+            
+            console.log('Inserting new customer with dynamic schema compatibility');
+            
+            const customerResult = await client.query(customerQuery, insertValues);
             await client.query('COMMIT');
             
             console.log('✅ Customer created successfully:', customerResult.rows[0]);
