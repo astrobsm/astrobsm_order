@@ -40,7 +40,7 @@ async function checkEndpoints() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         role_name: 'sales_staff',
-        password: 'unicorn'
+        password: 'pinkpetals'
       })
     });
     
