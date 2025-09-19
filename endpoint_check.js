@@ -8,9 +8,9 @@ async function checkEndpoints() {
   const endpoints = [
     { name: 'Health Check', url: '/api/health', method: 'GET' },
     { name: 'Products', url: '/api/products', method: 'GET' },
-    { name: 'User Roles', url: '/api/users/roles', method: 'GET' },
+    { name: 'User Roles', url: '/api/users/public/roles', method: 'GET' },
     { name: 'Orders', url: '/api/orders', method: 'GET' },
-    { name: 'Stock', url: '/api/stock', method: 'GET' }
+    { name: 'Users Management', url: '/api/users', method: 'GET' }
   ];
 
   console.log('🚀 Testing available endpoints...\n');
@@ -40,7 +40,7 @@ async function checkEndpoints() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         role_name: 'sales_staff',
-        password: 'sales123'
+        password: 'unicorn'
       })
     });
     
