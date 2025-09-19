@@ -34,25 +34,34 @@ class Customer {
             const hasDeliveryAddress = availableColumns.includes('delivery_address');
             const hasAddress = availableColumns.includes('address');
             
-            // First, try to find existing customer by email (if email column exists and email is provided)
-            if (hasEmail && email) {
+            // First, try to find existing customer by email or phone (if columns exist)
+            if ((hasEmail && email) || phone) {
                 try {
                     const selectColumns = ['id', 'name'];
+                    if (availableColumns.includes('customer_id')) selectColumns.push('customer_id');
                     if (hasEmail) selectColumns.push('email');
                     if (hasDeliveryAddress) selectColumns.push('delivery_address');
                     if (hasAddress) selectColumns.push('address');
                     selectColumns.push('phone');
                     
-                    const findQuery = `SELECT ${selectColumns.join(', ')} FROM customers WHERE email = $1`;
-                    const findResult = await client.query(findQuery, [email]);
+                    let findQuery, findValue;
+                    if (hasEmail && email) {
+                        findQuery = `SELECT ${selectColumns.join(', ')} FROM customers WHERE email = $1`;
+                        findValue = email;
+                    } else if (phone) {
+                        findQuery = `SELECT ${selectColumns.join(', ')} FROM customers WHERE phone = $1`;
+                        findValue = phone;
+                    }
+                    
+                    const findResult = await client.query(findQuery, [findValue]);
                     
                     if (findResult.rows.length > 0) {
                         console.log('✅ Found existing customer:', findResult.rows[0]);
                         await client.query('COMMIT');
                         return findResult.rows[0];
                     }
-                } catch (emailError) {
-                    console.log('⚠️ Email query failed:', emailError.message);
+                } catch (findError) {
+                    console.log('⚠️ Customer search failed:', findError.message);
                 }
             }
             
@@ -60,6 +69,17 @@ class Customer {
             const insertColumns = ['name', 'phone'];
             const insertValues = [name, phone];
             const returnColumns = ['id', 'name', 'phone'];
+            
+            // Check if customer_id column exists and handle it
+            const hasCustomerId = availableColumns.includes('customer_id');
+            if (hasCustomerId) {
+                // Generate a unique customer_id (could be timestamp-based or UUID-like)
+                const customerId = `CUST${Date.now()}${Math.floor(Math.random() * 1000)}`;
+                insertColumns.push('customer_id');
+                insertValues.push(customerId);
+                returnColumns.push('customer_id');
+                console.log('🔧 Generated customer_id:', customerId);
+            }
             
             if (hasEmail) {
                 insertColumns.push('email');
