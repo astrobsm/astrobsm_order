@@ -48,6 +48,15 @@ class Order {
       const order = orderResult.rows[0];
       let orderSubtotal = 0;
       
+      // Get available columns for order_items table
+      const orderItemsColumnsResult = await client.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'order_items' AND table_schema = 'public'
+      `);
+      const orderItemsColumns = orderItemsColumnsResult.rows.map(row => row.column_name);
+      console.log('📋 Available order_items columns:', orderItemsColumns);
+
       // Create order items and calculate totals
       for (const item of items) {
         const productResult = await client.query('SELECT * FROM products WHERE name = $1', [item.product_name]);
@@ -73,10 +82,24 @@ class Order {
         console.log('💰 Final price:', price, 'Quantity:', quantity, 'Item Subtotal:', itemSubtotal, 'Order Subtotal:', orderSubtotal);
         console.log('🔄 About to insert order item with subtotal:', itemSubtotal);
         
-        await client.query(
-          'INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal) VALUES ($1, $2, $3, $4, $5)',
-          [order.id, product.id, quantity, price, itemSubtotal]
-        );
+        // Build dynamic INSERT for order_items based on available columns
+        const itemColumnsToInsert = ['order_id', 'product_id', 'quantity'];
+        const itemValuesToInsert = [order.id, product.id, quantity];
+        
+        // Add optional columns if they exist
+        if (orderItemsColumns.includes('unit_price')) {
+          itemColumnsToInsert.push('unit_price');
+          itemValuesToInsert.push(price);
+        }
+        if (orderItemsColumns.includes('subtotal')) {
+          itemColumnsToInsert.push('subtotal');
+          itemValuesToInsert.push(itemSubtotal);
+        }
+        
+        const orderItemInsertSQL = `INSERT INTO order_items (${itemColumnsToInsert.join(', ')}) VALUES (${itemColumnsToInsert.map((_, i) => `$${i + 1}`).join(', ')})`;
+        console.log('📋 Order Item INSERT SQL:', orderItemInsertSQL, 'Values:', itemValuesToInsert);
+        
+        await client.query(orderItemInsertSQL, itemValuesToInsert);
       }
       
       // Calculate VAT (2.5%) and total
