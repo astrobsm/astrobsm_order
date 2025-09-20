@@ -186,17 +186,53 @@ class Order {
 
   static async getAll() {
     try {
-      const result = await pool.query(`
-        SELECT o.*, c.name as customer_name, c.phone, c.delivery_address as address
+      // First, check what columns exist in the customers table
+      const customersColumnsResult = await pool.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'customers' AND table_schema = 'public'
+      `);
+      const customerColumns = customersColumnsResult.rows.map(row => row.column_name);
+      console.log('📋 Available customer columns for orders query:', customerColumns);
+      
+      // Build dynamic query based on available columns
+      let addressColumn = 'NULL as address';
+      if (customerColumns.includes('delivery_address')) {
+        addressColumn = 'c.delivery_address as address';
+      } else if (customerColumns.includes('address')) {
+        addressColumn = 'c.address as address';
+      }
+      
+      const query = `
+        SELECT o.*, c.name as customer_name, c.phone, ${addressColumn}
         FROM orders o 
         JOIN customers c ON o.customer_id = c.id 
         ORDER BY o.created_at DESC
-      `);
+      `;
+      
+      console.log('📋 Orders query SQL:', query);
+      const result = await pool.query(query);
+      console.log(`📊 Found ${result.rows.length} orders in database`);
+      
       return result.rows;
     } catch (error) {
       console.error('Error fetching all orders:', error);
       console.error('SQL Error details:', error.message);
-      return [];
+      
+      // Fallback query without customer join if there's an issue
+      try {
+        console.log('🔄 Trying fallback query without customer join...');
+        const fallbackResult = await pool.query(`
+          SELECT o.*, 'Unknown' as customer_name, '' as phone, '' as address
+          FROM orders o 
+          ORDER BY o.created_at DESC
+        `);
+        console.log(`📊 Fallback query found ${fallbackResult.rows.length} orders`);
+        return fallbackResult.rows;
+      } catch (fallbackError) {
+        console.error('Fallback query also failed:', fallbackError.message);
+        return [];
+      }
     }
   }
 }
