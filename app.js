@@ -1773,17 +1773,29 @@ async function loadAllOrders() {
     
     let ordersHtml = '';
     for (const order of orders) {
-      // Fetch order items with error handling
-      let orderWithItems = { items: [] };
+      let orderWithItems = { 
+        items: [{ 
+          product_name: 'Loading order details...', 
+          quantity: '', 
+          subtotal: order.total_amount || 0 
+        }] 
+      };
+      
+      // Fetch detailed order information including items
       try {
         const itemsResponse = await fetch(`${API_BASE_URL}/orders/${order.id}`);
         if (itemsResponse.ok) {
-          orderWithItems = await itemsResponse.json();
+          const orderDetails = await itemsResponse.json();
+          if (orderDetails && orderDetails.items && Array.isArray(orderDetails.items)) {
+            orderWithItems = orderDetails;
+          } else {
+            console.warn(`Order ${order.id}: Invalid items data structure`);
+          }
         } else {
-          console.warn(`Failed to fetch items for order ${order.id}:`, itemsResponse.status);
+          console.warn(`Failed to fetch items for order ${order.id}: ${itemsResponse.status} ${itemsResponse.statusText}`);
         }
       } catch (itemsError) {
-        console.warn(`Error fetching items for order ${order.id}:`, itemsError.message);
+        console.warn(`Network error fetching items for order ${order.id}:`, itemsError.message);
       }
       
       ordersHtml += `

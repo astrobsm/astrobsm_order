@@ -140,31 +140,79 @@ class Order {
 
   static async findById(id) {
     try {
-      const orderResult = await pool.query(`
-        SELECT o.*, c.name as customer_name, c.phone, c.delivery_address as address
+      console.log(`🔍 Finding order by ID: ${id}`);
+      
+      // First check if customers table exists and what columns it has
+      const customersColumnsResult = await pool.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'customers' AND table_schema = 'public'
+      `);
+      const customerColumns = customersColumnsResult.rows.map(row => row.column_name);
+      console.log('📋 Available customer columns:', customerColumns);
+      
+      // Build dynamic address column selection
+      let addressColumn = 'NULL as address';
+      if (customerColumns.includes('delivery_address')) {
+        addressColumn = 'c.delivery_address as address';
+      } else if (customerColumns.includes('address')) {
+        addressColumn = 'c.address as address';
+      }
+      
+      const orderQuery = `
+        SELECT o.*, 
+               COALESCE(c.name, 'Unknown Customer') as customer_name, 
+               COALESCE(c.phone, '') as phone, 
+               ${addressColumn}
         FROM orders o 
-        JOIN customers c ON o.customer_id = c.id 
+        LEFT JOIN customers c ON o.customer_id = c.id 
         WHERE o.id = $1
-      `, [id]);
+      `;
+      
+      console.log(`📋 Executing order query: ${orderQuery}`);
+      const orderResult = await pool.query(orderQuery, [id]);
       
       if (!orderResult.rows || orderResult.rows.length === 0) {
+        console.log(`❌ Order ${id} not found`);
         return null;
       }
       
       const order = orderResult.rows[0];
+      console.log(`✅ Found order ${id}: ${order.customer_name}`);
       
-      // Get order items
-      const itemsResult = await pool.query(`
-        SELECT oi.*, p.name as product_name 
+      // Get order items with dynamic schema detection
+      const orderItemsColumnsResult = await pool.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'order_items' AND table_schema = 'public'
+      `);
+      const orderItemColumns = orderItemsColumnsResult.rows.map(row => row.column_name);
+      console.log('📋 Available order_items columns:', orderItemColumns);
+      
+      // Build dynamic select for order items
+      const availableColumns = ['oi.id', 'oi.order_id', 'oi.product_id', 'oi.quantity', 'p.name as product_name'];
+      
+      if (orderItemColumns.includes('price')) availableColumns.push('oi.price');
+      if (orderItemColumns.includes('unit_price')) availableColumns.push('oi.unit_price as price');
+      if (orderItemColumns.includes('subtotal')) availableColumns.push('oi.subtotal');
+      if (orderItemColumns.includes('product_name')) availableColumns.push('oi.product_name');
+      
+      const itemsQuery = `
+        SELECT ${availableColumns.join(', ')}
         FROM order_items oi 
-        JOIN products p ON oi.product_id = p.id 
+        LEFT JOIN products p ON oi.product_id = p.id 
         WHERE oi.order_id = $1
-      `, [id]);
+      `;
+      
+      console.log(`📋 Executing items query: ${itemsQuery}`);
+      const itemsResult = await pool.query(itemsQuery, [id]);
       
       order.items = itemsResult.rows;
+      console.log(`✅ Found ${order.items.length} items for order ${id}`);
+      
       return order;
     } catch (error) {
-      console.error('Error fetching order by ID:', error);
+      console.error(`❌ Error fetching order by ID ${id}:`, error);
       throw error;
     }
   }
