@@ -4,16 +4,26 @@
 // Generate Payment Receipt for an Order
 async function generatePaymentReceipt(orderId, paymentDetails = {}) {
   try {
-    console.log('Generating payment receipt for order ID:', orderId);
+    console.log('💳 Generating payment receipt for order ID:', orderId);
     
     // Fetch complete order details
     const response = await fetch(`/api/orders/${orderId}`);
     if (!response.ok) {
-      throw new Error('Failed to fetch order details');
+      throw new Error(`Failed to fetch order details: ${response.status} ${response.statusText}`);
     }
     
     const orderData = await response.json();
-    console.log('Order data for payment receipt:', orderData);
+    console.log('📊 Order data fetched for payment receipt:', orderData);
+    
+    // Validate that we have customer information
+    if (!orderData.customer_name) {
+      console.warn('⚠️ No customer name found in order data, using fallback');
+      orderData.customer_name = 'Unknown Customer';
+    }
+    if (!orderData.phone) {
+      console.warn('⚠️ No phone found in order data');
+      orderData.phone = 'Not provided';
+    }
     
     // Initialize jsPDF
     const { jsPDF } = window.jspdf;
@@ -62,6 +72,10 @@ async function generatePaymentReceipt(orderId, paymentDetails = {}) {
     }
     doc.text(`Phone: ${orderData.phone}`, 25, yPos);
     yPos += 6;
+    if (orderData.address) {
+      doc.text(`Address: ${orderData.address}`, 25, yPos);
+      yPos += 6;
+    }
     if (orderData.company) {
       doc.text(`Company: ${orderData.company}`, 25, yPos);
       yPos += 6;
@@ -183,8 +197,11 @@ async function generatePaymentReceipt(orderId, paymentDetails = {}) {
     
     // Generate filename and save
     const receiptDate = new Date().toISOString().split('T')[0];
-    const safeCustomerName = orderData.customer_name.replace(/[^a-zA-Z0-9]/g, '_');
-    const filename = `ASTRO-BSM_Payment_Receipt_${orderId}_${safeCustomerName}_${receiptDate}.pdf`;
+    const customerNameForFile = orderData.customer_name || 'Unknown_Customer';
+    const safeCustomerName = customerNameForFile.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
+    const filename = `ASTROBSM_Payment_Receipt_${orderId}_${safeCustomerName}_${receiptDate}.pdf`;
+    
+    console.log('💾 Saving payment receipt with filename:', filename);
     
     doc.save(filename);
     

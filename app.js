@@ -2542,14 +2542,23 @@ async function acknowledgeAlert(alertId) {
 // Export order as PDF
 async function exportOrderAsPDF(orderId, customerName) {
   try {
+    console.log('📄 Exporting PDF for Order ID:', orderId, 'Customer:', customerName);
+    
     // Fetch the complete order data
     const response = await fetch(`${API_BASE_URL}/orders/${orderId}`);
     if (!response.ok) {
-      throw new Error('Failed to fetch order data');
+      throw new Error(`Failed to fetch order data: ${response.status} ${response.statusText}`);
     }
     
     const orderData = await response.json();
-    console.log('Order data for PDF:', orderData);
+    console.log('📊 Order data fetched for PDF:', orderData);
+    
+    // Use order data customer name if parameter is missing or invalid
+    const finalCustomerName = customerName && customerName !== 'undefined' && customerName !== 'null' 
+      ? customerName 
+      : orderData.customer_name || 'Unknown_Customer';
+    
+    console.log('📝 Using customer name for PDF:', finalCustomerName);
     
     // Initialize jsPDF
     const { jsPDF } = window.jspdf;
@@ -2705,8 +2714,10 @@ async function exportOrderAsPDF(orderId, customerName) {
     
     // Generate filename and save
     const orderDate = new Date(orderData.created_at).toISOString().split('T')[0];
-    const safeCustomerName = customerName.replace(/[^a-zA-Z0-9]/g, '_');
-    const filename = `ASTRO-BSM_Order_${orderId}_${safeCustomerName}_${orderDate}.pdf`;
+    const safeCustomerName = finalCustomerName.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
+    const filename = `ASTROBSM_Order_${orderId}_${safeCustomerName}_${orderDate}.pdf`;
+    
+    console.log('💾 Saving PDF with filename:', filename);
     
     doc.save(filename);
     
@@ -2731,16 +2742,22 @@ async function exportOrderAsPDF(orderId, customerName) {
 // Generate Invoice for Order ID
 async function generateInvoiceForOrder(orderId) {
   try {
-    console.log('Generating invoice for order ID:', orderId);
+    console.log('🧾 Generating invoice for order ID:', orderId);
     
     // Fetch complete order details with items directly from API
     const response = await fetch(`/api/orders/${orderId}`);
     if (!response.ok) {
-      throw new Error('Failed to fetch order details');
+      throw new Error(`Failed to fetch order details: ${response.status} ${response.statusText}`);
     }
     
     const orderWithItems = await response.json();
-    console.log('Fetched order for invoice:', orderWithItems);
+    console.log('📊 Fetched order data for invoice:', orderWithItems);
+    
+    // Validate that we have customer information
+    if (!orderWithItems.customer_name) {
+      console.warn('⚠️ No customer name found in order data, using fallback');
+      orderWithItems.customer_name = 'Unknown Customer';
+    }
     
     generateInvoice(orderWithItems);
     
@@ -2937,8 +2954,12 @@ function generateInvoiceContent(pdf, order) {
   pdf.text('For inquiries, contact us at info@astro-bsm.com', 105, yPos, null, null, 'center');
   
   // Save PDF with customer name
-  const customerName = (order.customer_name || 'Customer').replace(/[^a-zA-Z0-9]/g, '_');
-  const fileName = `Invoice_${customerName}_${order.id || 'N/A'}.pdf`;
+  const customerName = order.customer_name || 'Unknown_Customer';
+  const safeCustomerName = customerName.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
+  const invoiceDate = new Date().toISOString().split('T')[0];
+  const fileName = `ASTROBSM_Invoice_${order.id || 'N/A'}_${safeCustomerName}_${invoiceDate}.pdf`;
+  
+  console.log('💾 Saving invoice with filename:', fileName);
   pdf.save(fileName);
   
   // Mark notification as invoice generated
