@@ -35,10 +35,12 @@
   animation: pulse-scale 2s infinite ease-in-out;
 }
 
-.splash-logo img {
+.splash-logo img,
+.splash-logo-image {
   width: 80px;
   height: 80px;
   object-fit: contain;
+  border-radius: 8px;
 }
 
 .splash-logo-fallback {

@@ -29,21 +29,34 @@ async function generatePaymentReceipt(orderId, paymentDetails = {}) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
-    // Receipt Header
-    doc.setFontSize(24);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(40, 40, 40);
-    doc.text('PAYMENT RECEIPT', 105, 25, null, null, 'center');
+    // Load and add company logo
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
     
-    // Company information
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.text('ASTRO-BSM PROFESSIONAL MEDICAL SUPPLIES', 105, 40, null, null, 'center');
+    const generateReceiptContent = () => {
+      // Add logo to PDF (top left corner)
+      try {
+        doc.addImage(img, 'PNG', 15, 15, 25, 25);
+        console.log('✅ Company logo added to payment receipt');
+      } catch (logoError) {
+        console.warn('⚠️ Could not add logo to payment receipt:', logoError.message);
+      }
+      
+      // Receipt Header with logo (adjusted for logo space)
+      doc.setFontSize(24);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(40, 40, 40);
+      doc.text('PAYMENT RECEIPT', 105, 25, null, null, 'center');
+      
+      // Company information (adjusted positioning)
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('ASTRO-BSM PROFESSIONAL MEDICAL SUPPLIES', 105, 35, null, null, 'center');
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100, 100, 100);
-    doc.text('Medical Equipment • Laboratory Supplies • Healthcare Solutions', 105, 50, null, null, 'center');
+    doc.text('Medical Equipment • Laboratory Supplies • Healthcare Solutions', 105, 45, null, null, 'center');
     
     // Receipt details
     doc.setFontSize(12);
@@ -59,27 +72,34 @@ async function generatePaymentReceipt(orderId, paymentDetails = {}) {
     doc.text(`Order #: ${orderId}`, 20, yPos);
     
     // Customer information
-    yPos += 15;
-    doc.setFont('helvetica', 'bold');
-    doc.text('RECEIVED FROM:', 20, yPos);
-    doc.setFont('helvetica', 'normal');
-    yPos += 8;
-    doc.text(`Name: ${orderData.customer_name}`, 25, yPos);
-    yPos += 6;
-    if (orderData.email) {
-      doc.text(`Email: ${orderData.email}`, 25, yPos);
+      yPos += 15;
+      doc.setFont('helvetica', 'bold');
+      doc.text('RECEIVED FROM:', 20, yPos);
+      doc.setFont('helvetica', 'normal');
+      yPos += 8;
+      
+      // Customer Name (always show)
+      doc.text(`Name: ${orderData.customer_name}`, 25, yPos);
       yPos += 6;
-    }
-    doc.text(`Phone: ${orderData.phone}`, 25, yPos);
-    yPos += 6;
-    if (orderData.address) {
-      doc.text(`Address: ${orderData.address}`, 25, yPos);
+      
+      // Customer Email (show even if empty for completeness)
+      doc.text(`Email: ${orderData.email || 'Not provided'}`, 25, yPos);
       yPos += 6;
-    }
-    if (orderData.company) {
-      doc.text(`Company: ${orderData.company}`, 25, yPos);
+      
+      // Customer Phone (always show)
+      doc.text(`Phone: ${orderData.phone}`, 25, yPos);
       yPos += 6;
-    }
+      
+      // Customer Address (show even if empty for completeness)
+      const customerAddress = orderData.address || orderData.delivery_address || 'Address not provided';
+      doc.text(`Address: ${customerAddress}`, 25, yPos);
+      yPos += 6;
+      
+      // Company (if available)
+      if (orderData.company) {
+        doc.text(`Company: ${orderData.company}`, 25, yPos);
+        yPos += 6;
+      }
     
     // Payment details
     yPos += 10;
@@ -201,12 +221,27 @@ async function generatePaymentReceipt(orderId, paymentDetails = {}) {
     const safeCustomerName = customerNameForFile.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
     const filename = `ASTROBSM_Payment_Receipt_${orderId}_${safeCustomerName}_${receiptDate}.pdf`;
     
-    console.log('💾 Saving payment receipt with filename:', filename);
-    
-    doc.save(filename);
-    
-    console.log('Payment receipt generated successfully:', filename);
-    return true;
+      console.log('💾 Saving payment receipt with filename:', filename);
+      
+      doc.save(filename);
+      
+      console.log('Payment receipt generated successfully:', filename);
+      return true;
+    };
+
+    // Image loading logic
+    img.onload = function() {
+      console.log('✅ Company logo loaded successfully for payment receipt');
+      generateReceiptContent();
+    };
+
+    img.onerror = function() {
+      console.warn('⚠️ Company logo failed to load, generating receipt without logo');
+      generateReceiptContent();
+    };
+
+    // Try to load the logo
+    img.src = '/public/company_logo.PNG';
     
   } catch (error) {
     console.error('Error generating payment receipt:', error);

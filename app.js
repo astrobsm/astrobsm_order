@@ -2828,10 +2828,25 @@ function generateInvoiceContent(pdf, order) {
   pdf.setFont(undefined, 'bold');
   pdf.text('Bill To:', 20, 120);
   pdf.setFont(undefined, 'normal');
-  pdf.text(`${order.customer_name || 'N/A'}`, 20, 130);
-  pdf.text(`${order.email || 'N/A'}`, 20, 140);
-  pdf.text(`${order.phone || 'N/A'}`, 20, 150);
-  pdf.text(`${order.address || 'N/A'}`, 20, 160);
+  
+  // Customer Name
+  const invoiceCustomerName = order.customer_name || 'Customer Name Not Provided';
+  pdf.text(`Name: ${invoiceCustomerName}`, 20, 130);
+  
+  // Customer Email
+  if (order.email) {
+    pdf.text(`Email: ${order.email}`, 20, 140);
+  } else {
+    pdf.text('Email: Not provided', 20, 140);
+  }
+  
+  // Customer Phone
+  const phone = order.phone || 'Phone not provided';
+  pdf.text(`Phone: ${phone}`, 20, 150);
+  
+  // Customer Address
+  const address = order.address || order.delivery_address || 'Address not provided';
+  pdf.text(`Address: ${address}`, 20, 160);
   
   // Order Items Table Header
   pdf.setFont(undefined, 'bold');
@@ -3401,7 +3416,9 @@ function showSplashScreen() {
   const splashHTML = `
     <div id="splashScreen" class="splash-screen">
       <div class="splash-logo">
-        <div class="splash-logo-fallback">AB</div>
+        <img src="/public/company_logo.PNG" alt="ASTRO-BSM Logo" class="splash-logo-image" 
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+        <div class="splash-logo-fallback" style="display: none;">AB</div>
       </div>
       <h1 class="splash-title">ASTRO-BSM</h1>
       <p class="splash-subtitle">Professional Order Management</p>
