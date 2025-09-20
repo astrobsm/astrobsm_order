@@ -1736,10 +1736,17 @@ async function loadAllOrders() {
     
     const response = await fetch(`${API_BASE_URL}/orders`);
     if (!response.ok) {
-      throw new Error('Failed to fetch orders');
+      if (response.status === 404) {
+        throw new Error('Orders endpoint not found');
+      } else if (response.status >= 500) {
+        throw new Error('Server error - please try again later');
+      } else {
+        throw new Error(`Failed to fetch orders (${response.status})`);
+      }
     }
     
     const orders = await response.json();
+    console.log(`📊 Successfully loaded ${orders.length} orders`);
     
     // Store orders globally for invoice generation
     window.currentOrders = orders;
@@ -1766,9 +1773,18 @@ async function loadAllOrders() {
     
     let ordersHtml = '';
     for (const order of orders) {
-      // Fetch order items
-      const itemsResponse = await fetch(`${API_BASE_URL}/orders/${order.id}`);
-      const orderWithItems = await itemsResponse.json();
+      // Fetch order items with error handling
+      let orderWithItems = { items: [] };
+      try {
+        const itemsResponse = await fetch(`${API_BASE_URL}/orders/${order.id}`);
+        if (itemsResponse.ok) {
+          orderWithItems = await itemsResponse.json();
+        } else {
+          console.warn(`Failed to fetch items for order ${order.id}:`, itemsResponse.status);
+        }
+      } catch (itemsError) {
+        console.warn(`Error fetching items for order ${order.id}:`, itemsError.message);
+      }
       
       ordersHtml += `
         <div class="order-card" id="order-${order.id}">
@@ -3352,8 +3368,7 @@ function showSplashScreen() {
   const splashHTML = `
     <div id="splashScreen" class="splash-screen">
       <div class="splash-logo">
-        <img src="/public/company_logo.PNG" alt="ASTRO-BSM" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-        <div class="splash-logo-fallback" style="display: none;">AB</div>
+        <div class="splash-logo-fallback">AB</div>
       </div>
       <h1 class="splash-title">ASTRO-BSM</h1>
       <p class="splash-subtitle">Professional Order Management</p>

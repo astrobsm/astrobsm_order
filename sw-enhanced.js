@@ -166,6 +166,23 @@ async function networkFirstWithCache(request, cacheName) {
       });
     }
     
+    if (request.url.includes('/api/orders')) {
+      // For orders API, return appropriate offline response
+      if (request.url.includes('/api/orders/') && request.url.split('/').length > 5) {
+        // Individual order request
+        return new Response(JSON.stringify({ error: 'Order not available offline' }), {
+          headers: { 'Content-Type': 'application/json' },
+          status: 404
+        });
+      } else {
+        // Orders list request
+        return new Response(JSON.stringify([]), {
+          headers: { 'Content-Type': 'application/json' },
+          status: 200
+        });
+      }
+    }
+    
     throw error;
   }
 }
