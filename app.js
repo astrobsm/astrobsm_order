@@ -3352,7 +3352,7 @@ function showSplashScreen() {
   const splashHTML = `
     <div id="splashScreen" class="splash-screen">
       <div class="splash-logo">
-        <img src="/astro-logo.png" alt="ASTRO-BSM" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+        <img src="/public/company_logo.PNG" alt="ASTRO-BSM" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
         <div class="splash-logo-fallback" style="display: none;">AB</div>
       </div>
       <h1 class="splash-title">ASTRO-BSM</h1>
@@ -3443,14 +3443,21 @@ function initializePushNotifications() {
       if (permission === 'granted') {
         console.log('✅ Notification permission granted');
         
-        // Subscribe to push notifications
+        // Subscribe to push notifications (when VAPID keys are available)
         navigator.serviceWorker.ready.then(registration => {
-          return registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: null // Would be set with VAPID key in production
-          });
+          // Check if push subscription already exists
+          return registration.pushManager.getSubscription();
+        }).then(subscription => {
+          if (!subscription) {
+            console.log('📢 Push notifications ready (VAPID key required for production)');
+            // In production, you would add VAPID key here:
+            // return registration.pushManager.subscribe({
+            //   userVisibleOnly: true,
+            //   applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+            // });
+          }
         }).catch(error => {
-          console.log('Push subscription failed:', error);
+          console.log('📢 Push notifications will be enabled when VAPID keys are configured');
         });
       } else {
         console.log('❌ Notification permission denied');

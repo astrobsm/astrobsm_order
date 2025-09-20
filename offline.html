@@ -229,7 +229,7 @@
             </ul>
         </div>
 
-        <button class="retry-button" onclick="checkConnection()">
+        <button class="retry-button" id="retryButton">
             Check Connection
         </button>
         
@@ -243,9 +243,17 @@
     </div>
 
     <script>
+        // Add event listener for retry button
+        document.addEventListener('DOMContentLoaded', function() {
+            const retryButton = document.getElementById('retryButton');
+            if (retryButton) {
+                retryButton.addEventListener('click', checkConnection);
+            }
+        });
+
         function checkConnection() {
             const status = document.getElementById('connectionStatus');
-            const button = document.querySelector('.retry-button');
+            const button = document.getElementById('retryButton');
             
             button.textContent = 'Checking...';
             button.disabled = true;

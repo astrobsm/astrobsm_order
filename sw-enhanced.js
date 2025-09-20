@@ -17,7 +17,6 @@ const STATIC_ASSETS = [
   '/offline.html',
   '/icon-192.png',
   '/icon-512.png',
-  '/astro-logo.png',
   '/thermal-print.css',
   '/public/company_logo.PNG'
 ];
