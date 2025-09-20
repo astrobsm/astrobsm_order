@@ -96,7 +96,12 @@ class Order {
         if (orderItemsColumns.includes('unit_price')) {
           itemColumnsToInsert.push('unit_price');
           itemValuesToInsert.push(price);
+        } else if (orderItemsColumns.includes('price')) {
+          // Some schemas use 'price' instead of 'unit_price'
+          itemColumnsToInsert.push('price');
+          itemValuesToInsert.push(price);
         }
+        
         if (orderItemsColumns.includes('subtotal')) {
           itemColumnsToInsert.push('subtotal');
           itemValuesToInsert.push(itemSubtotal);
