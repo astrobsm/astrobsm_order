@@ -119,45 +119,70 @@ router.post('/', async (req, res) => {
         WHERE id = $2
       `, [newStock, item.product_id]);
 
-      // Record stock movement (dynamic based on available columns)
+      // Record stock movement (try different approaches for compatibility)
       try {
-        const stockMovementColumnsResult = await client.query(`
-          SELECT column_name 
-          FROM information_schema.columns 
-          WHERE table_name = 'stock_movements' AND table_schema = 'public'
+        // First, check if stock_movements table exists and what columns it has
+        const tableExistsResult = await client.query(`
+          SELECT EXISTS (
+            SELECT 1 FROM information_schema.tables 
+            WHERE table_name = 'stock_movements' AND table_schema = 'public'
+          )
         `);
-        const stockMovementColumns = stockMovementColumnsResult.rows.map(row => row.column_name);
         
-        // Build dynamic INSERT for stock_movements
-        const stockColumnsToInsert = ['product_id', 'movement_type', 'quantity'];
-        const stockValuesToInsert = [item.product_id, 'OUT', item.quantity];
-        
-        // Add optional columns if they exist
-        if (stockMovementColumns.includes('reason')) {
-          stockColumnsToInsert.push('reason');
-          stockValuesToInsert.push(`Stock deduction for order #${order.id}`);
+        if (tableExistsResult.rows[0].exists) {
+          const stockMovementColumnsResult = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'stock_movements' AND table_schema = 'public'
+          `);
+          const stockMovementColumns = stockMovementColumnsResult.rows.map(row => row.column_name);
+          console.log('📋 Available stock_movements columns:', stockMovementColumns);
+          
+          // Minimum required columns
+          if (stockMovementColumns.includes('product_id') && stockMovementColumns.includes('quantity')) {
+            // Build dynamic INSERT for stock_movements
+            const stockColumnsToInsert = ['product_id', 'quantity'];
+            const stockValuesToInsert = [item.product_id, item.quantity];
+            
+            // Add movement_type if it exists
+            if (stockMovementColumns.includes('movement_type')) {
+              stockColumnsToInsert.push('movement_type');
+              stockValuesToInsert.push('OUT');
+            }
+            
+            // Add optional columns if they exist
+            if (stockMovementColumns.includes('reason')) {
+              stockColumnsToInsert.push('reason');
+              stockValuesToInsert.push(`Stock deduction for order #${order.id}`);
+            }
+            if (stockMovementColumns.includes('previous_stock')) {
+              stockColumnsToInsert.push('previous_stock');
+              stockValuesToInsert.push(current_stock);
+            }
+            if (stockMovementColumns.includes('new_stock')) {
+              stockColumnsToInsert.push('new_stock');
+              stockValuesToInsert.push(newStock);
+            }
+            if (stockMovementColumns.includes('reference_type')) {
+              stockColumnsToInsert.push('reference_type');
+              stockValuesToInsert.push('ORDER');
+            }
+            if (stockMovementColumns.includes('reference_id')) {
+              stockColumnsToInsert.push('reference_id');
+              stockValuesToInsert.push(order.id);
+            }
+            
+            const stockMovementSQL = `INSERT INTO stock_movements (${stockColumnsToInsert.join(', ')}) VALUES (${stockColumnsToInsert.map((_, i) => `$${i + 1}`).join(', ')})`;
+            console.log('📋 Stock Movement INSERT SQL:', stockMovementSQL, 'Values:', stockValuesToInsert);
+            
+            await client.query(stockMovementSQL, stockValuesToInsert);
+            console.log('✅ Stock movement recorded successfully');
+          } else {
+            console.log('⚠️ Stock movements table exists but lacks required columns, skipping...');
+          }
+        } else {
+          console.log('⚠️ Stock movements table does not exist, skipping tracking...');
         }
-        if (stockMovementColumns.includes('previous_stock')) {
-          stockColumnsToInsert.push('previous_stock');
-          stockValuesToInsert.push(current_stock);
-        }
-        if (stockMovementColumns.includes('new_stock')) {
-          stockColumnsToInsert.push('new_stock');
-          stockValuesToInsert.push(newStock);
-        }
-        if (stockMovementColumns.includes('reference_type')) {
-          stockColumnsToInsert.push('reference_type');
-          stockValuesToInsert.push('ORDER');
-        }
-        if (stockMovementColumns.includes('reference_id')) {
-          stockColumnsToInsert.push('reference_id');
-          stockValuesToInsert.push(order.id);
-        }
-        
-        const stockMovementSQL = `INSERT INTO stock_movements (${stockColumnsToInsert.join(', ')}) VALUES (${stockColumnsToInsert.map((_, i) => `$${i + 1}`).join(', ')})`;
-        console.log('📋 Stock Movement INSERT SQL:', stockMovementSQL, 'Values:', stockValuesToInsert);
-        
-        await client.query(stockMovementSQL, stockValuesToInsert);
       } catch (stockError) {
         console.log('⚠️ Stock movement tracking failed (non-critical):', stockError.message);
         // Don't fail the entire order if stock movement tracking fails
