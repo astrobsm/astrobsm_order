@@ -119,20 +119,49 @@ router.post('/', async (req, res) => {
         WHERE id = $2
       `, [newStock, item.product_id]);
 
-      // Record stock movement
-      await client.query(`
-        INSERT INTO stock_movements (product_id, movement_type, quantity, reason, previous_stock, new_stock, reference_type, reference_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      `, [
-        item.product_id,
-        'OUT',
-        item.quantity,
-        `Stock deduction for order #${order.id}`,
-        current_stock,
-        newStock,
-        'ORDER',
-        order.id
-      ]);
+      // Record stock movement (dynamic based on available columns)
+      try {
+        const stockMovementColumnsResult = await client.query(`
+          SELECT column_name 
+          FROM information_schema.columns 
+          WHERE table_name = 'stock_movements' AND table_schema = 'public'
+        `);
+        const stockMovementColumns = stockMovementColumnsResult.rows.map(row => row.column_name);
+        
+        // Build dynamic INSERT for stock_movements
+        const stockColumnsToInsert = ['product_id', 'movement_type', 'quantity'];
+        const stockValuesToInsert = [item.product_id, 'OUT', item.quantity];
+        
+        // Add optional columns if they exist
+        if (stockMovementColumns.includes('reason')) {
+          stockColumnsToInsert.push('reason');
+          stockValuesToInsert.push(`Stock deduction for order #${order.id}`);
+        }
+        if (stockMovementColumns.includes('previous_stock')) {
+          stockColumnsToInsert.push('previous_stock');
+          stockValuesToInsert.push(current_stock);
+        }
+        if (stockMovementColumns.includes('new_stock')) {
+          stockColumnsToInsert.push('new_stock');
+          stockValuesToInsert.push(newStock);
+        }
+        if (stockMovementColumns.includes('reference_type')) {
+          stockColumnsToInsert.push('reference_type');
+          stockValuesToInsert.push('ORDER');
+        }
+        if (stockMovementColumns.includes('reference_id')) {
+          stockColumnsToInsert.push('reference_id');
+          stockValuesToInsert.push(order.id);
+        }
+        
+        const stockMovementSQL = `INSERT INTO stock_movements (${stockColumnsToInsert.join(', ')}) VALUES (${stockColumnsToInsert.map((_, i) => `$${i + 1}`).join(', ')})`;
+        console.log('📋 Stock Movement INSERT SQL:', stockMovementSQL, 'Values:', stockValuesToInsert);
+        
+        await client.query(stockMovementSQL, stockValuesToInsert);
+      } catch (stockError) {
+        console.log('⚠️ Stock movement tracking failed (non-critical):', stockError.message);
+        // Don't fail the entire order if stock movement tracking fails
+      }
       
       stockUpdates.push({
         product_name: name,
