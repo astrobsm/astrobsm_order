@@ -86,6 +86,12 @@ class Order {
         const itemColumnsToInsert = ['order_id', 'product_id', 'quantity'];
         const itemValuesToInsert = [order.id, product.id, quantity];
         
+        // Add product_name if the column exists (critical for production)
+        if (orderItemsColumns.includes('product_name')) {
+          itemColumnsToInsert.push('product_name');
+          itemValuesToInsert.push(product.name);
+        }
+        
         // Add optional columns if they exist
         if (orderItemsColumns.includes('unit_price')) {
           itemColumnsToInsert.push('unit_price');
