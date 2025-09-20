@@ -55,21 +55,23 @@ async function finalProductionTest() {
     
     console.log('👤 Step 3: Testing Customer Creation...');
     
-    // Create test order data
+    // Create test order data in correct format
     const testOrderData = {
       userRole: 'sales_staff',
-      customer: {
+      customerData: {
         name: 'Final Test Customer',
         phone: '08099887766',
         address: 'Test Address, Lagos'
       },
+      orderData: {
+        delivery_route: 'Lagos Mainland',
+        preferred_delivery_method: 'Pick-up',
+        request_status: 'pending'
+      },
       items: [{
         product_name: testProduct.name,
         quantity: 2
-      }],
-      delivery_route: 'Lagos Mainland',
-      preferred_delivery_method: 'Pick-up',
-      request_status: 'pending'
+      }]
     };
     
     console.log('🚀 Step 4: Submitting Complete Order...');
