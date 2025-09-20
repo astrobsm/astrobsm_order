@@ -3346,18 +3346,188 @@ function getStockAlertNotificationText(alertLevel) {
   }
 }
 
-// PWA: Register service worker
+// 🎨 SPLASH SCREEN FUNCTIONALITY
+function showSplashScreen() {
+  // Create splash screen HTML
+  const splashHTML = `
+    <div id="splashScreen" class="splash-screen">
+      <div class="splash-logo">
+        <img src="/astro-logo.png" alt="ASTRO-BSM" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+        <div class="splash-logo-fallback" style="display: none;">AB</div>
+      </div>
+      <h1 class="splash-title">ASTRO-BSM</h1>
+      <p class="splash-subtitle">Professional Order Management</p>
+      <div class="splash-loader"></div>
+      <p class="splash-status">Loading application...</p>
+    </div>
+  `;
+  
+  // Add splash screen to page
+  document.body.insertAdjacentHTML('afterbegin', splashHTML);
+  
+  // Load splash screen CSS
+  const splashCSS = document.createElement('link');
+  splashCSS.rel = 'stylesheet';
+  splashCSS.href = '/splash.css';
+  document.head.appendChild(splashCSS);
+}
+
+function hideSplashScreen() {
+  const splash = document.getElementById('splashScreen');
+  if (splash) {
+    splash.classList.add('fade-out');
+    setTimeout(() => {
+      splash.remove();
+    }, 500);
+  }
+}
+
+// Show splash screen immediately if app is being loaded for first time
+if (!window.splashShown && document.readyState === 'loading') {
+  window.splashShown = true;
+  showSplashScreen();
+  
+  // Hide splash screen when app is fully loaded
+  window.addEventListener('load', () => {
+    setTimeout(hideSplashScreen, 1500); // Show for at least 1.5 seconds
+  });
+}
+
+// PWA: Register enhanced service worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js')
+    navigator.serviceWorker.register('sw-enhanced.js')
       .then(registration => {
-        console.log('SW registered: ', registration);
+        console.log('🚀 Enhanced SW registered: ', registration);
+        
+        // Listen for service worker updates
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New service worker is available
+              console.log('🔄 New app version available');
+              showUpdateNotification();
+            }
+          });
+        });
+        
       })
       .catch(registrationError => {
-        console.log('SW registration failed: ', registrationError);
+        console.log('❌ Enhanced SW registration failed: ', registrationError);
+        // Fallback to old service worker
+        navigator.serviceWorker.register('sw.js')
+          .then(reg => console.log('📱 Fallback SW registered:', reg))
+          .catch(err => console.log('❌ Fallback SW failed:', err));
       });
   });
 }
+
+// Show update notification when new version is available
+function showUpdateNotification() {
+  if (window.showNotification) {
+    showNotification('🔄 App Update Available', 'A new version is ready. Refresh to update.', 'info');
+  } else {
+    // Fallback notification
+    if (confirm('🔄 App Update Available\n\nA new version is ready. Refresh to update?')) {
+      window.location.reload();
+    }
+  }
+}
+
+// 📢 ENHANCED PUSH NOTIFICATIONS
+function initializePushNotifications() {
+  if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
+    // Request notification permission
+    Notification.requestPermission().then(permission => {
+      if (permission === 'granted') {
+        console.log('✅ Notification permission granted');
+        
+        // Subscribe to push notifications
+        navigator.serviceWorker.ready.then(registration => {
+          return registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: null // Would be set with VAPID key in production
+          });
+        }).catch(error => {
+          console.log('Push subscription failed:', error);
+        });
+      } else {
+        console.log('❌ Notification permission denied');
+      }
+    });
+  }
+}
+
+// Initialize push notifications after app loads
+setTimeout(initializePushNotifications, 3000);
+
+// 🚀 PWA SHORTCUT ACTIONS HANDLER
+function handlePWAShortcuts() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const action = urlParams.get('action');
+  
+  if (action) {
+    console.log('🎯 PWA Shortcut action:', action);
+    
+    // Wait for app to initialize
+    setTimeout(() => {
+      switch (action) {
+        case 'new-order':
+          // Focus on product search or scroll to order form
+          const productSearch = document.getElementById('productSearch');
+          if (productSearch) {
+            productSearch.focus();
+            productSearch.scrollIntoView({ behavior: 'smooth' });
+          }
+          showNotification('📝 Ready for New Order', 'Start typing to search for products', 'info');
+          break;
+          
+        case 'view-orders':
+          // Show orders section
+          const ordersTab = document.querySelector('[data-section="orders"]');
+          if (ordersTab) {
+            ordersTab.click();
+          }
+          showNotification('📋 Orders View', 'Displaying all orders', 'info');
+          break;
+          
+        case 'manage-products':
+          // Check permissions and show product management
+          if (window.currentUserRole && hasPermission('manage_products')) {
+            const productsTab = document.querySelector('[data-section="products"]');
+            if (productsTab) {
+              productsTab.click();
+            }
+            showNotification('📦 Product Management', 'Manage your product inventory', 'info');
+          } else {
+            showNotification('❌ Access Denied', 'You don\'t have permission to manage products', 'error');
+          }
+          break;
+          
+        case 'stock-intake':
+          // Check permissions and show stock intake
+          if (window.currentUserRole && hasPermission('manage_stock')) {
+            const stockTab = document.querySelector('[data-section="stock"]');
+            if (stockTab) {
+              stockTab.click();
+            }
+            showNotification('📈 Stock Intake', 'Record new stock arrivals', 'info');
+          } else {
+            showNotification('❌ Access Denied', 'You don\'t have permission to manage stock', 'error');
+          }
+          break;
+      }
+      
+      // Clear the action parameter from URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }, 2000);
+  }
+}
+
+// Initialize PWA shortcut handler
+document.addEventListener('DOMContentLoaded', handlePWAShortcuts);
 
 // PWA Install Functionality
 let deferredPrompt;

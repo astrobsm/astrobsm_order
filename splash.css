@@ -1,0 +1,163 @@
+/* 🎨 SPLASH SCREEN STYLES - Professional app startup experience */
+
+.splash-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  opacity: 1;
+  transition: opacity 0.5s ease-out;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.splash-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.splash-logo {
+  width: 120px;
+  height: 120px;
+  background: white;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  animation: pulse-scale 2s infinite ease-in-out;
+}
+
+.splash-logo img {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
+.splash-logo-fallback {
+  font-size: 36px;
+  font-weight: bold;
+  color: #007bff;
+  text-align: center;
+  line-height: 1;
+}
+
+.splash-title {
+  color: white;
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  text-align: center;
+  letter-spacing: -0.5px;
+}
+
+.splash-subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 16px;
+  font-weight: 400;
+  margin: 0 0 32px 0;
+  text-align: center;
+}
+
+.splash-loader {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top: 3px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.splash-status {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  margin-top: 16px;
+  text-align: center;
+}
+
+/* Animations */
+@keyframes pulse-scale {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.splash-title {
+  animation: fadeInUp 0.8s ease-out 0.3s both;
+}
+
+.splash-subtitle {
+  animation: fadeInUp 0.8s ease-out 0.5s both;
+}
+
+.splash-loader {
+  animation: fadeInUp 0.8s ease-out 0.7s both, spin 1s linear infinite 1.5s;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .splash-logo {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .splash-logo img {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .splash-logo-fallback {
+    font-size: 30px;
+  }
+  
+  .splash-title {
+    font-size: 24px;
+    padding: 0 20px;
+  }
+  
+  .splash-subtitle {
+    font-size: 14px;
+    padding: 0 20px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .splash-screen {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .splash-screen * {
+    animation-duration: 0.1s !important;
+    animation-iteration-count: 1 !important;
+  }
+}

@@ -1,16 +1,21 @@
 {
-  "name": "ASTRO-BSM Product Order",
+  "name": "ASTRO-BSM Professional Order Management",
   "short_name": "ASTRO-BSM",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait-primary",
+  "orientation": "portrait-primary", 
   "background_color": "#f7f7f7",
   "theme_color": "#007bff",
-  "description": "Order products from ASTRO-BSM with ease. Professional ordering system for mobile and desktop.",
-  "categories": ["business", "productivity"],
+  "description": "Professional order management system for ASTRO-BSM. Place orders, manage inventory, and track sales with offline capability.",
+  "categories": ["business", "productivity", "shopping"],
   "lang": "en",
   "dir": "ltr",
+  "prefer_related_applications": false,
+  "display_override": ["standalone", "minimal-ui"],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
   "icons": [
     {
       "src": "icon-192.png",
@@ -36,10 +41,46 @@
   ],
   "shortcuts": [
     {
-      "name": "New Order",
-      "short_name": "Order",
-      "description": "Create a new product order",
-      "url": "/",
+      "name": "Place New Order",
+      "short_name": "New Order",
+      "description": "Quickly create a new product order",
+      "url": "/?action=new-order",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "View Orders",
+      "short_name": "Orders",
+      "description": "View and manage existing orders",
+      "url": "/?action=view-orders",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Manage Products",
+      "short_name": "Products",
+      "description": "Add and update product inventory",
+      "url": "/?action=manage-products",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Stock Intake",
+      "short_name": "Stock",
+      "description": "Record new stock arrivals",
+      "url": "/?action=stock-intake",
       "icons": [
         {
           "src": "icon-192.png",

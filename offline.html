@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - ASTRO-BSM Order System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .offline-container {
+            text-align: center;
+            max-width: 500px;
+            background: white;
+            border-radius: 16px;
+            padding: 40px 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .offline-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: #ffeaa7;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+        }
+
+        .offline-title {
+            color: #2d3436;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .offline-message {
+            color: #636e72;
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 32px;
+        }
+
+        .offline-features {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+            text-align: left;
+        }
+
+        .offline-features h3 {
+            color: #2d3436;
+            font-size: 18px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-list li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            color: #636e72;
+            font-size: 14px;
+        }
+
+        .feature-list li:before {
+            content: "✓";
+            color: #00b894;
+            font-weight: bold;
+            margin-right: 12px;
+            width: 16px;
+            text-align: center;
+        }
+
+        .retry-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-right: 12px;
+        }
+
+        .retry-button:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+
+        .retry-button:active {
+            transform: translateY(0);
+        }
+
+        .home-button {
+            background: transparent;
+            color: #007bff;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            padding: 10px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .home-button:hover {
+            background: #007bff;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .connection-status {
+            margin-top: 24px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .connection-offline {
+            background: #ffeaa7;
+            color: #e17055;
+        }
+
+        .connection-online {
+            background: #d1f2eb;
+            color: #00b894;
+        }
+
+        .logo-container {
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto;
+            background: #007bff;
+            color: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        @media (max-width: 480px) {
+            .offline-container {
+                padding: 30px 20px;
+            }
+            
+            .offline-title {
+                font-size: 24px;
+            }
+            
+            .retry-button, .home-button {
+                display: block;
+                width: 100%;
+                margin: 8px 0;
+            }
+        }
+
+        /* Animations */
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .offline-container {
+            animation: slideInUp 0.6s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="logo-container">
+            <div class="logo">AB</div>
+        </div>
+        
+        <div class="offline-icon">📡</div>
+        
+        <h1 class="offline-title">You're Offline</h1>
+        
+        <p class="offline-message">
+            Don't worry! The ASTRO-BSM Order System works offline too. 
+            You can still browse products and prepare orders.
+        </p>
+
+        <div class="offline-features">
+            <h3>What you can do offline:</h3>
+            <ul class="feature-list">
+                <li>Browse all products and prices</li>
+                <li>Calculate order totals</li>
+                <li>Prepare customer information</li>
+                <li>View previously loaded orders</li>
+                <li>Access contact information</li>
+            </ul>
+        </div>
+
+        <button class="retry-button" onclick="checkConnection()">
+            Check Connection
+        </button>
+        
+        <a href="/" class="home-button">
+            Continue Offline
+        </a>
+
+        <div id="connectionStatus" class="connection-status connection-offline">
+            📴 No internet connection detected
+        </div>
+    </div>
+
+    <script>
+        function checkConnection() {
+            const status = document.getElementById('connectionStatus');
+            const button = document.querySelector('.retry-button');
+            
+            button.textContent = 'Checking...';
+            button.disabled = true;
+            
+            // Try to fetch a small resource to test connection
+            fetch('/', { mode: 'no-cors', cache: 'no-cache' })
+                .then(() => {
+                    status.textContent = '✅ Connection restored! Redirecting...';
+                    status.className = 'connection-status connection-online';
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1500);
+                })
+                .catch(() => {
+                    status.textContent = '📴 Still offline - try again in a moment';
+                    status.className = 'connection-status connection-offline';
+                    button.textContent = 'Try Again';
+                    button.disabled = false;
+                });
+        }
+
+        // Auto-check connection periodically
+        setInterval(checkConnection, 30000);
+
+        // Listen for online events
+        window.addEventListener('online', () => {
+            const status = document.getElementById('connectionStatus');
+            status.textContent = '✅ Connection restored! Redirecting...';
+            status.className = 'connection-status connection-online';
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1000);
+        });
+
+        window.addEventListener('offline', () => {
+            const status = document.getElementById('connectionStatus');
+            status.textContent = '📴 Connection lost';
+            status.className = 'connection-status connection-offline';
+        });
+    </script>
+</body>
+</html>
