@@ -19,12 +19,17 @@ class Order {
       console.log('📋 Available orders columns:', availableColumns);
       
       // Build dynamic INSERT based on available columns
-      const baseData = { customer_id, request_status: request_status || 'pending' };
-      const optionalData = { delivery_date, delivery_route, preferred_delivery_method };
+      const columnsToInsert = ['customer_id'];
+      const valuesToInsert = [customer_id];
+      let paramIndex = 1;
       
-      const columnsToInsert = ['customer_id', 'request_status'];
-      const valuesToInsert = [customer_id, request_status || 'pending'];
-      let paramIndex = 2;
+      // Add all optional columns including request_status
+      const optionalData = { 
+        request_status: request_status || 'pending',
+        delivery_date, 
+        delivery_route, 
+        preferred_delivery_method 
+      };
       
       // Add optional columns if they exist in the table
       Object.entries(optionalData).forEach(([key, value]) => {
