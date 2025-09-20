@@ -185,54 +185,82 @@ class Order {
   }
 
   static async getAll() {
+    console.log('🔍 Order.getAll() called - fetching orders...');
+    
     try {
-      // First, check what columns exist in the customers table
-      const customersColumnsResult = await pool.query(`
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name = 'customers' AND table_schema = 'public'
-      `);
-      const customerColumns = customersColumnsResult.rows.map(row => row.column_name);
-      console.log('📋 Available customer columns for orders query:', customerColumns);
+      // First, let's check if orders table has any data at all
+      const countResult = await pool.query('SELECT COUNT(*) as count FROM orders');
+      const orderCount = countResult.rows[0].count;
+      console.log(`📊 Total orders in database: ${orderCount}`);
       
-      // Build dynamic query based on available columns
-      let addressColumn = 'NULL as address';
-      if (customerColumns.includes('delivery_address')) {
-        addressColumn = 'c.delivery_address as address';
-      } else if (customerColumns.includes('address')) {
-        addressColumn = 'c.address as address';
-      }
-      
-      const query = `
-        SELECT o.*, c.name as customer_name, c.phone, ${addressColumn}
-        FROM orders o 
-        JOIN customers c ON o.customer_id = c.id 
-        ORDER BY o.created_at DESC
-      `;
-      
-      console.log('📋 Orders query SQL:', query);
-      const result = await pool.query(query);
-      console.log(`📊 Found ${result.rows.length} orders in database`);
-      
-      return result.rows;
-    } catch (error) {
-      console.error('Error fetching all orders:', error);
-      console.error('SQL Error details:', error.message);
-      
-      // Fallback query without customer join if there's an issue
-      try {
-        console.log('🔄 Trying fallback query without customer join...');
-        const fallbackResult = await pool.query(`
-          SELECT o.*, 'Unknown' as customer_name, '' as phone, '' as address
-          FROM orders o 
-          ORDER BY o.created_at DESC
-        `);
-        console.log(`📊 Fallback query found ${fallbackResult.rows.length} orders`);
-        return fallbackResult.rows;
-      } catch (fallbackError) {
-        console.error('Fallback query also failed:', fallbackError.message);
+      if (orderCount === 0) {
+        console.log('ℹ️ No orders in database');
         return [];
       }
+      
+      // Check if customers table exists and has data
+      const customerCountResult = await pool.query('SELECT COUNT(*) as count FROM customers');
+      const customerCount = customerCountResult.rows[0].count;
+      console.log(`📊 Total customers in database: ${customerCount}`);
+      
+      // Try the simplest query first - just orders without JOIN
+      console.log('🔄 Trying simple orders query first...');
+      const simpleResult = await pool.query(`
+        SELECT o.*, 'Loading...' as customer_name, '' as phone, '' as address
+        FROM orders o 
+        ORDER BY o.created_at DESC
+        LIMIT 10
+      `);
+      console.log(`📊 Simple query found ${simpleResult.rows.length} orders`);
+      
+      if (simpleResult.rows.length > 0) {
+        console.log('✅ Simple query works, now trying with customer data...');
+        
+        // Check what columns exist in the customers table
+        const customersColumnsResult = await pool.query(`
+          SELECT column_name 
+          FROM information_schema.columns 
+          WHERE table_name = 'customers' AND table_schema = 'public'
+        `);
+        const customerColumns = customersColumnsResult.rows.map(row => row.column_name);
+        console.log('📋 Available customer columns:', customerColumns);
+        
+        // Build dynamic query based on available columns
+        let addressColumn = 'NULL as address';
+        if (customerColumns.includes('delivery_address')) {
+          addressColumn = 'c.delivery_address as address';
+        } else if (customerColumns.includes('address')) {
+          addressColumn = 'c.address as address';
+        }
+        
+        // Try the JOIN query
+        const joinQuery = `
+          SELECT o.*, 
+                 COALESCE(c.name, 'Unknown Customer') as customer_name, 
+                 COALESCE(c.phone, '') as phone, 
+                 ${addressColumn}
+          FROM orders o 
+          LEFT JOIN customers c ON o.customer_id = c.id 
+          ORDER BY o.created_at DESC
+        `;
+        
+        console.log('📋 Trying JOIN query:', joinQuery);
+        const joinResult = await pool.query(joinQuery);
+        console.log(`📊 JOIN query found ${joinResult.rows.length} orders`);
+        
+        return joinResult.rows;
+      } else {
+        console.log('⚠️ Simple query returned no results despite count > 0');
+        return [];
+      }
+      
+    } catch (error) {
+      console.error('❌ Error in Order.getAll():', error);
+      console.error('SQL Error details:', error.message);
+      
+      // Final fallback - return empty array but log the issue
+      console.log('🔄 All queries failed, returning empty array');
+      return [];
     }
   }
 }
