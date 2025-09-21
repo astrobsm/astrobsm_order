@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const banner = document.createElement('div');
     banner.id = 'pwa-install-banner';
     banner.innerHTML = `
-      <div style="
+      <div class="pwa-banner-content" style="
         position: fixed;
         top: 0;
         left: 0;
@@ -69,30 +69,17 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
         </div>
         <div style="display: flex; align-items: center; gap: 10px;">
-          ${hasPrompt ? `
-            <button onclick="installPWAFromBanner()" style="
-              background: white;
-              color: #007bff;
-              border: none;
-              padding: 8px 16px;
-              border-radius: 20px;
-              font-weight: bold;
-              cursor: pointer;
-              font-size: 14px;
-            ">Install</button>
-          ` : `
-            <button onclick="showManualInstallFromBanner()" style="
-              background: rgba(255,255,255,0.2);
-              color: white;
-              border: 1px solid rgba(255,255,255,0.3);
-              padding: 8px 16px;
-              border-radius: 20px;
-              font-weight: bold;
-              cursor: pointer;
-              font-size: 14px;
-            ">How to Install</button>
-          `}
-          <button onclick="dismissInstallBanner()" style="
+          <button class="pwa-install-btn" data-action="${hasPrompt ? 'install' : 'manual'}" style="
+            background: ${hasPrompt ? 'white' : 'rgba(255,255,255,0.2)'};
+            color: ${hasPrompt ? '#007bff' : 'white'};
+            border: ${hasPrompt ? 'none' : '1px solid rgba(255,255,255,0.3)'};
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+          ">${hasPrompt ? 'Install' : 'How to Install'}</button>
+          <button class="pwa-dismiss-btn" style="
             background: none;
             border: none;
             color: white;
@@ -112,36 +99,76 @@ document.addEventListener('DOMContentLoaded', function() {
     
     document.body.appendChild(banner);
     
+    // Add event listeners using proper event delegation
+    const installBtn = banner.querySelector('.pwa-install-btn');
+    const dismissBtn = banner.querySelector('.pwa-dismiss-btn');
+    
+    if (installBtn) {
+      installBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🔴 Install button clicked!');
+        
+        const action = this.getAttribute('data-action');
+        if (action === 'install') {
+          installPWAFromBanner();
+        } else {
+          showManualInstallFromBanner();
+        }
+      });
+    }
+    
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🔴 Dismiss button clicked!');
+        dismissInstallBanner();
+      });
+    }
+    
     // Adjust page padding to account for banner
     document.body.style.paddingTop = '70px';
+    
+    console.log('✅ Install banner created with event listeners');
   }
   
-  // Install PWA from banner
-  window.installPWAFromBanner = async function() {
+  // Install PWA from banner - make sure it's globally available
+  function installPWAFromBanner() {
+    console.log('🔴 installPWAFromBanner called, installPromptEvent:', !!installPromptEvent);
+    
     if (!installPromptEvent) {
+      console.log('⚠️ No install prompt event, showing manual instructions');
       showManualInstallFromBanner();
       return;
     }
     
     try {
-      await installPromptEvent.prompt();
-      const result = await installPromptEvent.userChoice;
-      
-      if (result.outcome === 'accepted') {
-        console.log('✅ User installed the app from banner!');
-        removeBanner();
-      } else {
-        console.log('❌ User declined installation from banner');
-        dismissInstallBanner(); // Auto-dismiss if declined
-      }
+      console.log('🚀 Triggering install prompt...');
+      installPromptEvent.prompt().then(() => {
+        return installPromptEvent.userChoice;
+      }).then((result) => {
+        console.log('📋 Install result:', result.outcome);
+        
+        if (result.outcome === 'accepted') {
+          console.log('✅ User installed the app from banner!');
+          removeBanner();
+        } else {
+          console.log('❌ User declined installation from banner');
+          dismissInstallBanner(); // Auto-dismiss if declined
+        }
+      });
     } catch (error) {
       console.error('💥 Install error:', error);
       showManualInstallFromBanner();
     }
-  };
+  }
+  
+  window.installPWAFromBanner = installPWAFromBanner;
   
   // Show manual install instructions
-  window.showManualInstallFromBanner = function() {
+  function showManualInstallFromBanner() {
+    console.log('🔴 showManualInstallFromBanner called');
     const modal = document.createElement('div');
     modal.innerHTML = `
       <div style="
@@ -213,13 +240,18 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     
     document.body.appendChild(modal);
-  };
+  }
+  
+  window.showManualInstallFromBanner = showManualInstallFromBanner;
   
   // Dismiss banner
-  window.dismissInstallBanner = function() {
+  function dismissInstallBanner() {
+    console.log('🔴 dismissInstallBanner called');
     localStorage.setItem(dismissKey, Date.now().toString());
     removeBanner();
-  };
+  }
+  
+  window.dismissInstallBanner = dismissInstallBanner;
   
   // Remove banner
   function removeBanner() {

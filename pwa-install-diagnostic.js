@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const installBtn = document.createElement('div');
     installBtn.id = 'enhanced-install-btn';
     installBtn.innerHTML = `
-      <div style="
+      <div class="floating-install-btn" style="
         position: fixed;
         bottom: 20px;
         right: 20px;
@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
       ">
         <span style="font-size: 20px;">📱</span>
         <span>Install App</span>
-        <button onclick="this.parentElement.parentElement.remove()" style="
+        <button class="floating-close-btn" style="
           background: rgba(255,255,255,0.2);
           border: none;
           color: white;
@@ -76,11 +76,18 @@ document.addEventListener('DOMContentLoaded', function() {
       </style>
     `;
     
-    installBtn.onclick = async function(event) {
-      if (event.target.tagName === 'BUTTON') return; // Don't trigger on close button
+    // Add proper event listeners
+    const floatingBtn = installBtn.querySelector('.floating-install-btn');
+    const closeBtn = installBtn.querySelector('.floating-close-btn');
+    
+    floatingBtn.addEventListener('click', async function(event) {
+      if (event.target.classList.contains('floating-close-btn')) {
+        event.stopPropagation();
+        return;
+      }
       
       try {
-        console.log('🚀 Triggering install prompt...');
+        console.log('🚀 Triggering install prompt from floating button...');
         await promptEvent.prompt();
         const result = await promptEvent.userChoice;
         console.log('📋 Install result:', result.outcome);
@@ -94,7 +101,14 @@ document.addEventListener('DOMContentLoaded', function() {
       } catch (error) {
         console.error('💥 Install error:', error);
       }
-    };
+    });
+    
+    closeBtn.addEventListener('click', function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      console.log('🔴 Floating install button dismissed');
+      installBtn.remove();
+    });
     
     document.body.appendChild(installBtn);
     console.log('✅ Enhanced install button created!');
@@ -180,7 +194,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Show manual install option anyway
       const manualBtn = document.createElement('div');
       manualBtn.innerHTML = `
-        <div style="
+        <div class="manual-install-btn" style="
           position: fixed;
           bottom: 20px;
           right: 20px;
@@ -191,10 +205,19 @@ document.addEventListener('DOMContentLoaded', function() {
           cursor: pointer;
           z-index: 10000;
           font-size: 14px;
-        " onclick="triggerInstallPrompt()">
+        ">
           📱 Install Options
         </div>
       `;
+      
+      const btnElement = manualBtn.querySelector('.manual-install-btn');
+      btnElement.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('� Manual install options clicked');
+        triggerInstallPrompt();
+      });
+      
       document.body.appendChild(manualBtn);
     }
   }, 3000);
