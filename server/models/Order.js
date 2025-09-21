@@ -142,11 +142,38 @@ class Order {
     try {
       console.log(`🔍 Finding order by ID: ${id}`);
       
-      // Use a simpler, more reliable approach
-      // First get the order data
-      const orderResult = await pool.query(`
-        SELECT * FROM orders WHERE id = $1
-      `, [id]);
+      // Use the same JOIN approach as getAll method for consistency
+      // First check what columns exist in the customers table
+      const customersColumnsResult = await pool.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'customers' AND table_schema = 'public'
+      `);
+      const customerColumns = customersColumnsResult.rows.map(row => row.column_name);
+      console.log('📋 Available customer columns:', customerColumns);
+      
+      // Build dynamic query based on available columns
+      let addressColumn = 'NULL as address';
+      if (customerColumns.includes('delivery_address')) {
+        addressColumn = 'c.delivery_address as address';
+      } else if (customerColumns.includes('address')) {
+        addressColumn = 'c.address as address';
+      }
+      
+      // Use JOIN query like getAll method
+      const orderQuery = `
+        SELECT o.*, 
+               COALESCE(c.name, 'Unknown Customer') as customer_name, 
+               COALESCE(c.phone, '') as phone, 
+               COALESCE(c.email, '') as email,
+               ${addressColumn}
+        FROM orders o 
+        LEFT JOIN customers c ON o.customer_id = c.id 
+        WHERE o.id = $1
+      `;
+      
+      console.log(`📋 Executing order query: ${orderQuery}`);
+      const orderResult = await pool.query(orderQuery, [id]);
       
       if (!orderResult.rows || orderResult.rows.length === 0) {
         console.log(`❌ Order ${id} not found`);
@@ -154,33 +181,7 @@ class Order {
       }
       
       const order = orderResult.rows[0];
-      console.log(`✅ Found order ${id}`);
-      
-      // Try to get customer data (handle missing customer gracefully)
-      try {
-        const customerResult = await pool.query(`
-          SELECT name, phone, 
-                 COALESCE(delivery_address, address, '') as address
-          FROM customers 
-          WHERE id = $1
-        `, [order.customer_id]);
-        
-        if (customerResult.rows && customerResult.rows.length > 0) {
-          const customer = customerResult.rows[0];
-          order.customer_name = customer.name || 'Unknown Customer';
-          order.phone = customer.phone || '';
-          order.address = customer.address || '';
-        } else {
-          order.customer_name = 'Unknown Customer';
-          order.phone = '';
-          order.address = '';
-        }
-      } catch (customerError) {
-        console.warn(`⚠️ Error fetching customer for order ${id}:`, customerError.message);
-        order.customer_name = 'Unknown Customer';
-        order.phone = '';
-        order.address = '';
-      }
+      console.log(`✅ Found order ${id} with customer: ${order.customer_name}`);
       
       // Get order items (handle gracefully if missing)
       try {
