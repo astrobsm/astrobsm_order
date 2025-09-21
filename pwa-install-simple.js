@@ -11,9 +11,20 @@
     console.log('🔍 PWA Requirements Check:');
     console.log('- HTTPS:', location.protocol === 'https:' || location.hostname === 'localhost');
     console.log('- Service Worker supported:', 'serviceWorker' in navigator);
+    console.log('- Service Worker registered:', navigator.serviceWorker ? navigator.serviceWorker.controller !== null : false);
     console.log('- Manifest linked:', !!document.querySelector('link[rel="manifest"]'));
     console.log('- Display mode:', window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser');
     console.log('- User agent:', navigator.userAgent.includes('Chrome') ? 'Chrome-based' : 'Other');
+    
+    // Check service worker status
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        console.log('- SW Registrations found:', registrations.length);
+        registrations.forEach((reg, i) => {
+          console.log(`  Registration ${i + 1}: ${reg.scope} - State: ${reg.active ? reg.active.state : 'none'}`);
+        });
+      });
+    }
   }
   
   debugPWARequirements();
@@ -170,6 +181,14 @@
         text-align: center;
       ">
         <h2 style="margin-top: 0; color: #007bff;">📱 Install ASTRO-BSM</h2>
+        
+        <div style="background: #e3f2fd; padding: 12px; border-radius: 8px; margin: 15px 0; font-size: 14px;">
+          <strong>💡 Why automatic install isn't available:</strong><br>
+          • App may already be installed<br>
+          • Browser needs more engagement with the site<br>
+          • Some browsers don't support auto-install
+        </div>
+        
         <div style="text-align: left; line-height: 1.6; margin: 20px 0;">
           <p><strong>🌐 Chrome/Edge:</strong><br>Look for install icon (⬇️) in address bar<br>OR Menu (⋮) → "Install ASTRO-BSM..."</p>
           <p><strong>🦊 Firefox:</strong><br>Address bar install icon<br>OR Menu → "Install this site as an app"</p>
