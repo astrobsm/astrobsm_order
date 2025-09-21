@@ -5,6 +5,11 @@ let allUsers = [];
 let filteredUsers = [];
 let currentEditingUser = null;
 
+// Helper function to get current user role
+function getCurrentUserRole() {
+  return window.currentUserRole || 'superadmin';
+}
+
 // Initialize User Management System
 function initializeUserManagement() {
   console.log('🚀 Initializing User Management System...');
@@ -250,9 +255,14 @@ async function loadAllUsers() {
   
   try {
     console.log(`📡 Fetching from: ${API_BASE_URL}/users`);
+    
+    // Get current user role for authentication
+    const currentUserRole = getCurrentUserRole();
+    
     const response = await fetch(`${API_BASE_URL}/users`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'list', userRole: currentUserRole })
     });
     
     console.log(`📡 Response status: ${response.status}`);
@@ -563,19 +573,23 @@ async function handleUserFormSubmit(e) {
     showLoader(true);
     
     let response;
+    // Get current user role for authentication
+    const currentUserRole = getCurrentUserRole();
+    const requestData = { ...userData, userRole: currentUserRole };
+    
     if (currentEditingUser) {
       // Update existing user
       response = await fetch(`${API_BASE_URL}/users/${currentEditingUser.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData)
+        body: JSON.stringify(requestData)
       });
     } else {
       // Create new user
       response = await fetch(`${API_BASE_URL}/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData)
+        body: JSON.stringify(requestData)
       });
     }
     
@@ -624,10 +638,13 @@ async function handlePasswordFormSubmit(e) {
   try {
     showLoader(true);
     
+    // Get current user role for authentication
+    const currentUserRole = getCurrentUserRole();
+    
     const response = await fetch(`${API_BASE_URL}/users/${userId}/password`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: newPassword })
+      body: JSON.stringify({ password: newPassword, userRole: currentUserRole })
     });
     
     const result = await response.json();
@@ -661,9 +678,13 @@ async function deleteUser(userId) {
   try {
     showLoader(true);
     
+    // Get current user role for authentication
+    const currentUserRole = getCurrentUserRole();
+    
     const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userRole: currentUserRole })
     });
     
     const result = await response.json();
