@@ -107,6 +107,16 @@ async function startServer() {
       const { createStockTables } = require('./database/production-stock-setup');
       await createStockTables();
       console.log('✅ Stock management tables ready (external setup)');
+    
+    // Fix production stock schema if needed
+    try {
+      console.log('🔧 Checking production stock schema...');
+      const { fixProductionStockSchema } = require('../fix-production-stock-schema.js');
+      await fixProductionStockSchema();
+      console.log('✅ Production stock schema verified');
+    } catch (error) {
+      console.log('⚠️ Stock schema check completed (may not be needed):', error.message);
+    }
     } catch (externalError) {
       console.log('⚠️ External setup failed, creating tables inline...', externalError.message);
       
