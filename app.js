@@ -2250,7 +2250,8 @@ async function updateStockLevel(productId, newStock, reason) {
       },
       body: JSON.stringify({
         new_stock: newStock,
-        reason: reason
+        reason: reason,
+        userRole: window.currentUserRole || 'superadmin'
       })
     });
     
@@ -2279,7 +2280,8 @@ async function updateReorderLevel(productId, newReorderLevel) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        reorder_level: newReorderLevel
+        reorder_level: newReorderLevel,
+        userRole: window.currentUserRole || 'superadmin'
       })
     });
     

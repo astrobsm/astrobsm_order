@@ -222,7 +222,7 @@ router.post('/intake', requireStockAccess, async (req, res) => {
 });
 
 // Update stock level directly (manual adjustment)
-router.put('/adjust/:productId', async (req, res) => {
+router.put('/adjust/:productId', requireStockAccess, async (req, res) => {
   try {
     const { productId } = req.params;
     const { new_stock, reason } = req.body;
@@ -261,7 +261,7 @@ router.put('/adjust/:productId', async (req, res) => {
 });
 
 // Update reorder level for a product
-router.put('/reorder-level/:productId', async (req, res) => {
+router.put('/reorder-level/:productId', requireStockAccess, async (req, res) => {
   try {
     const { productId } = req.params;
     const { reorder_level } = req.body;

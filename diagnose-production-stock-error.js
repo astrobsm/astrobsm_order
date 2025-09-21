@@ -14,17 +14,15 @@ async function diagnoseStockError() {
         // Test the endpoint that was failing: /api/stock/adjust/11
         const testPayload = {
             userRole: 'superadmin',
-            adjustment_type: 'manual',
-            new_quantity: 50,
-            reason: 'Test adjustment',
-            notes: 'Diagnostic test'
+            new_stock: 50,
+            reason: 'Diagnostic test adjustment'
         };
         
         console.log('📤 Sending test request to /api/stock/adjust/11');
         console.log('📋 Payload:', testPayload);
         
         const response = await fetch(`${API_BASE}/api/stock/adjust/11`, {
-            method: 'POST',
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
             },
