@@ -111,9 +111,9 @@ async function startServer() {
     // Fix production stock schema if needed
     try {
       console.log('🔧 Checking production stock schema...');
-      const { fixProductionStockSchema } = require('../fix-production-stock-schema.js');
-      await fixProductionStockSchema();
-      console.log('✅ Production stock schema verified');
+      const { fixAllStockSchemaIssues } = require('../fix-comprehensive-stock-schema.js');
+      await fixAllStockSchemaIssues();
+      console.log('✅ Production stock schema verified and fixed');
     } catch (error) {
       console.log('⚠️ Stock schema check completed (may not be needed):', error.message);
     }
