@@ -6,6 +6,18 @@
   
   console.log('🚀 Simplified PWA Install Script Loading...');
   
+  // Debug PWA requirements
+  function debugPWARequirements() {
+    console.log('🔍 PWA Requirements Check:');
+    console.log('- HTTPS:', location.protocol === 'https:' || location.hostname === 'localhost');
+    console.log('- Service Worker supported:', 'serviceWorker' in navigator);
+    console.log('- Manifest linked:', !!document.querySelector('link[rel="manifest"]'));
+    console.log('- Display mode:', window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser');
+    console.log('- User agent:', navigator.userAgent.includes('Chrome') ? 'Chrome-based' : 'Other');
+  }
+  
+  debugPWARequirements();
+  
   let deferredPrompt = null;
   let installBanner = null;
   
@@ -36,9 +48,11 @@
     createInstallBanner(true);
   });
   
-  // Create install banner
+  // Create install banner - ALWAYS show some form of install promotion
   function createInstallBanner(hasAutoPrompt) {
     if (installBanner) return; // Don't create multiple banners
+    
+    console.log('🎨 Creating install banner, hasAutoPrompt:', hasAutoPrompt);
     
     installBanner = document.createElement('div');
     installBanner.id = 'simple-pwa-banner';
@@ -198,13 +212,103 @@
     }
   }
   
-  // Show banner after delay if no auto-prompt
-  setTimeout(function() {
-    if (!deferredPrompt && !installBanner) {
-      console.log('💡 No auto-prompt available - showing manual install banner');
-      createInstallBanner(false);
+  // ALWAYS show install promotion - check multiple conditions
+  function checkAndShowInstallBanner() {
+    console.log('🔍 Checking install banner conditions...');
+    console.log('- deferredPrompt:', !!deferredPrompt);
+    console.log('- installBanner exists:', !!installBanner);
+    console.log('- isInstalled:', isInstalled);
+    console.log('- daysSinceDismissal:', daysSinceDismissal);
+    
+    if (!installBanner && !isInstalled && daysSinceDismissal >= 7) {
+      console.log('✅ Showing install banner');
+      createInstallBanner(!!deferredPrompt);
+    } else {
+      console.log('❌ Not showing banner - conditions not met');
     }
+  }
+  
+  // Check immediately after DOM load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(checkAndShowInstallBanner, 1000);
+    });
+  } else {
+    setTimeout(checkAndShowInstallBanner, 1000);
+  }
+  
+  // Also check after delay for beforeinstallprompt
+  setTimeout(function() {
+    console.log('⏰ 3-second timeout check');
+    checkAndShowInstallBanner();
   }, 3000);
+  
+  // Also create a floating install button as backup
+  function createFloatingInstallButton() {
+    // Don't create if already exists or app is installed
+    if (document.getElementById('floating-pwa-install') || isInstalled) return;
+    
+    const floatingBtn = document.createElement('div');
+    floatingBtn.id = 'floating-pwa-install';
+    floatingBtn.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 50px;
+      cursor: pointer;
+      z-index: 99998;
+      font-weight: bold;
+      box-shadow: 0 4px 15px rgba(0,123,255,0.4);
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: pulse 2s infinite;
+    `;
+    
+    floatingBtn.innerHTML = '📱 Install App';
+    
+    floatingBtn.addEventListener('click', function() {
+      console.log('🔴 Floating install button clicked!');
+      
+      if (deferredPrompt) {
+        // Try automatic install
+        deferredPrompt.prompt().then(function() {
+          return deferredPrompt.userChoice;
+        }).then(function(result) {
+          console.log('📋 Floating install result:', result.outcome);
+          if (result.outcome === 'accepted') {
+            floatingBtn.remove();
+          }
+        }).catch(function(error) {
+          console.error('💥 Floating install error:', error);
+          showManualInstructions();
+        });
+      } else {
+        // Show manual instructions
+        showManualInstructions();
+      }
+    });
+    
+    document.body.appendChild(floatingBtn);
+    console.log('🎯 Floating install button created');
+  }
+  
+  // Add CSS animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  // Create floating button after delay
+  setTimeout(createFloatingInstallButton, 2000);
   
   console.log('✅ Simplified PWA Install Script Ready');
   
