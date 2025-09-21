@@ -142,46 +142,58 @@ class Order {
     try {
       console.log(`🔍 Finding order by ID: ${id}`);
       
-      // Use the same JOIN approach as getAll method for consistency
-      // First check what columns exist in the customers table
-      const customersColumnsResult = await pool.query(`
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name = 'customers' AND table_schema = 'public'
-      `);
-      const customerColumns = customersColumnsResult.rows.map(row => row.column_name);
-      console.log('📋 Available customer columns:', customerColumns);
+      // Fallback approach - try simple query first, then try JOIN
+      let order;
       
-      // Build dynamic query based on available columns
-      let addressColumn = 'NULL as address';
-      if (customerColumns.includes('delivery_address')) {
-        addressColumn = 'c.delivery_address as address';
-      } else if (customerColumns.includes('address')) {
-        addressColumn = 'c.address as address';
+      try {
+        // First try the basic order without JOIN
+        const basicOrderResult = await pool.query('SELECT * FROM orders WHERE id = $1', [id]);
+        
+        if (!basicOrderResult.rows || basicOrderResult.rows.length === 0) {
+          console.log(`❌ Order ${id} not found`);
+          return null;
+        }
+        
+        order = basicOrderResult.rows[0];
+        console.log(`✅ Found basic order ${id}`);
+        
+        // Try to get customer data if customer_id exists
+        if (order.customer_id) {
+          try {
+            const customerResult = await pool.query('SELECT * FROM customers WHERE id = $1', [order.customer_id]);
+            if (customerResult.rows && customerResult.rows.length > 0) {
+              const customer = customerResult.rows[0];
+              order.customer_name = customer.name || 'Unknown Customer';
+              order.phone = customer.phone || '';
+              order.email = customer.email || '';
+              order.address = customer.delivery_address || customer.address || '';
+              console.log(`✅ Found customer data: ${order.customer_name}`);
+            } else {
+              order.customer_name = 'Unknown Customer';
+              order.phone = '';
+              order.email = '';
+              order.address = '';
+              console.log(`⚠️ Customer ${order.customer_id} not found`);
+            }
+          } catch (customerError) {
+            console.warn(`⚠️ Error fetching customer for order ${id}:`, customerError.message);
+            order.customer_name = 'Unknown Customer';
+            order.phone = '';
+            order.email = '';
+            order.address = '';
+          }
+        } else {
+          order.customer_name = 'Unknown Customer';
+          order.phone = '';
+          order.email = '';
+          order.address = '';
+          console.log(`⚠️ Order ${id} has no customer_id`);
+        }
+        
+      } catch (orderError) {
+        console.error(`❌ Error fetching basic order ${id}:`, orderError.message);
+        throw orderError;
       }
-      
-      // Use JOIN query like getAll method
-      const orderQuery = `
-        SELECT o.*, 
-               COALESCE(c.name, 'Unknown Customer') as customer_name, 
-               COALESCE(c.phone, '') as phone, 
-               COALESCE(c.email, '') as email,
-               ${addressColumn}
-        FROM orders o 
-        LEFT JOIN customers c ON o.customer_id = c.id 
-        WHERE o.id = $1
-      `;
-      
-      console.log(`📋 Executing order query: ${orderQuery}`);
-      const orderResult = await pool.query(orderQuery, [id]);
-      
-      if (!orderResult.rows || orderResult.rows.length === 0) {
-        console.log(`❌ Order ${id} not found`);
-        return null;
-      }
-      
-      const order = orderResult.rows[0];
-      console.log(`✅ Found order ${id} with customer: ${order.customer_name}`);
       
       // Get order items (handle gracefully if missing)
       try {
@@ -202,7 +214,7 @@ class Order {
       
       return order;
     } catch (error) {
-      console.error(`❌ Error fetching order by ID ${id}:`, error.message);
+      console.error(`❌ Error fetching order by ID ${id}:`, error.message, error.stack);
       throw error;
     }
   }
