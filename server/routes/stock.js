@@ -117,6 +117,7 @@ router.post('/intake', requireStockAccess, async (req, res) => {
     const {
       product_id,
       quantity_added,
+      quantity, // Production compatibility: some schemas use 'quantity' instead of 'quantity_added'
       cost_per_unit,
       supplier,
       batch_number,
@@ -124,7 +125,10 @@ router.post('/intake', requireStockAccess, async (req, res) => {
       notes
     } = req.body;
 
-    if (!product_id || !quantity_added || quantity_added <= 0) {
+    // Use either quantity_added or quantity (for production compatibility)
+    const quantityToAdd = quantity_added || quantity;
+
+    if (!product_id || !quantityToAdd || quantityToAdd <= 0) {
       return res.status(400).json({
         success: false,
         error: 'Product ID and valid quantity are required'
@@ -147,20 +151,62 @@ router.post('/intake', requireStockAccess, async (req, res) => {
     }
 
     const currentStock = currentStockResult.rows[0].current_stock;
-    const newStock = currentStock + parseInt(quantity_added);
-    const totalCost = cost_per_unit ? (cost_per_unit * quantity_added).toFixed(2) : null;
+    const newStock = currentStock + parseInt(quantityToAdd);
+    const totalCost = cost_per_unit ? (cost_per_unit * quantityToAdd).toFixed(2) : null;
 
-    // Insert stock intake record
-    const intakeResult = await client.query(`
-      INSERT INTO stock_intake (
-        product_id, quantity_added, cost_per_unit, total_cost, 
-        supplier, batch_number, expiry_date, notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    // Check which columns exist in stock_intake table (production compatibility)
+    const columnsResult = await client.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'stock_intake' AND table_schema = 'public'
+    `);
+    const availableColumns = columnsResult.rows.map(row => row.column_name);
+    
+    console.log('📋 Available stock_intake columns:', availableColumns);
+
+    // Build INSERT query based on available columns
+    const insertFields = ['product_id'];
+    const insertValues = [product_id];
+    let paramCount = 1;
+
+    // Add quantity field (use quantity_added if available, otherwise quantity)
+    if (availableColumns.includes('quantity_added')) {
+      insertFields.push('quantity_added');
+      insertValues.push(quantityToAdd);
+      paramCount++;
+    } else if (availableColumns.includes('quantity')) {
+      insertFields.push('quantity');
+      insertValues.push(quantityToAdd);
+      paramCount++;
+    }
+
+    // Add optional fields if they exist
+    const optionalFields = {
+      'cost_per_unit': cost_per_unit,
+      'total_cost': totalCost,
+      'supplier': supplier,
+      'batch_number': batch_number,
+      'expiry_date': expiry_date,
+      'notes': notes
+    };
+
+    Object.entries(optionalFields).forEach(([field, value]) => {
+      if (availableColumns.includes(field) && value !== undefined) {
+        insertFields.push(field);
+        insertValues.push(value);
+        paramCount++;
+      }
+    });
+
+    const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
+    const insertQuery = `
+      INSERT INTO stock_intake (${insertFields.join(', ')}) 
+      VALUES (${placeholders}) 
       RETURNING id
-    `, [
-      product_id, quantity_added, cost_per_unit, totalCost,
-      supplier, batch_number, expiry_date, notes
-    ]);
+    `;
+
+    console.log('📤 Stock intake query:', insertQuery, insertValues);
+    
+    const intakeResult = await client.query(insertQuery, insertValues);
 
     const intakeId = intakeResult.rows[0].id;
 
@@ -176,16 +222,42 @@ router.post('/intake', requireStockAccess, async (req, res) => {
       UPDATE products SET stock_quantity = $1 WHERE id = $2
     `, [newStock, product_id]);
 
+    // Record stock movement with production compatibility
+    const movementColumnsResult = await client.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'stock_movements' AND table_schema = 'public'
+    `);
+    const movementColumns = movementColumnsResult.rows.map(row => row.column_name);
+    
+    const movementFields = ['product_id', 'movement_type', 'quantity'];
+    const movementValues = [product_id, 'IN', quantityToAdd];
+
+    // Add optional fields if they exist
+    const movementOptionalFields = {
+      'reason': `Stock intake - ${supplier || 'Unknown supplier'}`,
+      'previous_stock': currentStock,
+      'new_stock': newStock,
+      'reference_type': 'INTAKE',
+      'reference_id': intakeId
+    };
+
+    Object.entries(movementOptionalFields).forEach(([field, value]) => {
+      if (movementColumns.includes(field) && value !== undefined) {
+        movementFields.push(field);
+        movementValues.push(value);
+      }
+    });
+
+    const movementPlaceholders = movementValues.map((_, i) => `$${i + 1}`).join(', ');
+    const movementQuery = `
+      INSERT INTO stock_movements (${movementFields.join(', ')}) 
+      VALUES (${movementPlaceholders})
+    `;
+
+    console.log('📤 Stock movement query:', movementQuery, movementValues);
+    
     // Record stock movement
-    await client.query(`
-      INSERT INTO stock_movements (
-        product_id, movement_type, quantity, reason, 
-        previous_stock, new_stock, reference_type, reference_id
-      ) VALUES ($1, 'IN', $2, $3, $4, $5, 'INTAKE', $6)
-    `, [
-      product_id, quantity_added, `Stock intake - ${supplier || 'Unknown supplier'}`,
-      currentStock, newStock, intakeId
-    ]);
+    await client.query(movementQuery, movementValues);
 
     await client.query('COMMIT');
 

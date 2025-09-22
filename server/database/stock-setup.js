@@ -144,20 +144,49 @@ const updateProductStock = async (productId, newStock, reason = 'Manual update',
       WHERE id = $2
     `, [newStock, productId]);
 
-    // Record stock movement
-    await client.query(`
-      INSERT INTO stock_movements (product_id, movement_type, quantity, reason, previous_stock, new_stock, reference_type, reference_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    `, [
+    // Check which columns exist in stock_movements table (production compatibility)
+    const columnsResult = await client.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'stock_movements' AND table_schema = 'public'
+    `);
+    const availableColumns = columnsResult.rows.map(row => row.column_name);
+    
+    console.log('📋 Available stock_movements columns:', availableColumns);
+
+    // Build INSERT query based on available columns
+    const insertFields = ['product_id', 'movement_type', 'quantity'];
+    const insertValues = [
       productId,
       stockDifference > 0 ? 'IN' : 'OUT',
-      Math.abs(stockDifference),
-      reason,
-      previousStock,
-      newStock,
-      referenceType,
-      referenceId
-    ]);
+      Math.abs(stockDifference)
+    ];
+
+    // Add optional fields if they exist
+    const optionalFields = {
+      'reason': reason,
+      'previous_stock': previousStock,
+      'new_stock': newStock,
+      'reference_type': referenceType,
+      'reference_id': referenceId
+    };
+
+    Object.entries(optionalFields).forEach(([field, value]) => {
+      if (availableColumns.includes(field) && value !== undefined) {
+        insertFields.push(field);
+        insertValues.push(value);
+      }
+    });
+
+    const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
+    const movementQuery = `
+      INSERT INTO stock_movements (${insertFields.join(', ')}) 
+      VALUES (${placeholders})
+    `;
+
+    console.log('📤 Stock movement query:', movementQuery, insertValues);
+    
+    // Record stock movement
+    await client.query(movementQuery, insertValues);
 
     await client.query('COMMIT');
     console.log(`Stock updated for product ${productId}: ${previousStock} → ${newStock}`);
